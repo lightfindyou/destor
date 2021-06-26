@@ -261,6 +261,7 @@ int index_lookup(struct segment* s) {
  * For physical locality, this function is called for each written container.
  * For logical locality, this function is called for each written segment.
  */
+//xzjin features is in fact fingerprints, stored in htable.
 void index_update(GHashTable *features, int64_t id){
     VERBOSE("Filter phase: update %d features", g_hash_table_size(features));
     GHashTableIter iter;

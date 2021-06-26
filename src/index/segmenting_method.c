@@ -10,6 +10,7 @@ struct segment* (*segmenting)(struct chunk *c);
  * Used by SiLo and Block Locality Caching.
  */
 static struct segment* segment_fixed(struct chunk * c) {
+    //xzjin it's static, so it can be reused between different calls
     static struct segment* tmp;
     if (tmp == NULL)
         tmp = new_segment();

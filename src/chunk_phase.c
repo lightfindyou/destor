@@ -92,7 +92,7 @@ static void* chunk_thread(void *arg) {
 
 			sync_queue_push(chunk_queue, nc);
 		}
-
+		//xzjin add file tail chunck at last
 		sync_queue_push(chunk_queue, c);
 		leftoff = 0;
 		c = NULL;
@@ -110,7 +110,8 @@ static void* chunk_thread(void *arg) {
 }
 
 
-
+//xzjin get file data from read_queue and hash, then, put into chunk_queue
+//xzjin only chunck, no dedup
 void start_chunk_phase() {
 
 	if (destor.chunk_algorithm == CHUNK_RABIN){
@@ -174,7 +175,13 @@ void start_chunk_phase() {
 
 		chunking = ae_chunk_data;
 		ae_init();
-	}else{
+	} else if(destor.chunk_algorithm == CHUNK_FASTCDC){
+		assert(destor.chunk_avg_size <= destor.chunk_max_size);
+		assert(destor.chunk_max_size <= CONTAINER_SIZE - CONTAINER_META_SIZE);
+
+		chunking = fastcdc_chunk_data;
+		fastcdc_init(destor.chunk_avg_size);
+	} else{
 		NOTICE("Invalid chunking algorithm");
 		exit(1);
 	}

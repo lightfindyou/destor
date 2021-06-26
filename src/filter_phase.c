@@ -73,6 +73,7 @@ static void* filter_thread(void *arg) {
          * If we find an early copy of the chunk in earlier segments,
          * has been rewritten,
          * the rewrite request for it will be denied. */
+        //xzjin if has been writen, do not write again.
         index_check_buffer(s);
 
     	GSequenceIter *iter = g_sequence_get_begin_iter(s->chunks);
@@ -135,6 +136,7 @@ static void* filter_thread(void *arg) {
                 		storage_buffer.chunks = g_sequence_new(free_chunk);
                 }
 
+                //xzjin if container is bigger, update htable and add container to container queue.
                 if (container_overflow(storage_buffer.container_buffer, c->size)) {
 
                     if(destor.index_category[1] == INDEX_CATEGORY_PHYSICAL_LOCALITY){
@@ -155,6 +157,7 @@ static void* filter_thread(void *arg) {
                     storage_buffer.container_buffer = create_container();
                 }
 
+                //xzjin add chunck to containter and update corresponding hashtable
                 if(add_chunk_to_container(storage_buffer.container_buffer, c)){
 
                 	struct chunk* wc = new_chunk(0);

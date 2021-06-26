@@ -78,7 +78,8 @@ void check_simulation_level(int last_level, int current_level) {
 void destor_start() {
 
 	/* Init */
-	destor.working_directory = sdsnew("/home/data/working/");
+//	destor.working_directory = sdsnew("/home/data/working/");
+	destor.working_directory = sdsnew("/home/xzjin/destorTest");
 	destor.simulation_level = SIMULATION_NO;
     destor.trace_format = TRACE_DESTOR;
 	destor.verbosity = DESTOR_WARNING;

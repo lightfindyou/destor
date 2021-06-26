@@ -105,6 +105,7 @@ static void* read_thread(void *argv) {
 	return NULL;
 }
 
+//xzjin read file in new thread, add read file to read_queue
 void start_read_phase() {
     /* running job */
     jcr.status = JCR_STATUS_RUNNING;

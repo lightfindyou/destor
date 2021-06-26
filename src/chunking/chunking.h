@@ -15,4 +15,6 @@ int ae_chunk_data(unsigned char *p, int n);
 
 int tttd_chunk_data(unsigned char *p, int n);
 
+void fastcdc_init(uint32_t expectCS);
+int fastcdc_chunk_data(unsigned char *p, int n);
 #endif

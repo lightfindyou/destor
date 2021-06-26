@@ -34,13 +34,12 @@ static GHashTable* index_sampling_min(GSequence *chunks, int32_t chunk_num) {
             continue;
 
         if (g_sequence_get_length(candidates) < feature_num
-                || memcmp(&c->fp, g_sequence_get(
-                        g_sequence_iter_prev(
-                            g_sequence_get_end_iter(candidates))),
+                || memcmp(&c->fp,
+                    g_sequence_get( g_sequence_iter_prev( g_sequence_get_end_iter(candidates))),
                     sizeof(fingerprint)) < 0) {
             /* insufficient candidates or new candidate */
-            fingerprint *new_candidate = (fingerprint*) malloc(
-                    sizeof(fingerprint));
+            fingerprint *new_candidate = 
+                    (fingerprint*) malloc( sizeof(fingerprint));
             memcpy(new_candidate, &c->fp, sizeof(fingerprint));
             g_sequence_insert_sorted(candidates, new_candidate,
                     g_fingerprint_cmp, NULL);

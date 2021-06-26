@@ -19,7 +19,7 @@ AC_CHECK_LIB([glib], [g_thread_init],[thread_safe=no],[thread_safe=yes])
     if test "$thread_safe" = "no"; then
     AC_MSG_ERROR([*** The version of glib is too low ***])
     fi
-AC_CHECK_LIB([crypto],[SHA_Update],[found_crypto=yes],[found_crypto=no])
+AC_CHECK_LIB([crypto],[SHA1_Update],[found_crypto=yes],[found_crypto=no])
     if test "$found_crypto" = "no"; then
     AC_MSG_ERROR([*** Working crypto library not found ***])
     fi

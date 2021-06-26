@@ -11,6 +11,7 @@
 static int32_t backup_version_count;
 static sds recipepath;
 
+//xzjin read recipes/backupversion.count to backup_version_count
 void init_recipe_store() {
 	recipepath = sdsdup(destor.working_directory);
 	recipepath = sdscat(recipepath, "/recipes/");

@@ -56,6 +56,7 @@ static inline void free_kvpair(kvpair kvp){
 	free(kvp);
 }
 
+//xzjin read from index/htable and insert into hash table.
 void init_kvstore_htable(){
     kvpair_size = destor.index_key_size + destor.index_value_length * 8;
 

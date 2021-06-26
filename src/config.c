@@ -95,6 +95,8 @@ void load_config_from_string(sds config) {
 				destor.chunk_algorithm = CHUNK_FILE;
 			} else if (strcasecmp(argv[1], "ae") == 0) {
 				destor.chunk_algorithm = CHUNK_AE;
+			} else if (strcasecmp(argv[1], "fastcdc") == 0){
+				destor.chunk_algorithm = CHUNK_FASTCDC;
 			} else {
 				err = "Invalid chunk algorithm";
 				goto loaderr;

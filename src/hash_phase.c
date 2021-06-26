@@ -23,9 +23,9 @@ static void* sha1_thread(void* arg) {
 		TIMER_DECLARE(1);
 		TIMER_BEGIN(1);
 		SHA_CTX ctx;
-		SHA_Init(&ctx);
-		SHA_Update(&ctx, c->data, c->size);
-		SHA_Final(c->fp, &ctx);
+		SHA1_Init(&ctx);
+		SHA1_Update(&ctx, c->data, c->size);
+		SHA1_Final(c->fp, &ctx);
 		TIMER_END(1, jcr.hash_time);
 
 		hash2code(c->fp, code);
@@ -37,6 +37,7 @@ static void* sha1_thread(void* arg) {
 	return NULL;
 }
 
+//xzjin calculate SHA1 and put into hash_queue
 void start_hash_phase() {
 	hash_queue = sync_queue_new(100);
 	pthread_create(&hash_t, NULL, sha1_thread, NULL);

@@ -43,16 +43,17 @@ static void* append_thread(void *arg) {
 	return NULL;
 }
 
+//xzjin create container_buffer and append_t thread
 void init_container_store() {
 
 	sds containerfile = sdsdup(destor.working_directory);
 	containerfile = sdscat(containerfile, "/container.pool");
+	printf("container file:%s\n", containerfile);
 
 	if ((fp = fopen(containerfile, "r+"))) {
 		fread(&container_count, 8, 1, fp);
 	} else if (!(fp = fopen(containerfile, "w+"))) {
-		perror(
-				"Can not create container.pool for read and write because");
+		perror( "Can not create container.pool for read and write because");
 		exit(1);
 	}
 

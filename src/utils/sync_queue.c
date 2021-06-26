@@ -115,6 +115,7 @@ void* sync_queue_find(SyncQueue* s_queue, int (*hit)(void*, void*), void* data,
 	return ret;
 }
 
+//xzjin wait, to get an element on the queue
 void* sync_queue_get_top(SyncQueue* s_queue) {
 	if (pthread_mutex_lock(&s_queue->mutex) != 0) {
 		puts("failed to lock!");
