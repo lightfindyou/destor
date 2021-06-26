@@ -100,7 +100,7 @@ void init_kvstore_htable(){
 
 void close_kvstore_htable() {
 	sds indexpath = sdsdup(destor.working_directory);
-	indexpath = sdscat(indexpath, "index/htable");
+	indexpath = sdscat(indexpath, "/index/htable");
 
 	FILE *fp;
 	if ((fp = fopen(indexpath, "w")) == NULL) {

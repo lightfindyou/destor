@@ -177,6 +177,7 @@ void destor_start() {
 	}
 
 	sdsfree(stat_file);
+	printf("chunck algorithm:%d.\n", destor.chunk_algorithm);
 }
 
 void destor_shutdown() {

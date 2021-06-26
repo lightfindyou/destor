@@ -86,7 +86,7 @@ static gint g_record_cmp(struct containerRecord *a, struct containerRecord* b, g
 
 void close_har() {
 	sds fname = sdsdup(destor.working_directory);
-	fname = sdscat(fname, "recipes/bv");
+	fname = sdscat(fname, "/recipes/bv");
 	char s[20];
 	sprintf(s, "%d", jcr.id);
 	fname = sdscat(fname, s);
@@ -94,7 +94,7 @@ void close_har() {
 
 	FILE* fp = fopen(fname, "w");
 	if (!fp) {
-		fprintf(stderr, "Can not create sparse file");
+		fprintf(stderr, "Can not create sparse file: %s\n", fname);
 		perror("The reason is");
 		exit(1);
 	}
