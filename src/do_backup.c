@@ -16,6 +16,8 @@ extern struct {
 } index_overhead;
 
 void do_backup(char *path) {
+
+       double dedup_time = 0;
     init_recipe_store();
     init_container_store();
     init_index();
@@ -25,6 +27,7 @@ void do_backup(char *path) {
     puts("==== backup begin ====");
 
     TIMER_DECLARE(1);
+    TIMER_DECLARE(2);
     TIMER_BEGIN(1);
 
     time_t start = time(NULL);
@@ -32,6 +35,7 @@ void do_backup(char *path) {
         start_read_trace_phase();
     } else {
         start_read_phase();
+        TIMER_BEGIN(2);
         start_chunk_phase();
         start_hash_phase();
     }
@@ -60,6 +64,10 @@ void do_backup(char *path) {
         stop_hash_phase();
     }
     stop_dedup_phase();
+    if (destor.simulation_level != SIMULATION_ALL) {
+        TIMER_END(2, dedup_time);
+        printf("dedup time(s): %.3f\n", dedup_time / 1000000);
+    }
     stop_rewrite_phase();
     stop_filter_phase();
 

@@ -177,7 +177,6 @@ void destor_start() {
 	}
 
 	sdsfree(stat_file);
-	printf("chunck algorithm:%d.\n", destor.chunk_algorithm);
 }
 
 void destor_shutdown() {
@@ -296,6 +295,7 @@ int main(int argc, char **argv) {
 		}
 	}
 
+	printf("chunck algorithm:%d.\n", destor.chunk_algorithm);
 	sds path = NULL;
 
 	switch (job) {
