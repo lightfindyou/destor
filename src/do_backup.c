@@ -92,7 +92,7 @@ void do_backup(char *path) {
     printf("total size(B): %" PRId64 "\n", jcr.data_size);
     printf("stored data size(B): %" PRId64 "\n",
            jcr.unique_data_size + jcr.rewritten_chunk_size);
-    printf("deduplication ratio: %.4f, %.4f\n",
+    printf("deduplication ratio: \x1B[32m%.4f\x1B[37m, %.4f\n",
            jcr.data_size != 0 ? (jcr.data_size - jcr.unique_data_size -
                                  jcr.rewritten_chunk_size) /
                                     (double)(jcr.data_size)
