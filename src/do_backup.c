@@ -99,7 +99,7 @@ void do_backup(char *path) {
                               : 0,
            jcr.data_size /
                (double)(jcr.unique_data_size + jcr.rewritten_chunk_size));
-    printf("total time(s): %.3f\n", jcr.total_time / 1000000);
+    printf("\x1B[32mTotal time(s): %.3f\x1B[37m\n", jcr.total_time / 1000000);
     printf("throughput(MB/s): %.2f\n",
            (double)jcr.data_size * 1000000 / (1024 * 1024 * jcr.total_time));
     printf("number of zero chunks: %" PRId32 "\n", jcr.zero_chunk_num);
