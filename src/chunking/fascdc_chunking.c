@@ -7,6 +7,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <openssl/md5.h>
+#include "../destor.h"
 
 #define SymbolCount 256
 #define DigistLength 16
@@ -71,9 +72,12 @@ void fastcdc_init(uint32_t expectCS){
         memcpy(&g_gear_matrix[i], md5_result, sizeof(uint64_t));
     }
 
-    g_min_fastcdc_chunk_size = 2048;
-    g_max_fastcdc_chunk_size = 65536;
-    g_expect_fastcdc_chunk_size = expectCS;
+//    g_min_fastcdc_chunk_size = 2048;
+//    g_max_fastcdc_chunk_size = 65536;
+//    g_expect_fastcdc_chunk_size = expectCS;
+    g_min_fastcdc_chunk_size = destor.chunk_min_size;
+    g_max_fastcdc_chunk_size = destor.chunk_max_size;
+    g_expect_fastcdc_chunk_size = destor.chunk_avg_size;
 }
 
 
@@ -81,7 +85,8 @@ int fastcdc_chunk_data(unsigned char *p, int n){
 
     uint64_t fingerprint=0;
     //uint64_t digest __attribute__((unused));
-    int i=g_min_fastcdc_chunk_size, Mid=g_min_fastcdc_chunk_size + 8*1024;
+    int i=g_min_fastcdc_chunk_size;//, Mid=g_min_fastcdc_chunk_size + 8*1024;
+    int Mid= g_expect_fastcdc_chunk_size;
     //return n;
 
     if(n<=g_min_fastcdc_chunk_size) //the minimal  subChunk Size.
@@ -91,16 +96,16 @@ int fastcdc_chunk_data(unsigned char *p, int n){
         n = g_max_fastcdc_chunk_size;
     else if(n<Mid)
         Mid = n;
-    while(i<Mid)
-    {
+
+    while(i<Mid){
         fingerprint = (fingerprint<<1) + (g_gear_matrix[p[i]]);
         if ((!(fingerprint & 0x0000d90f03530000))) { //AVERAGE*2, *4, *8
             return i;
         }
         i++;
     }
-    while(i<n	)
-    {
+
+    while(i<n){
         fingerprint = (fingerprint<<1) + (g_gear_matrix[p[i]]);
         if ((!(fingerprint & 0x0000d90003530000))) { //Average/2, /4, /8
             return i;
