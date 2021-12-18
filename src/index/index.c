@@ -184,6 +184,7 @@ static void index_lookup_base(struct segment *s){
             if(ids){
                 index_overhead.lookup_requests++;
                 /* prefetch the target unit */
+                /*xzjin here need to access the container, may delete.*/
                 fingerprint_cache_prefetch(ids[0]);
                 int64_t id = fingerprint_cache_lookup(&c->fp);
                 if(id != TEMPORARY_ID){

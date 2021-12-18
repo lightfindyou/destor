@@ -13,6 +13,7 @@ typedef char* kvpair;
 #define get_key(kv) (kv)
 #define get_value(kv) ((int64_t*)(kv+destor.index_key_size))
 
+/*xzjin map the fingerprints to container ids*/
 static GHashTable *htable;
 
 static int32_t kvpair_size;

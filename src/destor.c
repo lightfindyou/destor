@@ -399,6 +399,7 @@ struct segment* new_segment_full(){
 	return s;
 }
 
+/*here the freed chunks are duplicated chunks, the unique chunks are removed from the segment*/
 void free_segment(struct segment* s) {
 	GSequenceIter *begin = g_sequence_get_begin_iter(s->chunks);
 	GSequenceIter *end = g_sequence_get_end_iter(s->chunks);

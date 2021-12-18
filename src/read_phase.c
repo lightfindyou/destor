@@ -34,6 +34,7 @@ static void read_file(sds path) {
 
 	SET_CHUNK(c, CHUNK_FILE_START);
 
+	//xzjin here put name into the queue
 	sync_queue_push(read_queue, c);
 
 	TIMER_DECLARE(1);
