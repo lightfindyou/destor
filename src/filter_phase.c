@@ -6,6 +6,8 @@
 #include "backup.h"
 #include "index/index.h"
 
+struct seemsLikeABuffer rewrite_buffer;
+
 static pthread_t filter_t;
 static int64_t chunk_num;
 

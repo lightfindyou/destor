@@ -10,6 +10,7 @@
 #include "index/index.h"
 #include "storage/containerstore.h"
 
+struct destor destor;
 extern void do_backup(char *path);
 //extern void do_delete(int revision);
 extern void do_restore(int revision, char *path);

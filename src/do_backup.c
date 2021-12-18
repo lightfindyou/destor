@@ -5,6 +5,19 @@
 #include "storage/containerstore.h"
 #include "utils/sync_queue.h"
 
+/* Output of read phase. */
+SyncQueue* read_queue;
+/* Output of chunk phase. */
+SyncQueue* chunk_queue;
+/* Output of hash phase. */
+SyncQueue* hash_queue;
+/* Output of trace phase. */
+SyncQueue* trace_queue;
+/* Output of dedup phase */
+SyncQueue* dedup_queue;
+/* Output of rewrite phase. */
+SyncQueue* rewrite_queue;
+
 /* defined in index.c */
 extern struct {
     /* Requests to the key-value store */
