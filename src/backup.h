@@ -57,16 +57,16 @@ void start_append_phase();
 void stop_append_phase();
 
 /* Output of read phase. */
-SyncQueue* read_queue;
+extern SyncQueue* read_queue;
 /* Output of chunk phase. */
-SyncQueue* chunk_queue;
+extern SyncQueue* chunk_queue;
 /* Output of hash phase. */
-SyncQueue* hash_queue;
+extern SyncQueue* hash_queue;
 /* Output of trace phase. */
-SyncQueue* trace_queue;
+extern SyncQueue* trace_queue;
 /* Output of dedup phase */
-SyncQueue* dedup_queue;
+extern SyncQueue* dedup_queue;
 /* Output of rewrite phase. */
-SyncQueue* rewrite_queue;
+extern SyncQueue* rewrite_queue;
 
 #endif /* BACKUP_H_ */

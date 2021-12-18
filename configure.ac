@@ -3,7 +3,8 @@
 
 AC_PREREQ([2.67])
 AC_INIT([destor], [2.0], [fumin@hust.edu.cn])
-AM_INIT_AUTOMAKE([destor], [2.0])
+#AM_INIT_AUTOMAKE([destor], [2.0])
+AM_INIT_AUTOMAKE
 
 # Checks for programs.
 AC_PROG_CC

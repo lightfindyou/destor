@@ -6,6 +6,8 @@
 #include "backup.h"
 #include "index/index.h"
 
+struct seemsLikeABuffer rewrite_buffer;
+
 static pthread_t filter_t;
 static int64_t chunk_num;
 
@@ -45,6 +47,12 @@ static void* filter_thread(void *arg) {
         assert(CHECK_CHUNK(c, CHUNK_SEGMENT_START));
         free_chunk(c);
 
+        /** TODO, seems not implementable
+         * challenges
+         * 1. file need to be read again after write.
+         * 2. data is backed up in file order, need to change it.
+         * 3. index search need to read from disk again (may change to store in the memory).
+        */
         c = sync_queue_pop(rewrite_queue);
         while (!(CHECK_CHUNK(c, CHUNK_SEGMENT_END))) {
             g_sequence_append(s->chunks, c);

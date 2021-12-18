@@ -40,6 +40,7 @@ void send_segment(struct segment* s) {
 		struct chunk* c = g_sequence_get(begin);
 		if (!CHECK_CHUNK(c, CHUNK_FILE_START) && !CHECK_CHUNK(c, CHUNK_FILE_END)) {
 			if (CHECK_CHUNK(c, CHUNK_DUPLICATE)) {
+				/*TODO xzjin, here may write the data, but frequent small size write may slow the deduplication, may accum to big enough */
 				if (c->id == TEMPORARY_ID) {
 					DEBUG("Dedup phase: %ldth chunk is identical to a unique chunk",
 							chunk_num++);

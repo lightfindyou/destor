@@ -71,6 +71,7 @@ static struct segment* segment_file_defined(struct chunk *c) {
  * Used by Sparse Index.
  */
 static struct segment* segment_content_defined(struct chunk *c) {
+    //xzjin here segment is static, so it can be reused.
     static struct segment* tmp;
 
     if (tmp == NULL)

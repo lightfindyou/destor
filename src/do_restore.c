@@ -5,6 +5,9 @@
 #include "utils/lru_cache.h"
 #include "restore.h"
 
+SyncQueue *restore_chunk_queue;
+SyncQueue *restore_recipe_queue;
+
 static void* lru_restore_thread(void *arg) {
 	struct lruCache *cache;
 	if (destor.simulation_level >= SIMULATION_RESTORE)
