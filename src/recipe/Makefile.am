@@ -1,2 +1,3 @@
-noinst_LIBRARIES=librecipe.a
-librecipe_a_SOURCES=recipestore.c
+lib_LTLIBRARIES=librecipe.la
+librecipe_la_SOURCES=recipestore.c
+LIBS=-ldl

@@ -1,2 +1,3 @@
-noinst_LIBRARIES=libfsl.a
-libfsl_a_SOURCES=libhashfile.c read_fsl_trace.c
+lib_LTLIBRARIES=libfsl.la
+libfsl_la_SOURCES=libhashfile.c read_fsl_trace.c
+LIBS= -ldl

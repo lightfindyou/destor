@@ -1,3 +1,3 @@
-noinst_LIBRARIES=libstorage.a
-libstorage_a_SOURCES=containerstore.c
-LIBS=-lglib
+lib_LTLIBRARIES=libstorage.la
+libstorage_la_SOURCES=containerstore.c
+LIBS=-lglib -ldl
