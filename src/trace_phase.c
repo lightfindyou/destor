@@ -1,6 +1,7 @@
 #include "destor.h"
 #include "jcr.h"
 #include "backup.h"
+#include "fsl/read_fsl_trace.h"
 
 void hash2code(unsigned char hash[20], char code[40]) {
 	int i, j, b;
@@ -206,8 +207,8 @@ static void* read_trace_thread(void *argv) {
 	return NULL;
 }
 
-/* fsl/read_fsl_trace.c */
-extern void* read_fsl_trace(void *argv);
+///* fsl/read_fsl_trace.c */
+//extern void* read_fsl_trace(void *argv);
 
 void start_read_trace_phase() {
     /* running job */
