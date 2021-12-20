@@ -10,12 +10,19 @@
 #include <string.h>
 
 #include "destor.h"
+#include "hash_phase.h"
+#include "chunk_phase.h"
+#include "backup.h"
+#include "debug.h"
 #include "jcr.h"
 #include "index/index.h"
 #include "storage/containerstore.h"
 
- void __attribute__ ((constructor)) init(void);
- void __attribute__ ((destructor)) fini(void);
+void __attribute__ ((constructor)) init(void);
+void __attribute__ ((destructor)) fini(void);
+
+pthread_mutex_t waitDedupMutex;
+pthread_cond_t finishDedup;
 
 /* Function pointers to hold the value of the glibc functions */
 static  ssize_t (*real_write)(int fd, const void *buf, size_t count) = NULL;
@@ -24,8 +31,32 @@ static int (*real_puts)(const char* str) = NULL;
 /* wrapping write function call */
 ssize_t write(int fd, const void *buf, size_t count) {
 
+//	if (pthread_mutex_lock(&waitDedupMutex) != 0) {
+//		ERROR("write failed to lock!");
+//		return;
+//	}
+
     /* printing out the number of characters */
-    printf("write:chars#:%lu\n", count);
+//    printf("write:chars#:%lu\n", count);
+	struct chunk *c = new_chunk(count);
+	memcpy(c->data, buf, count);
+	sync_queue_push(read_queue, c);
+
+	c = new_chunk(0);
+	SET_CHUNK(c, CHUNK_FILE_END);
+	sync_queue_push(read_queue, c);
+	chunk_thread(NULL);
+	sha1_thread(NULL);
+	dedup_thread(NULL);
+
+//	DEBUG("wait condition.\n");
+//	pthread_cond_wait(&finishDedup, &waitDedupMutex);
+//	DEBUG("condition realized.\n");
+
+//	if (pthread_mutex_unlock(&waitDedupMutex)) {
+//		ERROR("failed to lock!");
+//		return;
+//	}
     /* reslove the real write function from glibc
      * and pass the arguments.
      */
@@ -33,18 +64,6 @@ ssize_t write(int fd, const void *buf, size_t count) {
     real_write(fd, buf, count);
 
 }
-
-//int puts(const char* str) {
-//
-//    /* printing out the number of characters */
-//    printf("puts:chars#:%lu\n", strlen(str));
-//    /* resolve the real puts function from glibc
-//     * and pass the arguments.
-//     */
-//    real_puts = dlsym(RTLD_NEXT, "puts");
-//    real_puts(str);
-//}
-
 
 struct destor destor;
 extern void do_backup(char *path);
@@ -465,6 +484,10 @@ gint g_chunk_cmp(struct chunk* a, struct chunk* b, gpointer user_data){
 
 void init(){
 	printf("init library.\n");
+	if (pthread_mutex_init(&waitDedupMutex, 0) || pthread_cond_init(&finishDedup, 0)) {
+		printf("Failed to init mutex!");
+		return NULL;
+	}
 	main(0, NULL);
 }
 

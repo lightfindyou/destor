@@ -182,6 +182,7 @@
 #define CHUNK_FILE_END (0x0002)
 #define CHUNK_SEGMENT_START (0x0004)
 #define CHUNK_SEGMENT_END (0x0008)
+#define CHUNK_WRITE_END (0x000f)
 
 /* Flags for restore */
 #define CHUNK_WAIT 0x0010
@@ -312,13 +313,16 @@ struct segment* new_segment();
 struct segment* new_segment_full();
 void free_segment(struct segment* s);
 
+extern pthread_mutex_t waitDedupMutex;
+extern pthread_cond_t finishDedup;
+
 gboolean g_fingerprint_equal(fingerprint* fp1, fingerprint* fp2);
 gint g_fingerprint_cmp(fingerprint* fp1, fingerprint* fp2, gpointer user_data);
 gint g_chunk_cmp(struct chunk* a, struct chunk* b, gpointer user_data);
 
 void hash2code(unsigned char hash[20], char code[40]);
 
-#define DEBUG(fmt, arg...) destor_log(DESTOR_DEBUG, fmt, ##arg);
+//#define DEBUG(fmt, arg...) destor_log(DESTOR_DEBUG, fmt, ##arg);
 #define VERBOSE(fmt, arg...) destor_log(DESTOR_VERBOSE, fmt, ##arg);
 #define NOTICE(fmt, arg...) destor_log(DESTOR_NOTICE, fmt, ##arg);
 #define WARNING(fmt, arg...) destor_log(DESTOR_WARNING, fmt, ##arg);

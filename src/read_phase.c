@@ -111,7 +111,7 @@ void start_read_phase() {
     /* running job */
     jcr.status = JCR_STATUS_RUNNING;
 	read_queue = sync_queue_new(10);
-	pthread_create(&read_t, NULL, read_thread, NULL);
+	//pthread_create(&read_t, NULL, read_thread, NULL);
 }
 
 void stop_read_phase() {

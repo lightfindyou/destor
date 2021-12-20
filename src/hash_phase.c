@@ -1,11 +1,13 @@
 #include "destor.h"
 #include "jcr.h"
 #include "backup.h"
+#include "debug.h"
+#include "hash_phase.h"
 
 static pthread_t hash_t;
 static int64_t chunk_num;
 
-static void* sha1_thread(void* arg) {
+void* sha1_thread(void* arg) {
 	char code[41];
 	while (1) {
 		struct chunk* c = sync_queue_pop(chunk_queue);
@@ -15,9 +17,17 @@ static void* sha1_thread(void* arg) {
 			break;
 		}
 
-		if (CHECK_CHUNK(c, CHUNK_FILE_START) || CHECK_CHUNK(c, CHUNK_FILE_END)) {
+//		if (CHECK_CHUNK(c, CHUNK_FILE_START) || CHECK_CHUNK(c, CHUNK_FILE_END)) {
+//			sync_queue_push(hash_queue, c);
+//			continue;
+//		}
+
+		if (CHECK_CHUNK(c, CHUNK_FILE_END)) {
+//			DEBUG("hash write finish.\n");
+//			pthread_cond_broadcast(&finishDedup);
+//			continue;
 			sync_queue_push(hash_queue, c);
-			continue;
+			break;
 		}
 
 		TIMER_DECLARE(1);
@@ -40,7 +50,7 @@ static void* sha1_thread(void* arg) {
 //xzjin calculate SHA1 and put into hash_queue
 void start_hash_phase() {
 	hash_queue = sync_queue_new(100);
-	pthread_create(&hash_t, NULL, sha1_thread, NULL);
+//	pthread_create(&hash_t, NULL, sha1_thread, NULL);
 }
 
 void stop_hash_phase() {

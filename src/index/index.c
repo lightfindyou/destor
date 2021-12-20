@@ -4,6 +4,7 @@
 #include "index_buffer.h"
 #include "../storage/containerstore.h"
 #include "../recipe/recipestore.h"
+#include "../debug.h"
 #include "../jcr.h"
 
 struct index_overhead index_overhead;

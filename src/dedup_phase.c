@@ -7,6 +7,7 @@
  * segments are only for batch process.
  * */
 #include "destor.h"
+#include "debug.h"
 #include "jcr.h"
 #include "index/index.h"
 #include "backup.h"
@@ -15,6 +16,7 @@
 static pthread_t dedup_t;
 static int64_t chunk_num;
 static int64_t segment_num;
+struct GHashTable *fpTable;
 
 struct {
 	/* g_mutex_init() is unnecessary if in static storage. */
@@ -74,36 +76,47 @@ void *dedup_thread(void *arg) {
 			c = sync_queue_pop(hash_queue);
 		else
 			c = sync_queue_pop(trace_queue);
-
-		/* Add the chunk to the segment. */
-		s = segmenting(c);
-		if (!s)
-			continue;
-		/* segmenting success */
-		if (s->chunk_num > 0) {
-			VERBOSE("Dedup phase: the %lldth segment of %lld chunks", segment_num++,
-					s->chunk_num);
-			/* Each duplicate chunk will be marked. */
-			pthread_mutex_lock(&index_lock.mutex);
-			while (index_lookup(s) == 0) {
-				pthread_cond_wait(&index_lock.cond, &index_lock.mutex);
-			}
-			pthread_mutex_unlock(&index_lock.mutex);
-		} else {
-			VERBOSE("Dedup phase: an empty segment");
-		}
-		/* Send chunks in the segment to the next phase.
-		 * The segment will be cleared. */
-		send_segment(s);
-
-		free_segment(s);
-		s = NULL;
-
-		if (c == NULL)
+		if(CHECK_CHUNK(c, CHUNK_FILE_END)){
+			DEBUG("dedup end.\n");
 			break;
+		}
+
+		gboolean duplicated = g_hash_table_contains(fpTable, &c->fp);
+		if(duplicated){
+			MSG("duplicated chunk detected.\n");
+		}else{
+			g_hash_table_add(fpTable, &c->fp);
+		}
+
+//		/* Add the chunk to the segment. */
+//		s = segmenting(c);
+//		if (!s)
+//			continue;
+//		/* segmenting success */
+//		if (s->chunk_num > 0) {
+//			VERBOSE("Dedup phase: the %lldth segment of %lld chunks", segment_num++,
+//					s->chunk_num);
+//			/* Each duplicate chunk will be marked. */
+//			pthread_mutex_lock(&index_lock.mutex);
+//			while (index_lookup(s) == 0) {
+//				pthread_cond_wait(&index_lock.cond, &index_lock.mutex);
+//			}
+//			pthread_mutex_unlock(&index_lock.mutex);
+//		} else {
+//			VERBOSE("Dedup phase: an empty segment");
+//		}
+//		/* Send chunks in the segment to the next phase.
+//		 * The segment will be cleared. */
+//		send_segment(s);
+//
+//		free_segment(s);
+//		s = NULL;
+//
+//		if (c == NULL)
+//			break;
 	}
 
-	sync_queue_term(dedup_queue);
+	//sync_queue_term(dedup_queue);
 
 	return NULL;
 }
@@ -122,7 +135,9 @@ void start_dedup_phase() {
 
 	dedup_queue = sync_queue_new(1000);
 
-	pthread_create(&dedup_t, NULL, dedup_thread, NULL);
+	fpTable = g_hash_table_new_full(NULL, NULL, NULL, NULL);
+
+//	pthread_create(&dedup_t, NULL, dedup_thread, NULL);
 }
 
 void stop_dedup_phase() {
