@@ -77,11 +77,12 @@ void *dedup_thread(void *arg) {
 		else
 			c = sync_queue_pop(trace_queue);
 		if(CHECK_CHUNK(c, CHUNK_FILE_END)){
-			DEBUG("dedup end.\n");
+//			DEBUG("dedup end.\n");
 			break;
 		}
 
 		gboolean duplicated = g_hash_table_contains(fpTable, &c->fp);
+		DEBUG("address:%x, content:%x.\n", &c->fp, c->fp);
 		if(duplicated){
 			MSG("duplicated chunk detected.\n");
 		}else{
