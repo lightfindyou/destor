@@ -3,9 +3,10 @@
 #include "backup.h"
 #include "fsl/read_fsl_trace.h"
 
-void hash2code(unsigned char hash[20], char code[40]) {
+void hash2code(unsigned char hash[21], char code[40]) {
 	int i, j, b;
 	unsigned char a, c;
+	hash[20] = NULL;
 	i = 0;
 	for (i = 0; i < 20; i++) {
 		a = hash[i];

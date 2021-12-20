@@ -37,6 +37,7 @@ void* sha1_thread(void* arg) {
 		SHA1_Update(&ctx, c->data, c->size);
 		SHA1_Final(c->fp, &ctx);
 		TIMER_END(1, jcr.hash_time);
+		c->fp[20] = '\0';
 
 		hash2code(c->fp, code);
 		code[40] = 0;

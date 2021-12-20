@@ -285,7 +285,7 @@ struct destor {
 };
 extern struct destor destor;
 
-typedef unsigned char fingerprint[20];
+typedef unsigned char fingerprint[21];
 typedef int64_t containerid; //container id
 typedef int64_t segmentid;
 

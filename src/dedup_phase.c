@@ -81,12 +81,13 @@ void *dedup_thread(void *arg) {
 			break;
 		}
 
+		//DEBUG("address:%x, content:%s.\n", &c->fp, c->fp);
 		gboolean duplicated = g_hash_table_contains(fpTable, &c->fp);
-		DEBUG("address:%x, content:%x.\n", &c->fp, c->fp);
 		if(duplicated){
 			MSG("duplicated chunk detected.\n");
 		}else{
-			g_hash_table_add(fpTable, &c->fp);
+			//g_hash_table_add(fpTable, &c->fp);
+			g_hash_table_insert(fpTable, &c->fp, NULL);
 		}
 
 //		/* Add the chunk to the segment. */
@@ -136,7 +137,7 @@ void start_dedup_phase() {
 
 	dedup_queue = sync_queue_new(1000);
 
-	fpTable = g_hash_table_new_full(NULL, NULL, NULL, NULL);
+	fpTable = g_hash_table_new_full(g_int_hash, g_fingerprint_equal, NULL, free);
 
 //	pthread_create(&dedup_t, NULL, dedup_thread, NULL);
 }

@@ -30,18 +30,6 @@ void* chunk_thread(void *arg) {
 	struct chunk* c = NULL;
 
 	while (1) {
-
-		/* Try to receive a CHUNK_FILE_START. */
-//		c = sync_queue_pop(read_queue);
-//
-//		if (c == NULL) {
-//			sync_queue_term(chunk_queue);
-//			break;
-//		}
-//
-//		assert(CHECK_CHUNK(c, CHUNK_FILE_START));
-//		sync_queue_push(chunk_queue, c);
-
 		/* Try to receive normal chunks. */
 		c = sync_queue_pop(read_queue);
 		if (CHECK_CHUNK(c, CHUNK_FILE_END)){
@@ -53,26 +41,6 @@ void* chunk_thread(void *arg) {
 			free_chunk(c);
 			c = NULL;
 		}
-
-		/* c == NULL indicates more data for this file can be read. */
-		//xzjin append the chunk data to bigger than max chunk size
-		//while ((leftlen < destor.chunk_max_size) && c == NULL) {
-		//	c = sync_queue_pop(read_queue);
-		//	if (!CHECK_CHUNK(c, CHUNK_FILE_END)) {
-		//		memmove(leftbuf, leftbuf + leftoff, leftlen);
-		//		leftoff = 0;
-		//		memcpy(leftbuf + leftlen, c->data, c->size);
-		//		leftlen += c->size;
-		//		free_chunk(c);
-		//		c = NULL;
-		//	}
-		//}
-
-//		DEBUG("chunking\n");
-//			if (leftlen == 0) {
-//				assert(c);
-//				break;
-//			}
 
 		TIMER_DECLARE(1);
 		TIMER_BEGIN(1);
@@ -91,9 +59,10 @@ void* chunk_thread(void *arg) {
 					chunk_num++, chunk_size);
 			jcr.zero_chunk_num++;
 			jcr.zero_chunk_size += chunk_size;
-		} else
+		} else{
 			VERBOSE("Chunk phase: %ldth chunk of %d bytes", chunk_num++,
 					chunk_size);
+		}
 
 		sync_queue_push(chunk_queue, nc);
 	}
