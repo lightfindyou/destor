@@ -47,10 +47,10 @@ void do_backup(char *path) {
     if (destor.simulation_level == SIMULATION_ALL) {
         start_read_trace_phase();
     } else {
-        start_read_phase();
-        TIMER_BEGIN(2);
-        start_chunk_phase();
-        start_hash_phase();
+//       start_read_phase();
+       TIMER_BEGIN(2);
+       start_chunk_phase();
+       start_hash_phase();
     }
     start_dedup_phase();
     start_rewrite_phase();

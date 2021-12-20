@@ -308,6 +308,8 @@ void load_config_from_string(sds config) {
 		} else if (strcasecmp(argv[0], "backup-retention-time") == 0
 				&& argc == 2) {
 			destor.backup_retention_time = atoi(argv[1]);
+		} else if (strcasecmp(argv[0], "backup-dir") == 0) {
+			strncpy(destor.backup_dir, argv[1], 1024);
 		} else {
 			err = "Bad directive or wrong number of arguments";
 			goto loaderr;
@@ -327,10 +329,15 @@ void load_config_from_string(sds config) {
 void load_config() {
 	sds config = sdsempty();
 	char buf[DESTOR_CONFIGLINE_MAX + 1];
+	char path[1024];
+
+    getcwd(path, 1024);
+    printf("Current working directory: %s\n", path);
 
 	FILE *fp;
 	if ((fp = fopen("destor.config", "r")) == 0) {
 		destor_log(DESTOR_WARNING, "No destor.config file!");
+		destor_log(DESTOR_WARNING, "Current work dir:%s\n", path);
 		return;
 	}
 

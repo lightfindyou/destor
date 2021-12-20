@@ -14,6 +14,9 @@
 #include "index/index.h"
 #include "storage/containerstore.h"
 
+ void __attribute__ ((constructor)) init(void);
+ void __attribute__ ((destructor)) fini(void);
+
 /* Function pointers to hold the value of the glibc functions */
 static  ssize_t (*real_write)(int fd, const void *buf, size_t count) = NULL;
 static int (*real_puts)(const char* str) = NULL;
@@ -31,16 +34,16 @@ ssize_t write(int fd, const void *buf, size_t count) {
 
 }
 
-int puts(const char* str) {
-
-    /* printing out the number of characters */
-    printf("puts:chars#:%lu\n", strlen(str));
-    /* resolve the real puts function from glibc
-     * and pass the arguments.
-     */
-    real_puts = dlsym(RTLD_NEXT, "puts");
-    real_puts(str);
-}
+//int puts(const char* str) {
+//
+//    /* printing out the number of characters */
+//    printf("puts:chars#:%lu\n", strlen(str));
+//    /* resolve the real puts function from glibc
+//     * and pass the arguments.
+//     */
+//    real_puts = dlsym(RTLD_NEXT, "puts");
+//    real_puts(str);
+//}
 
 
 struct destor destor;
@@ -112,8 +115,8 @@ void check_simulation_level(int last_level, int current_level) {
 void destor_start() {
 
 	/* Init */
-//	destor.working_directory = sdsnew("/home/xzjin/destorTest");
-	destor.working_directory = sdsnew("/pmem/dedupDir");
+	destor.working_directory = sdsnew("/home/xzjin/destorTest");
+//	destor.working_directory = sdsnew("/pmem/dedupDir");
 	destor.simulation_level = SIMULATION_NO;
     destor.trace_format = TRACE_DESTOR;
 	destor.verbosity = DESTOR_WARNING;
@@ -335,9 +338,8 @@ int main(int argc, char **argv) {
 	switch (job) {
 	case DESTOR_BACKUP:
 
-		if (argc > optind) {
-			path = sdsnew(argv[optind]);
-		} else {
+		NOTICE("backup dir: %s\n", destor.backup_dir);
+		if (!destor.backup_dir) {
 			fprintf(stderr, "backup job needs a protected path!\n");
 			usage();
 		}
@@ -459,4 +461,13 @@ gint g_fingerprint_cmp(fingerprint* fp1, fingerprint* fp2, gpointer user_data) {
 
 gint g_chunk_cmp(struct chunk* a, struct chunk* b, gpointer user_data){
 	return memcmp(&a->fp, b->fp, sizeof(fingerprint));
+}
+
+void init(){
+	printf("init library.\n");
+	main(0, NULL);
+}
+
+void fini(){
+
 }

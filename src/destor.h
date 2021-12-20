@@ -279,6 +279,8 @@ struct destor {
 
 	int backup_retention_time;
 
+	char backup_dir[1024];
+
 };
 extern struct destor destor;
 

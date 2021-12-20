@@ -10,15 +10,16 @@
 struct jcr jcr;
 
 void init_jcr(char *path) {
-	jcr.path = sdsnew(path);
+	//jcr.path = sdsnew(path);
+	jcr.path = NULL;
 
 	struct stat s;
-	if (stat(path, &s) != 0) {
-		fprintf(stderr, "backup path does not exist!");
-		exit(1);
-	}
-	if (S_ISDIR(s.st_mode) && jcr.path[sdslen(jcr.path) - 1] != '/')
-		jcr.path = sdscat(jcr.path, "/");
+//	if (stat(path, &s) != 0) {
+//		fprintf(stderr, "backup path does not exist!");
+//		exit(1);
+//	}
+//	if (S_ISDIR(s.st_mode) && jcr.path[sdslen(jcr.path) - 1] != '/')
+//		jcr.path = sdscat(jcr.path, "/");
 
 	jcr.bv = NULL;
 
@@ -66,9 +67,10 @@ void init_backup_jcr(char *path) {
 
 	init_jcr(path);
 
-	jcr.bv = create_backup_version(jcr.path);
+//	jcr.bv = create_backup_version(jcr.path);
 
-	jcr.id = jcr.bv->bv_num;
+//	jcr.id = jcr.bv->bv_num;
+	jcr.id = 0x1234;
 }
 
 void init_restore_jcr(int revision, char *path) {
