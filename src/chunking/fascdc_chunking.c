@@ -99,7 +99,8 @@ int fastcdc_chunk_data(unsigned char *p, int n){
 
     uint64_t fingerprint=0;
     //uint64_t digest __attribute__((unused));
-    int i=g_min_fastcdc_chunk_size;//, Mid=g_min_fastcdc_chunk_size + 8*1024;
+    //int i=g_min_fastcdc_chunk_size;//, Mid=g_min_fastcdc_chunk_size + 8*1024;
+    int i=0;//, Mid=g_min_fastcdc_chunk_size + 8*1024;
     int Mid = g_expect_fastcdc_chunk_size;
     //return n;
 
@@ -128,49 +129,4 @@ int fastcdc_chunk_data(unsigned char *p, int n){
     }
     //printf("\r\n==chunking FINISH!\r\n");
     return i;
-
-    /*
-    assert(p != NULL);
-    uint64_t fp = 0;
-    if(n < g_max_fastcdc_chunk_size){
-        if(n <= g_min_fastcdc_chunk_size){
-            return n;
-        }else if (n < g_expect_fastcdc_chunk_size){
-            for(int i=g_min_fastcdc_chunk_size; i<n; i++){
-                fp = ( fp <<1 ) + g_gear_matrix[ p[i] ];
-                if(!(fp & g_condition_mask[Mask_64KB])){
-                    return i;
-                }
-            }
-            return n;
-        }else {
-            for(int i=g_min_fastcdc_chunk_size; i<g_expect_fastcdc_chunk_size; i++){
-                fp = ( fp <<1 ) + g_gear_matrix[ p[i] ];
-                if(!(fp & g_condition_mask[Mask_64KB])){
-                    return i;
-                }
-            }
-            for(int i=g_expect_fastcdc_chunk_size; i<n; i++){
-                fp = ( fp <<1 ) + g_gear_matrix[ p[i] ];
-                if(!(fp & g_condition_mask[Mask_1KB])){
-                    return i;
-                }
-            }
-            return n;
-        }
-    }
-    for(int i=g_min_fastcdc_chunk_size; i<g_expect_fastcdc_chunk_size; i++){
-        fp = ( fp <<1 ) + g_gear_matrix[ p[i] ];
-        if(!(fp & g_condition_mask[Mask_64KB])){
-            return i;
-        }
-    }
-    for(int i=g_expect_fastcdc_chunk_size; i<g_max_fastcdc_chunk_size; i++){
-        fp = ( fp <<1 ) + g_gear_matrix[ p[i] ];
-        if(!(fp & g_condition_mask[Mask_1KB])){
-            return i;
-        }
-    }
-    return g_max_fastcdc_chunk_size;
-     */
 }

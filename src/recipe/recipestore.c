@@ -90,7 +90,8 @@ struct backupVersion* create_backup_version(const char *path) {
 	sds fname = sdsdup(b->fname_prefix);
 	fname = sdscat(fname, ".meta");
 	if ((b->metadata_fp = fopen(fname, "w")) == 0) {
-		fprintf(stderr, "Can not create bv%d.meta!\n", b->bv_num);
+		fprintf(stderr, "Can not create bv%d.meta, file name: %s!\n",
+			 b->bv_num, fname);
 		exit(1);
 	}
 

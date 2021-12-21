@@ -119,9 +119,9 @@ void start_dedup_phase() {
 	pthread_mutex_init(&index_lock.mutex, NULL);
 	pthread_cond_init(&index_lock.cond, NULL);
 
-	dedup_queue = sync_queue_new(1000);
-
-	pthread_create(&dedup_t, NULL, dedup_thread, NULL);
+//	dedup_queue = sync_queue_new(1000);
+//
+//	pthread_create(&dedup_t, NULL, dedup_thread, NULL);
 }
 
 void stop_dedup_phase() {

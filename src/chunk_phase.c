@@ -34,12 +34,12 @@ static void* chunk_thread(void *arg) {
 		c = sync_queue_pop(read_queue);
 
 		if (c == NULL) {
-			sync_queue_term(chunk_queue);
+			//sync_queue_term(chunk_queue);
 			break;
 		}
 
 		assert(CHECK_CHUNK(c, CHUNK_FILE_START));
-		sync_queue_push(chunk_queue, c);
+		//sync_queue_push(chunk_queue, c);
 
 		/* Try to receive normal chunks. */
 		c = sync_queue_pop(read_queue);
@@ -90,10 +90,10 @@ static void* chunk_thread(void *arg) {
 				VERBOSE("Chunk phase: %ldth chunk of %d bytes", chunk_num++,
 						chunk_size);
 
-			sync_queue_push(chunk_queue, nc);
+			//sync_queue_push(chunk_queue, nc);
 		}
 		//xzjin add file tail chunck at last
-		sync_queue_push(chunk_queue, c);
+		//sync_queue_push(chunk_queue, c);
 		leftoff = 0;
 		c = NULL;
 
@@ -106,6 +106,9 @@ static void* chunk_thread(void *arg) {
 	free(leftbuf);
 	free(zeros);
 	free(data);
+
+    jcr.status = JCR_STATUS_DONE;
+
 	return NULL;
 }
 

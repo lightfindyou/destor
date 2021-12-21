@@ -40,7 +40,7 @@ static void* sha1_thread(void* arg) {
 //xzjin calculate SHA1 and put into hash_queue
 void start_hash_phase() {
 	hash_queue = sync_queue_new(100);
-	pthread_create(&hash_t, NULL, sha1_thread, NULL);
+	//pthread_create(&hash_t, NULL, sha1_thread, NULL);
 }
 
 void stop_hash_phase() {

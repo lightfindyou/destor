@@ -335,7 +335,7 @@ void start_filter_phase() {
 
     init_restore_aware();
 
-    pthread_create(&filter_t, NULL, filter_thread, NULL);
+//    pthread_create(&filter_t, NULL, filter_thread, NULL);
 }
 
 void stop_filter_phase() {
