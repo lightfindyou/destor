@@ -18,6 +18,7 @@ static pthread_t dedup_t;
 static int64_t chunk_num;
 static int64_t segment_num;
 struct GHashTable *fpTable;
+pthread_mutex_t hashTableMutex;
 
 struct {
 	/* g_mutex_init() is unnecessary if in static storage. */
@@ -82,6 +83,11 @@ void *dedup_thread(void *arg) {
 			break;
 		}
 
+		if (pthread_mutex_lock(&hashTableMutex) != 0) {
+			ERROR("failed to lock!");
+			return NULL;
+		}
+
 		//DEBUG("address:%x, content:%s.\n", &c->fp, c->fp);
 		gboolean duplicated = g_hash_table_contains(fpTable, &c->fp);
 		if(duplicated){
@@ -89,9 +95,17 @@ void *dedup_thread(void *arg) {
 			duplicateSize += c->size;
 		}else{
 			//g_hash_table_add(fpTable, &c->fp);
-			g_hash_table_insert(fpTable, &c->fp, NULL);
+			void* fingerprintp = malloc(20);
+			if(!fingerprintp){
+				ERROR("alloc fingerprint error.\n");
+				exit(-1);
+			}
+			memcpy(fingerprintp, &c->fp, 20);
+//			DEBUG("address:%x\n", fingerprintp);
+			g_hash_table_insert(fpTable, fingerprintp, NULL);
 		}
-
+		pthread_mutex_unlock(&hashTableMutex);
+		//xzjin TODO free chunk
 	}
 
 	//sync_queue_term(dedup_queue);
@@ -109,12 +123,15 @@ void start_dedup_phase() {
 		index_lock.wait_threshold = -1; // file-defined segmenting has no threshold.
 
 	pthread_mutex_init(&index_lock.mutex, NULL);
+	pthread_mutex_init(&hashTableMutex, NULL);
 	pthread_cond_init(&index_lock.cond, NULL);
 
 	dedup_queue = sync_queue_new(1000);
 
 //	fpTable = g_hash_table_new_full(g_int_hash, g_fingerprint_equal, NULL, free);
-	fpTable = g_hash_table_new_full(g_int64_hash, g_fingerprint_equal, NULL, free);
+//	fpTable = g_hash_table_new_full(g_int64_hash, g_fingerprint_equal, NULL, free);
+	fpTable = g_hash_table_new_full(g_direct_hash, g_fingerprint_equal, NULL, free);
+	
 
 //	pthread_create(&dedup_t, NULL, dedup_thread, NULL);
 }
