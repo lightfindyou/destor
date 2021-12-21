@@ -12,6 +12,7 @@
 #include "destor.h"
 #include "hash_phase.h"
 #include "chunk_phase.h"
+#include "dedup_phase.h"
 #include "backup.h"
 #include "debug.h"
 #include "jcr.h"
@@ -26,18 +27,14 @@ pthread_cond_t finishDedup;
 
 /* Function pointers to hold the value of the glibc functions */
 static  ssize_t (*real_write)(int fd, const void *buf, size_t count) = NULL;
-static int (*real_puts)(const char* str) = NULL;
+int duplicateSize;
+int writeSize;
+int chunkNum;
 
 /* wrapping write function call */
 ssize_t write(int fd, const void *buf, size_t count) {
+	ssize_t ret = 0;
 
-//	if (pthread_mutex_lock(&waitDedupMutex) != 0) {
-//		ERROR("write failed to lock!");
-//		return;
-//	}
-
-    /* printing out the number of characters */
-//    printf("write:chars#:%lu\n", count);
 	struct chunk *c = new_chunk(count);
 	memcpy(c->data, buf, count);
 	sync_queue_push(read_queue, c);
@@ -53,16 +50,9 @@ ssize_t write(int fd, const void *buf, size_t count) {
 //	pthread_cond_wait(&finishDedup, &waitDedupMutex);
 //	DEBUG("condition realized.\n");
 
-//	if (pthread_mutex_unlock(&waitDedupMutex)) {
-//		ERROR("failed to lock!");
-//		return;
-//	}
-    /* reslove the real write function from glibc
-     * and pass the arguments.
-     */
-    real_write = dlsym(RTLD_NEXT, "write");
-    real_write(fd, buf, count);
-
+    ret = real_write(fd, buf, count);
+	writeSize += ret;
+	return ret;
 }
 
 struct destor destor;
@@ -486,11 +476,18 @@ void init(){
 	printf("init library.\n");
 	if (pthread_mutex_init(&waitDedupMutex, 0) || pthread_cond_init(&finishDedup, 0)) {
 		printf("Failed to init mutex!");
-		return NULL;
+		return;
 	}
+	real_write = dlsym(RTLD_NEXT, "write");
 	main(0, NULL);
+	duplicateSize = 0;
+	writeSize = 0;
+	chunkNum = 0;
 }
 
 void fini(){
-
+	MSG("duplicate size: %8d\n", duplicateSize);
+	MSG("write size: %8d\n", writeSize);
+	MSG("duplicate percentage: %.2f\n", (((float)duplicateSize)/writeSize)*100);
+	MSG("chunk number: %8d, average chunk size: %d\n", chunkNum, (writeSize/chunkNum));
 }

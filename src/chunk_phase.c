@@ -65,6 +65,7 @@ void* chunk_thread(void *arg) {
 		}
 
 		sync_queue_push(chunk_queue, nc);
+		chunkNum++;
 	}
 
 	leftoff = 0;

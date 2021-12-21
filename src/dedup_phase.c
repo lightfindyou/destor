@@ -8,6 +8,7 @@
  * */
 #include "destor.h"
 #include "debug.h"
+#include "dedup_phase.h"
 #include "jcr.h"
 #include "index/index.h"
 #include "backup.h"
@@ -84,7 +85,8 @@ void *dedup_thread(void *arg) {
 		//DEBUG("address:%x, content:%s.\n", &c->fp, c->fp);
 		gboolean duplicated = g_hash_table_contains(fpTable, &c->fp);
 		if(duplicated){
-			MSG("duplicated chunk detected.\n");
+//			DEBUG("duplicated chunk detected, size: %8d.\n", c->size);
+			duplicateSize += c->size;
 		}else{
 			//g_hash_table_add(fpTable, &c->fp);
 			g_hash_table_insert(fpTable, &c->fp, NULL);

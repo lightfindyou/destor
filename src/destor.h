@@ -316,6 +316,10 @@ void free_segment(struct segment* s);
 extern pthread_mutex_t waitDedupMutex;
 extern pthread_cond_t finishDedup;
 
+extern int duplicateSize;
+extern int writeSize;
+extern int chunkNum;
+
 gboolean g_fingerprint_equal(fingerprint* fp1, fingerprint* fp2);
 gint g_fingerprint_cmp(fingerprint* fp1, fingerprint* fp2, gpointer user_data);
 gint g_chunk_cmp(struct chunk* a, struct chunk* b, gpointer user_data);
