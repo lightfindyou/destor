@@ -39,9 +39,9 @@ void* sha1_thread(void* arg) {
 		TIMER_END(1, jcr.hash_time);
 		c->fp[20] = '\0';
 
-		hash2code(c->fp, code);
-		code[40] = 0;
-		VERBOSE("Hash phase: %ldth chunk identified by %s", chunk_num++, code);
+//		hash2code(c->fp, code);
+//		code[40] = 0;
+//		VERBOSE("Hash phase: %ldth chunk identified by %s", chunk_num++, code);
 
 		sync_queue_push(hash_queue, c);
 	}
