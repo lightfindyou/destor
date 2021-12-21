@@ -128,9 +128,9 @@ void start_dedup_phase() {
 
 	dedup_queue = sync_queue_new(1000);
 
-//	fpTable = g_hash_table_new_full(g_int_hash, g_fingerprint_equal, NULL, free);
+	fpTable = g_hash_table_new_full(g_int_hash, g_fingerprint_equal, NULL, free);
 //	fpTable = g_hash_table_new_full(g_int64_hash, g_fingerprint_equal, NULL, free);
-	fpTable = g_hash_table_new_full(g_direct_hash, g_fingerprint_equal, NULL, free);
+//	fpTable = g_hash_table_new_full(g_direct_hash, g_fingerprint_equal, NULL, free);
 	
 
 //	pthread_create(&dedup_t, NULL, dedup_thread, NULL);
