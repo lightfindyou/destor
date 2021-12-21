@@ -461,7 +461,8 @@ void free_segment(struct segment* s) {
 }
 
 gboolean g_fingerprint_equal(fingerprint* fp1, fingerprint* fp2) {
-	return !memcmp(fp1, fp2, sizeof(fingerprint));
+//	return !memcmp(fp1, fp2, sizeof(fingerprint));
+	return !memcmp(fp1, fp2, 20);
 }
 
 gint g_fingerprint_cmp(fingerprint* fp1, fingerprint* fp2, gpointer user_data) {
