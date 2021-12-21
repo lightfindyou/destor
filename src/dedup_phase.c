@@ -95,14 +95,14 @@ void *dedup_thread(void *arg) {
 			duplicateSize += c->size;
 		}else{
 			//g_hash_table_add(fpTable, &c->fp);
-			void* fingerprintp = malloc(20);
-			if(!fingerprintp){
-				ERROR("alloc fingerprint error.\n");
-				exit(-1);
-			}
-			memcpy(fingerprintp, &c->fp, 20);
+//			void* fingerprintp = malloc(20);
+//			if(!fingerprintp){
+//				ERROR("alloc fingerprint error.\n");
+//				exit(-1);
+//			}
+//			memcpy(fingerprintp, &c->fp, 20);
 //			DEBUG("address:%x\n", fingerprintp);
-			g_hash_table_insert(fpTable, fingerprintp, NULL);
+			g_hash_table_insert(fpTable, &c->fp, NULL);
 		}
 		pthread_mutex_unlock(&hashTableMutex);
 		//xzjin TODO free chunk
