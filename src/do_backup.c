@@ -1,5 +1,6 @@
 #include "backup.h"
 #include "destor.h"
+#include "debug.h"
 #include "index/index.h"
 #include "jcr.h"
 #include "storage/containerstore.h"
@@ -39,16 +40,17 @@ void do_backup(char *path) {
 
     puts("==== backup begin ====");
 
-    TIMER_DECLARE(1);
-    TIMER_DECLARE(2);
-    TIMER_BEGIN(1);
+//    TIMER_DECLARE(1);
+//    TIMER_DECLARE(2);
+//    TIMER_BEGIN(1);
 
     time_t start = time(NULL);
     if (destor.simulation_level == SIMULATION_ALL) {
-        start_read_trace_phase();
+//        start_read_trace_phase();
+        ERROR("error, simulation.\n");
     } else {
        start_read_phase();
-       TIMER_BEGIN(2);
+//       TIMER_BEGIN(2);
        start_chunk_phase();
        start_hash_phase();
     }

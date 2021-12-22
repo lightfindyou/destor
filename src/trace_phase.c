@@ -163,7 +163,7 @@ static void* read_trace_thread(void *argv) {
 
 		struct chunk* c;
 
-		TIMER_BEGIN(1),
+		TIMER_BEGIN(1);
 
 		assert(strncmp(line, "file start ", 11) == 0);
 		int filenamelen;
@@ -194,7 +194,7 @@ static void* read_trace_thread(void *argv) {
 
 			TIMER_END(1, jcr.read_time);
 			sync_queue_push(trace_queue, c);
-			TIMER_BEGIN(1),
+			TIMER_BEGIN(1);
 
 			fgets(line, 128, trace_file);
 		}

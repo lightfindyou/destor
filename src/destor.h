@@ -32,10 +32,18 @@
 
 #include "utils/sds.h"
 
+#define SETTIME 1
+
+#if SETTIME
 #define TIMER_DECLARE(n) struct timeval b##n,e##n
 #define TIMER_BEGIN(n) gettimeofday(&b##n, NULL)
 #define TIMER_END(n,t) gettimeofday(&e##n, NULL); \
     (t)+=e##n.tv_usec-b##n.tv_usec+1000000*(e##n.tv_sec-b##n.tv_sec)
+#else
+#define TIMER_DECLARE(n)
+#define TIMER_BEGIN(n)
+#define TIMER_END(n,t)
+#endif
 
 #define DESTOR_CONFIGLINE_MAX 1024
 
