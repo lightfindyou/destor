@@ -32,9 +32,9 @@ extern struct {
 void do_backup(char *path) {
 
     double dedup_time = 0;
-    init_recipe_store();
-    init_container_store();
-    init_index();
+//    init_recipe_store();
+//    init_container_store();
+//    init_index();
 
     init_backup_jcr(path);
 

@@ -533,6 +533,8 @@ void init(){
 void fini(){
 	MSG("duplicate size: %8d\n", duplicateSize);
 	MSG("write size: %8d\n", writeSize);
-	MSG("duplicate percentage: %.2f\n", (((float)duplicateSize)/writeSize)*100);
+	MSG("duplicate percentage: %.2f%%\n", (((float)duplicateSize)/writeSize)*100);
 	MSG("chunk number: %8d, average chunk size: %d\n", chunkNum, (writeSize/chunkNum));
+	unsigned int hashNum = g_hash_table_size(fpTable);
+	MSG("hash number: %8d\n", hashNum);
 }
