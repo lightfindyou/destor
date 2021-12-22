@@ -27,9 +27,9 @@ pthread_cond_t finishDedup;
 
 /* Function pointers to hold the value of the glibc functions */
 static  ssize_t (*real_write)(int fd, const void *buf, size_t count) = NULL;
-int duplicateSize;
-int writeSize;
-int chunkNum;
+unsigned long long duplicateSize;
+unsigned long long writeSize;
+unsigned long long chunkNum;
 
 void (* doDedup)(const void* buf, size_t count);
 void doDedupBase (const void* buf, size_t count){ }
@@ -262,7 +262,7 @@ void destor_shutdown() {
 
 	FILE *fp;
 	if ((fp = fopen(stat_file, "w")) == 0) {
-		destor_log(DESTOR_WARNING, "Fatal error, can not open destor.stat!");
+		destor_log(DESTOR_WARNING, "Fatal error, can not open %s!\n", stat_file);
 		exit(1);
 	}
 
@@ -531,10 +531,10 @@ void init(){
 }
 
 void fini(){
-	MSG("duplicate size: %8d\n", duplicateSize);
-	MSG("write size: %8d\n", writeSize);
-	MSG("duplicate percentage: %.2f%%\n", (((float)duplicateSize)/writeSize)*100);
-	MSG("chunk number: %8d, average chunk size: %d\n", chunkNum, (writeSize/chunkNum));
+	MSG("duplicate size: %8llu\n", duplicateSize);
+	MSG("write size: %8llu\n", writeSize);
+	MSG("duplicate percentage: %.2f%%\n", (((double)duplicateSize)/writeSize)*100);
+	MSG("chunk number: %8llu, average chunk size: %d\n", chunkNum, (writeSize/chunkNum));
 	unsigned int hashNum = g_hash_table_size(fpTable);
 	MSG("hash number: %8d\n", hashNum);
 }

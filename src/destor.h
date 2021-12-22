@@ -49,9 +49,9 @@
 #define DEDPU_CHUNK 1
 #define DEDPU_HASH 2
 #define DEDPU_DEDUP 3
-#define DEDUPLEVEL DEDPU_DEDUP 
+//#define DEDUPLEVEL DEDPU_DEDUP 
 //#define DEDUPLEVEL DEDPU_HASH
-//#define DEDUPLEVEL DEDPU_CHUNK
+#define DEDUPLEVEL DEDPU_CHUNK
 //#define DEDUPLEVEL DEDPU_BASE
 
 #define DESTOR_CONFIGLINE_MAX 1024
@@ -333,9 +333,9 @@ void free_segment(struct segment* s);
 extern pthread_mutex_t waitDedupMutex;
 extern pthread_cond_t finishDedup;
 
-extern int duplicateSize;
-extern int writeSize;
-extern int chunkNum;
+extern unsigned long long duplicateSize;
+extern unsigned long long writeSize;
+extern unsigned long long chunkNum;
 
 gboolean g_fingerprint_equal(fingerprint* fp1, fingerprint* fp2);
 gint g_fingerprint_cmp(fingerprint* fp1, fingerprint* fp2, gpointer user_data);
