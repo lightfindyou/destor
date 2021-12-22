@@ -26,7 +26,11 @@ void* sha1_thread(void* arg) {
 //			DEBUG("hash write finish.\n");
 //			pthread_cond_broadcast(&finishDedup);
 //			continue;
-			sync_queue_push(hash_queue, c);
+			if(DEDUPLEVEL <= DEDPU_HASH){
+				free_chunk(c);
+			}else{
+				sync_queue_push(hash_queue, c);
+			}
 			break;
 		}
 
@@ -43,7 +47,11 @@ void* sha1_thread(void* arg) {
 //		code[40] = 0;
 //		VERBOSE("Hash phase: %ldth chunk identified by %s", chunk_num++, code);
 
-		sync_queue_push(hash_queue, c);
+		if(DEDUPLEVEL <= DEDPU_HASH){
+			free_chunk(c);
+		}else{
+			sync_queue_push(hash_queue, c);
+		}
 	}
 	return NULL;
 }

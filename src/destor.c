@@ -31,35 +31,51 @@ int duplicateSize;
 int writeSize;
 int chunkNum;
 
-TIMER_DECLARE(1);
-TIMER_DECLARE(2);
-TIMER_DECLARE(3);
-static double chunkTime = 0;
-static double hashTime = 0;
-static double dedupTime = 0;
-
-/* wrapping write function call */
-ssize_t write(int fd, const void *buf, size_t count) {
-	ssize_t ret = 0;
-
+void (* doDedup)(const void* buf, size_t count);
+void doDedupBase (const void* buf, size_t count){ }
+void doDedupChunk (const void* buf, size_t count){
 	struct chunk *c = new_chunk(count);
 	memcpy(c->data, buf, count);
 
-    TIMER_BEGIN(1);
 	sync_queue_push(read_queue, c);
 	c = new_chunk(0);
 	SET_CHUNK(c, CHUNK_FILE_END);
 	sync_queue_push(read_queue, c);
 	chunk_thread(NULL);
-	TIMER_END(1, chunkTime);
+}
 
-    TIMER_BEGIN(2);
+void doDedupHash(const void* buf, size_t count){
+	struct chunk *c = new_chunk(count);
+	memcpy(c->data, buf, count);
+
+	sync_queue_push(read_queue, c);
+	c = new_chunk(0);
+	SET_CHUNK(c, CHUNK_FILE_END);
+	sync_queue_push(read_queue, c);
+	chunk_thread(NULL);
+
 	sha1_thread(NULL);
-	TIMER_END(2, hashTime);
+}
 
-    TIMER_BEGIN(3);
+void doDedupDedup(const void* buf, size_t count){
+	struct chunk *c = new_chunk(count);
+	memcpy(c->data, buf, count);
+
+	sync_queue_push(read_queue, c);
+	c = new_chunk(0);
+	SET_CHUNK(c, CHUNK_FILE_END);
+	sync_queue_push(read_queue, c);
+	chunk_thread(NULL);
+
+	sha1_thread(NULL);
+
 	dedup_thread(NULL);
-	TIMER_END(3, dedupTime);
+}
+
+/* wrapping write function call */
+ssize_t write(int fd, const void *buf, size_t count) {
+	ssize_t ret = 0;
+	doDedup(buf, count);
 
 //	DEBUG("wait condition.\n");
 //	pthread_cond_wait(&finishDedup, &waitDedupMutex);
@@ -499,6 +515,19 @@ void init(){
 	duplicateSize = 0;
 	writeSize = 0;
 	chunkNum = 0;
+	if(DEDUPLEVEL == DEDPU_BASE){
+		doDedup = doDedupBase;
+		MSG("Dedup level: base.\n");
+	}else if(DEDUPLEVEL == DEDPU_CHUNK){
+		doDedup = doDedupChunk;
+		MSG("Dedup level: chunk.\n");
+	}else if(DEDUPLEVEL == DEDPU_HASH){
+		doDedup = doDedupHash;
+		MSG("Dedup level: hash.\n");
+	}else if(DEDUPLEVEL >= DEDPU_DEDUP){
+		doDedup = doDedupDedup;
+		MSG("Dedup level: dedup.\n");
+	}
 }
 
 void fini(){
@@ -506,7 +535,4 @@ void fini(){
 	MSG("write size: %8d\n", writeSize);
 	MSG("duplicate percentage: %.2f\n", (((float)duplicateSize)/writeSize)*100);
 	MSG("chunk number: %8d, average chunk size: %d\n", chunkNum, (writeSize/chunkNum));
-	MSG("chunkTime: %6d.0\n", chunkTime/1000000);
-	MSG("hashTime : %6d.0\n", hashTime/1000000);
-	MSG("dedupTime: %6d.0\n", dedupTime/1000000);
 }

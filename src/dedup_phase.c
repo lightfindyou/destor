@@ -93,6 +93,7 @@ void *dedup_thread(void *arg) {
 		if(duplicated){
 //			DEBUG("duplicated chunk detected, size: %8d.\n", c->size);
 			duplicateSize += c->size;
+			free_chunk(c);
 		}else{
 			//g_hash_table_add(fpTable, &c->fp);
 //			void* fingerprintp = malloc(20);

@@ -33,7 +33,11 @@ void* chunk_thread(void *arg) {
 		/* Try to receive normal chunks. */
 		c = sync_queue_pop(read_queue);
 		if (CHECK_CHUNK(c, CHUNK_FILE_END)){
-			sync_queue_push(chunk_queue, c);
+			if(DEDUPLEVEL <= DEDPU_CHUNK){
+				free_chunk(c);
+			}else{
+				sync_queue_push(chunk_queue, c);
+			}
 			break;
 		} else {
 			memcpy(leftbuf, c->data, c->size);
@@ -64,7 +68,11 @@ void* chunk_thread(void *arg) {
 					chunk_size);
 		}
 
-		sync_queue_push(chunk_queue, nc);
+		if(DEDUPLEVEL <= DEDPU_CHUNK){
+			free_chunk(nc);
+		}else{
+			sync_queue_push(chunk_queue, nc);
+		}
 		chunkNum++;
 	}
 
