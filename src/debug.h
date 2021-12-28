@@ -24,7 +24,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#define PRINT_FD stderr
+#define PRINT_FD stdout
 
 typedef char* charptr;
 

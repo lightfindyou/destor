@@ -1,4 +1,5 @@
 #include "../destor.h"
+#include "../debug.h"
 
 #define MSB64 0x8000000000000000LL
 #define MAXBUF (128*1024)
@@ -246,12 +247,13 @@ void chunkAlg_init() {
 }
 
 /* The standard rabin chunking */
-int rabin_chunk_data(unsigned char *p, int n) {
-
+int rabin_chunk_data(const unsigned char *p, int n) {
+	
+	pthread_mutex_lock(&chunkMutex);
 	UINT64 f_break = 0;
 	UINT64 count = 0;
 	UINT64 fp = 0;
-	int i = 1, bufPos = -1;
+	int i = 1, bufPos = -1, ret = 0;
 
 	unsigned char om;
 	u_int64_t x;
@@ -259,10 +261,12 @@ int rabin_chunk_data(unsigned char *p, int n) {
 	unsigned char buf[128];
 	memset((char*) buf, 0, 128);
 
-	if (n <= destor.chunk_min_size)
-		return n;
-	else
+	if (n <= destor.chunk_min_size){
+		ret = n;
+		goto retPoint;
+	}else{
 		i = destor.chunk_min_size;
+	}
 
 	int end = n > destor.chunk_max_size ? destor.chunk_max_size : n;
 	while (i < end) {
@@ -272,7 +276,10 @@ int rabin_chunk_data(unsigned char *p, int n) {
 			break;
 		i++;
 	}
-	return i;
+	ret = i;
+retPoint:
+	pthread_mutex_unlock(&chunkMutex);
+	return ret;
 }
 
 /*
@@ -280,7 +287,7 @@ int rabin_chunk_data(unsigned char *p, int n) {
  * We use a larger avg chunk size when the current size is small,
  * and a smaller avg chunk size when the current size is large.
  * */
-int normalized_rabin_chunk_data(unsigned char *p, int n) {
+int normalized_rabin_chunk_data(const unsigned char *p, int n) {
 
 	UINT64 f_break = 0;
 	UINT64 count = 0;
@@ -324,7 +331,7 @@ int normalized_rabin_chunk_data(unsigned char *p, int n) {
  * See their paper:
  * 	A Framework for Analyzing and Improving Content-Based Chunking Algorithms
  */
-int tttd_chunk_data(unsigned char *p, int n) {
+int tttd_chunk_data(const unsigned char *p, int n) {
 
 	UINT64 f_break = 0;
 	UINT64 count = 0;

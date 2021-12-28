@@ -9,6 +9,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include "../destor.h"
+#include "../debug.h"
 
 #define SymbolCount 256
 #define DigistLength 16
@@ -92,16 +93,20 @@ void fastcdc_init(uint32_t expectCS){
 }
 
 
-int fastcdc_chunk_data(unsigned char *p, int n){
-
+int fastcdc_chunk_data(const unsigned char *p, int n){
+//	DEBUG("chunk input :%d, pos:%p.\n", n, p);
+//	DEBUG("1\n");
     uint64_t fingerprint=0;
     //uint64_t digest __attribute__((unused));
-    int i=g_min_fastcdc_chunk_size;//, Mid=g_min_fastcdc_chunk_size + 8*1024;
+    int i = g_min_fastcdc_chunk_size;//, Mid=g_min_fastcdc_chunk_size + 8*1024;
     int Mid = g_expect_fastcdc_chunk_size;
+    int ret = 0;
     //return n;
 
-    if(n<=g_min_fastcdc_chunk_size) //the minimal  subChunk Size.
-        return n;
+    if(n<=g_min_fastcdc_chunk_size){ //the minimal  subChunk Size.
+        ret = n;
+        goto retPoint;
+    }
     //windows_reset();
     if(n > g_max_fastcdc_chunk_size)
         n = g_max_fastcdc_chunk_size;
@@ -109,21 +114,35 @@ int fastcdc_chunk_data(unsigned char *p, int n){
         Mid = n;
 
     while(i<Mid){
-        fingerprint = (fingerprint<<1) + (g_gear_matrix[p[i]]);
-        if ((!(fingerprint & MaskS /*0x0000d90f03530000*/))) { //AVERAGE*2, *4, *8
-            return i;
+//        fingerprint = (fingerprint<<1) + (g_gear_matrix[p[i]]);
+        fingerprint <<= 1; 
+        unsigned char c = p[i];
+        unsigned int gearVal = g_gear_matrix[c];
+        fingerprint += gearVal;
+        if ((!(fingerprint & MaskS /*0x0000d90f03530000*/))){
+            ret = i;
+            goto retPoint;
         }
         i++;
     }
 
     while(i<n){
-        fingerprint = (fingerprint<<1) + (g_gear_matrix[p[i]]);
-        if ((!(fingerprint & MaskL /*0x0000d90003530000*/))) { //Average/2, /4, /8
-            return i;
+//        fingerprint = (fingerprint<<1) + (g_gear_matrix[p[i]]);
+        fingerprint <<= 1; 
+        unsigned char c = p[i];
+        unsigned int gearVal = g_gear_matrix[c];
+        fingerprint += gearVal;
+        if ((!(fingerprint & MaskL /*0x0000d90003530000*/))){
+            ret = i;
+            goto retPoint;
         }
         i++;
     }
     //printf("\r\n==chunking FINISH!\r\n");
-    return i;
+    ret = i;
+retPoint:
+//	DEBUG("ret, chunk input :%d, size: %d, pos:%p.\n", n, ret, p);
+//	DEBUG("2\n");
+    return ret;
 
 }

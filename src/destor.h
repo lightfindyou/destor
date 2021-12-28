@@ -49,9 +49,9 @@
 #define DEDPU_CHUNK 1
 #define DEDPU_HASH 2
 #define DEDPU_DEDUP 3
-//#define DEDUPLEVEL DEDPU_DEDUP 
+#define DEDUPLEVEL DEDPU_DEDUP 
 //#define DEDUPLEVEL DEDPU_HASH
-#define DEDUPLEVEL DEDPU_CHUNK
+//#define DEDUPLEVEL DEDPU_CHUNK
 //#define DEDUPLEVEL DEDPU_BASE
 
 #define DESTOR_CONFIGLINE_MAX 1024
@@ -330,8 +330,11 @@ struct segment* new_segment();
 struct segment* new_segment_full();
 void free_segment(struct segment* s);
 
+extern pthread_mutex_t fastCDCMutex;
+extern pthread_mutex_t chunkMutex;
 extern pthread_mutex_t waitDedupMutex;
 extern pthread_cond_t finishDedup;
+extern int proKey;
 
 extern unsigned long long duplicateSize;
 extern unsigned long long writeSize;

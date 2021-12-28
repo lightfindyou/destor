@@ -1,3 +1,6 @@
+#define _GNU_SOURCE
+#include <sys/mman.h>
+#include <stdlib.h>
 #include "destor.h"
 #include "debug.h"
 #include "jcr.h"
@@ -8,7 +11,7 @@
 static pthread_t chunk_t;
 static int64_t chunk_num;
 
-static int (*chunking)(unsigned char* buf, int size);
+static int (*chunking)(const unsigned char* buf, int size);
 
 static inline int fixed_chunk_data(unsigned char* buf, int size){
 	return destor.chunk_avg_size > size ? size : destor.chunk_avg_size;
@@ -22,6 +25,15 @@ void* chunk_thread(void *arg) {
 	int leftlen = 0;
 	int leftoff = 0;
 	unsigned char *leftbuf = malloc(DEFAULT_BLOCK_SIZE + destor.chunk_max_size);
+//	unsigned long bufSize = DEFAULT_BLOCK_SIZE + destor.chunk_max_size;
+//	if(bufSize & (0xFFF)){
+//		bufSize = (bufSize & (~0xFFF)) + 4096;
+//	}
+//	const unsigned char *leftbuf =aligned_alloc(4096, bufSize);
+//	if(!leftbuf){
+//		ERROR("alloc aligned area failed.\n");
+//		exit(-1);
+//	}
 
 	unsigned char *zeros = malloc(destor.chunk_max_size);
 	bzero(zeros, destor.chunk_max_size);
@@ -40,8 +52,11 @@ void* chunk_thread(void *arg) {
 			}
 			break;
 		} else {
+//			DEBUG("leftBuf:%p, c->data:%p size:%d.\n", leftbuf, c->data, c->size);
 			memcpy(leftbuf, c->data, c->size);
-			leftlen += c->size;
+			leftlen = c->size;
+			leftoff = 0;
+//			DEBUG("Buffer size:%d, pos:%p.\n", c->size, leftbuf);
 			free_chunk(c);
 			c = NULL;
 		}
@@ -49,31 +64,35 @@ void* chunk_thread(void *arg) {
 		TIMER_DECLARE(1);
 		TIMER_BEGIN(1);
 
-		int	chunk_size = chunking(leftbuf + leftoff, leftlen);
+		while(leftlen>0){
+			const unsigned char* chunkStart = leftbuf + leftoff;
+//			DEBUG("Buffer input size:%d, pos:%p.\n", leftlen, chunkStart);
+			int	chunk_size = chunking(chunkStart, leftlen);
 
-		TIMER_END(1, jcr.chunk_time);
+			TIMER_END(1, jcr.chunk_time);
 
-		struct chunk *nc = new_chunk(chunk_size);
-		memcpy(nc->data, leftbuf + leftoff, chunk_size);
-		leftlen -= chunk_size;
-		leftoff += chunk_size;
+			struct chunk *nc = new_chunk(chunk_size);
+			memcpy(nc->data, leftbuf + leftoff, chunk_size);
+			leftlen -= chunk_size;
+			leftoff += chunk_size;
 
-		if (memcmp(zeros, nc->data, chunk_size) == 0) {
-			VERBOSE("Chunk phase: %ldth chunk  of %d zero bytes",
-					chunk_num++, chunk_size);
-			jcr.zero_chunk_num++;
-			jcr.zero_chunk_size += chunk_size;
-		} else{
-			VERBOSE("Chunk phase: %ldth chunk of %d bytes", chunk_num++,
-					chunk_size);
+//			if (memcmp(zeros, nc->data, chunk_size) == 0) {
+//				VERBOSE("Chunk phase: %ldth chunk  of %d zero bytes",
+//						chunk_num++, chunk_size);
+//				jcr.zero_chunk_num++;
+//				jcr.zero_chunk_size += chunk_size;
+//			} else{
+//				VERBOSE("Chunk phase: %ldth chunk of %d bytes", chunk_num++,
+//						chunk_size);
+//			}
+
+			if(DEDUPLEVEL <= DEDPU_CHUNK){
+				free_chunk(nc);
+			}else{
+				sync_queue_push(chunk_queue, nc);
+			}
+			chunkNum++;
 		}
-
-		if(DEDUPLEVEL <= DEDPU_CHUNK){
-			free_chunk(nc);
-		}else{
-			sync_queue_push(chunk_queue, nc);
-		}
-		chunkNum++;
 	}
 
 	leftoff = 0;

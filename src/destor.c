@@ -8,6 +8,8 @@
 #include <dlfcn.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/mman.h>
+
 
 #include "destor.h"
 #include "hash_phase.h"
@@ -22,6 +24,8 @@
 void __attribute__ ((constructor)) init(void);
 void __attribute__ ((destructor)) fini(void);
 
+pthread_mutex_t fastCDCMutex;
+pthread_mutex_t chunkMutex;
 pthread_mutex_t waitDedupMutex;
 pthread_cond_t finishDedup;
 
@@ -30,6 +34,7 @@ static  ssize_t (*real_write)(int fd, const void *buf, size_t count) = NULL;
 unsigned long long duplicateSize;
 unsigned long long writeSize;
 unsigned long long chunkNum;
+int proKey;
 
 void (* doDedup)(const void* buf, size_t count);
 void doDedupBase (const void* buf, size_t count){ }
@@ -372,9 +377,51 @@ int main(int argc, char **argv) {
 		}
 	}
 
-	printf("chunck algorithm:%d.\n", destor.chunk_algorithm);
-	sds path = NULL;
+//#define CHUNK_FIXED 0
+//#define CHUNK_RABIN 1
+//#define CHUNK_NORMALIZED_RABIN 2
+//#define CHUNK_FILE 3 /* approximate file-level */
+//#define CHUNK_AE 4 /* Asymmetric Extremum CDC */
+//#define CHUNK_TTTD 5
+//#define CHUNK_FASTCDC 6
 
+	switch(destor.chunk_algorithm){
+		case 0:{
+			printf("chunck algorithm: FSC.\n");
+			break;
+		};
+		case 1:{
+			printf("chunck algorithm: Rabin.\n");
+			break;
+		};
+		case 2:{
+			printf("chunck algorithm: Normalized Rabin.\n");
+			break;
+		};
+		case 3:{
+			printf("chunck algorithm: File.\n");
+			break;
+		};
+		case 4:{
+			printf("chunck algorithm: AE.\n");
+			break;
+		};
+		case 5:{
+			printf("chunck algorithm: TTTD.\n");
+			break;
+		};
+		case 6:{
+			printf("chunck algorithm: FastCDC.\n");
+			break;
+		};
+		default:{
+			ERROR("could not find chunk method.\n");
+			exit(-1);
+		}
+		break;
+	};
+
+	sds path = NULL;
 	switch (job) {
 	case DESTOR_BACKUP:
 
@@ -505,11 +552,24 @@ gint g_chunk_cmp(struct chunk* a, struct chunk* b, gpointer user_data){
 }
 
 void init(){
+	int err;
 	printf("init library.\n");
-	if (pthread_mutex_init(&waitDedupMutex, 0) || pthread_cond_init(&finishDedup, 0)) {
+	if (pthread_mutex_init(&waitDedupMutex, 0) ||
+		 pthread_mutex_init(&chunkMutex, 0) ||
+		 pthread_mutex_init(&fastCDCMutex, 0) ||
+		 pthread_cond_init(&finishDedup, 0)) {
 		printf("Failed to init mutex!");
 		return;
 	}
+
+    proKey = pkey_alloc(0, 0);
+    err = errno;
+    if (proKey < 0) {
+        printf("Prokey alloc Error: %s.\n", strerror(err));
+    } else {
+        printf("Prokey with read allocated.\n");
+    }
+
 	real_write = dlsym(RTLD_NEXT, "write");
 	main(0, NULL);
 	duplicateSize = 0;

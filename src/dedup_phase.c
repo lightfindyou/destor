@@ -114,6 +114,14 @@ void *dedup_thread(void *arg) {
 	return NULL;
 }
 
+unsigned int getHashTableSize(){
+	unsigned int size = 0;
+	pthread_mutex_unlock(&hashTableMutex);
+	size = g_hash_table_size(fpTable);
+	pthread_mutex_unlock(&hashTableMutex);
+	return size;
+}
+
 void start_dedup_phase() {
 
 	if(destor.index_segment_algorithm[0] == INDEX_SEGMENT_CONTENT_DEFINED)
