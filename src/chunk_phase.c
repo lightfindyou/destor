@@ -34,12 +34,16 @@ static void* chunk_thread(void *arg) {
 		c = sync_queue_pop(read_queue);
 
 		if (c == NULL) {
-			//sync_queue_term(chunk_queue);
+#ifndef NODEDUP
+			sync_queue_term(chunk_queue);
+#endif	//NODEDUP
 			break;
 		}
 
 		assert(CHECK_CHUNK(c, CHUNK_FILE_START));
-		//sync_queue_push(chunk_queue, c);
+#ifndef NODEDUP
+			sync_queue_push(chunk_queue, c);
+#endif	//NODEDUP
 
 		/* Try to receive normal chunks. */
 		c = sync_queue_pop(read_queue);
@@ -76,6 +80,8 @@ static void* chunk_thread(void *arg) {
 
 			TIMER_END(1, jcr.chunk_time);
 
+#ifndef NODEDUP
+//do not pass the chunk down
 			struct chunk *nc = new_chunk(chunk_size);
 			memcpy(nc->data, leftbuf + leftoff, chunk_size);
 			leftlen -= chunk_size;
@@ -90,10 +96,13 @@ static void* chunk_thread(void *arg) {
 				VERBOSE("Chunk phase: %ldth chunk of %d bytes", chunk_num++,
 						chunk_size);
 
-			//sync_queue_push(chunk_queue, nc);
+			sync_queue_push(chunk_queue, nc);
+#endif	//NODEDUP
 		}
 		//xzjin add file tail chunck at last
-		//sync_queue_push(chunk_queue, c);
+#ifndef NODEDUP
+		sync_queue_push(chunk_queue, c);
+#endif	//NODEDUP
 		leftoff = 0;
 		c = NULL;
 
@@ -107,7 +116,10 @@ static void* chunk_thread(void *arg) {
 	free(zeros);
 	free(data);
 
+#ifndef NODEDUP
+#else	//NODEDUP
     jcr.status = JCR_STATUS_DONE;
+#endif	//NODEDUP
 
 	return NULL;
 }
@@ -184,6 +196,9 @@ void start_chunk_phase() {
 
 		chunking = fastcdc_chunk_data;
 		fastcdc_init(destor.chunk_avg_size);
+	} else if(destor.chunk_algorithm == CHUNK_SC){
+		chunking = sc_chunk_data;
+		sc_init();
 	} else{
 		NOTICE("Invalid chunking algorithm");
 		exit(1);

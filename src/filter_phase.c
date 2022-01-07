@@ -325,6 +325,7 @@ static void* filter_thread(void *arg) {
     }
 
     /* All files done */
+    printf("DONE!\n");
     jcr.status = JCR_STATUS_DONE;
     return NULL;
 }
@@ -335,7 +336,9 @@ void start_filter_phase() {
 
     init_restore_aware();
 
-//    pthread_create(&filter_t, NULL, filter_thread, NULL);
+#ifndef NODEDUP
+    pthread_create(&filter_t, NULL, filter_thread, NULL);
+#endif  //NODEDUP
 }
 
 void stop_filter_phase() {

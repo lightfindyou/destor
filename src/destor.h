@@ -69,6 +69,7 @@
 #define CHUNK_AE 4 /* Asymmetric Extremum CDC */
 #define CHUNK_TTTD 5
 #define CHUNK_FASTCDC 6
+#define CHUNK_SC 7
 
 /*
  * A global fingerprint index is required.

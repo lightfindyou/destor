@@ -37,14 +37,18 @@ void do_backup(char *path) {
         start_read_phase();
         TIMER_BEGIN(2);
         start_chunk_phase();
+#ifndef NODEDUP
         start_hash_phase();
+#endif //NODEDUP
     }
+#ifndef NODEDUP
     start_dedup_phase();
     start_rewrite_phase();
     start_filter_phase();
+#endif //NODEDUP
 
     do {
-        //		sleep(5);
+        //sleep(5);
         /*time_t now = time(NULL);*/
         fprintf(stderr,
                 "job %" PRId32 ", %" PRId64 " bytes, %" PRId32
@@ -61,15 +65,21 @@ void do_backup(char *path) {
     } else {
         stop_read_phase();
         stop_chunk_phase();
-//        stop_hash_phase();
+#ifndef nodedup
+        stop_hash_phase();
+#endif //nodedup
     }
-//    stop_dedup_phase();
+#ifndef nodedup
+    stop_dedup_phase();
+#endif //nodedup
     if (destor.simulation_level != SIMULATION_ALL) {
         TIMER_END(2, dedup_time);
         printf("\x1B[32mDedup time(s)\e: %.3f\n\x1B[37m", dedup_time / 1000000);
     }
-//    stop_rewrite_phase();
-//    stop_filter_phase();
+#ifndef nodedup
+    stop_rewrite_phase();
+    stop_filter_phase();
+#endif //nodedup
 
     TIMER_END(1, jcr.total_time);
 
