@@ -16,8 +16,11 @@ int sc_chunk_data(unsigned char *p, int n);
 
 int tttd_chunk_data(unsigned char *p, int n);
 
-void fastcdc_init(uint32_t expectCS);
+void fastcdc_init();
 int fastcdc_chunk_data(unsigned char *p, int n);
+
+void gearjump_init();
+int gearjump_chunk_data(unsigned char *p, int n);
 
 void sc_init();
 int sc_chunk_data(unsigned char *p, int n);

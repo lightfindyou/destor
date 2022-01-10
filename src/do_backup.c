@@ -17,7 +17,7 @@ extern struct {
 
 void do_backup(char *path) {
 
-       double dedup_time = 0;
+    double dedup_time = 0;
     init_recipe_store();
     init_container_store();
     init_index();
@@ -48,7 +48,7 @@ void do_backup(char *path) {
 #endif //NODEDUP
 
     do {
-        //sleep(5);
+//        sleep(2);
         /*time_t now = time(NULL);*/
         fprintf(stderr,
                 "job %" PRId32 ", %" PRId64 " bytes, %" PRId32

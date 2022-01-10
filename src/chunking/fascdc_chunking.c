@@ -51,9 +51,9 @@ uint64_t g_condition_mask[] = {
         0x00001803110,// 64B
         0x000018035100,// 128B
         0x00001800035300,// 256B
-        0x000019000353000,// 512B
+        0x0000590003510000,// 512B
         0x0000590003530000,// 1KB
-        0x0000d90003530000,// 2KB
+        0x0000590003570000,// 2KB
         0x0000d90103530000,// 4KB
         0x0000d90303530000,// 8KB
         0x0000d90313530000,// 16KB
@@ -62,7 +62,7 @@ uint64_t g_condition_mask[] = {
         0x0000d90703537000// 128KB
 };
 
-void fastcdc_init(uint32_t expectCS){
+void fastcdc_init(){
     char seed[SeedLength];
     int index;
     for(int i=0; i<SymbolCount; i++){
@@ -129,4 +129,72 @@ int fastcdc_chunk_data(unsigned char *p, int n){
     }
     //printf("\r\n==chunking FINISH!\r\n");
     return i;
+}
+
+uint32_t gearjumpChunkSize;
+uint64_t Mask;
+uint64_t jumpMask;
+void gearjump_init(){
+    char seed[SeedLength];
+    for(int i=0; i<SymbolCount; i++){
+        for(int j=0; j<SeedLength; j++){
+            seed[j] = i;
+        }
+
+        g_gear_matrix[i] = 0;
+        unsigned char md5_result[DigistLength];
+
+        MD5_CTX md5_ctx;
+        MD5_Init(&md5_ctx);
+        MD5_Update(&md5_ctx, seed, SeedLength);
+        MD5_Final(md5_result, &md5_ctx);
+
+        memcpy(&g_gear_matrix[i], md5_result, sizeof(uint64_t));
+    }
+
+//    gearjumpChunkSize = destor.chunk_avg_size;
+//    index = log2(gearjumpChunkSize);
+//    assert(index>6);
+//    assert(index<17);
+//    Mask = g_condition_mask[index];
+
+    gearjumpChunkSize = 4096;
+    Mask = g_condition_mask[11];
+    jumpMask = g_condition_mask[10];
+    printf("\nMask:%lx\n", Mask);
+    printf("\njumpMask:%lx\n", jumpMask);
+}
+
+int gearjump_chunk_data(unsigned char *p, int n){
+
+    uint64_t fingerprint=0;
+    int i=0;
+
+	if (n <= destor.chunk_min_size)
+		return n;
+	else
+		i = destor.chunk_min_size;
+
+    while(i < n){
+        fingerprint = (fingerprint<<1) + (g_gear_matrix[p[i]]);
+        i++;
+
+        if( G_UNLIKELY(!(fingerprint & jumpMask)) ){
+            if ((!(fingerprint & Mask))) { //AVERAGE*2, *4, *8
+//                printf("fingerprint: %lx\n", fingerprint);
+//                printf("mask:        %lx\n", Mask);
+//                printf("and:         %lx\n", (fingerprint & Mask));
+//                printf("i:%d\n", i);
+                return i;
+            } else {
+                i += 2048;
+//                printf("JUMP fingerprint: %lx\n", fingerprint);
+//                printf("JUMP mask:        %lx\n", jumpMask);
+//                printf("JUMP and:         %lx\n", (fingerprint & jumpMask));
+//                printf("JUMP i:%d\n", i);
+            }
+        }
+    }
+
+    return i<n?i:n;
 }
