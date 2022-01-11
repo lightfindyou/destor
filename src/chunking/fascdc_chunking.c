@@ -165,15 +165,19 @@ void gearjump_init(){
     printf("\njumpMask:%lx\n", jumpMask);
 }
 
+#define CHUNKMIN 0
 int gearjump_chunk_data(unsigned char *p, int n){
 
     uint64_t fingerprint=0;
     int i=0;
+    int minSize = destor.chunk_min_size;
 
 	if (n <= destor.chunk_min_size)
 		return n;
+#if !CHUNKMIN 
 	else
 		i = destor.chunk_min_size;
+#endif  //MINJUMP 
 
     while(i < n){
         fingerprint = (fingerprint<<1) + (g_gear_matrix[p[i]]);
@@ -181,6 +185,12 @@ int gearjump_chunk_data(unsigned char *p, int n){
 
         if( G_UNLIKELY(!(fingerprint & jumpMask)) ){
             if ((!(fingerprint & Mask))) { //AVERAGE*2, *4, *8
+#if CHUNKMIN 
+                if(i<minSize){
+                    i += 2048;
+                    continue;
+                }
+#endif  //MINJUMP 
 //                printf("fingerprint: %lx\n", fingerprint);
 //                printf("mask:        %lx\n", Mask);
 //                printf("and:         %lx\n", (fingerprint & Mask));
