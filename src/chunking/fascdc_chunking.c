@@ -48,16 +48,16 @@ uint64_t g_condition_mask[] = {
         0x00001803110,// 16B
         0x00001803110,// 32B
 
-        0x00001803110,// 64B
-        0x000018035100,// 128B
-        0x00001800035300,// 256B
+        0x0000590003000000,// 64B
+        0x0000590003100000,// 128B
+        0x0000590003500000,// 256B
         0x0000590003510000,// 512B
         0x0000590003530000,// 1KB
-        0x0000590003570000,// 2KB
+        0x0000590103530000,// 2KB
         0x0000d90103530000,// 4KB
         0x0000d90303530000,// 8KB
-        0x0000d90313530000,// 16KB
-        0x0000d90f03530000,// 32KB
+        0x0000d90303531000,// 16KB
+        0x0000d90303533000,// 32KB
         0x0000d90303537000,// 64KB
         0x0000d90703537000// 128KB
 };
@@ -134,6 +134,7 @@ int fastcdc_chunk_data(unsigned char *p, int n){
 uint32_t gearjumpChunkSize;
 uint64_t Mask;
 uint64_t jumpMask;
+int jumpLen = 0;
 void gearjump_init(){
     char seed[SeedLength];
     for(int i=0; i<SymbolCount; i++){
@@ -152,17 +153,21 @@ void gearjump_init(){
         memcpy(&g_gear_matrix[i], md5_result, sizeof(uint64_t));
     }
 
-//    gearjumpChunkSize = destor.chunk_avg_size;
-//    index = log2(gearjumpChunkSize);
-//    assert(index>6);
-//    assert(index<17);
-//    Mask = g_condition_mask[index];
+    gearjumpChunkSize = destor.chunk_avg_size;
+    int index = log2(gearjumpChunkSize);
+    assert(index>6);
+    assert(index<17);
+    Mask = g_condition_mask[index-1];
+    jumpMask = g_condition_mask[index-2];
+    jumpLen = gearjumpChunkSize/4;
 
-    gearjumpChunkSize = 4096;
-    Mask = g_condition_mask[11];
-    jumpMask = g_condition_mask[10];
+//    gearjumpChunkSize = 4096;
+//    jumpLen = gearjumpChunkSize/2;
+//    Mask = g_condition_mask[11];
+//    jumpMask = g_condition_mask[10];
     printf("\nMask:%lx\n", Mask);
-    printf("\njumpMask:%lx\n", jumpMask);
+    printf("jumpMask:%lx\n", jumpMask);
+    printf("jumpLen:%d\n\n", jumpLen);
 }
 
 #define CHUNKMIN 0
@@ -172,11 +177,11 @@ int gearjump_chunk_data(unsigned char *p, int n){
     int i=0;
     int minSize = destor.chunk_min_size;
 
-	if (n <= destor.chunk_min_size)
+	if (n <= minSize)
 		return n;
 #if !CHUNKMIN 
 	else
-		i = destor.chunk_min_size;
+		i = minSize;
 #endif  //MINJUMP 
 
     while(i < n){
@@ -191,17 +196,10 @@ int gearjump_chunk_data(unsigned char *p, int n){
                     continue;
                 }
 #endif  //MINJUMP 
-//                printf("fingerprint: %lx\n", fingerprint);
-//                printf("mask:        %lx\n", Mask);
-//                printf("and:         %lx\n", (fingerprint & Mask));
-//                printf("i:%d\n", i);
                 return i;
             } else {
-                i += 2048;
-//                printf("JUMP fingerprint: %lx\n", fingerprint);
-//                printf("JUMP mask:        %lx\n", jumpMask);
-//                printf("JUMP and:         %lx\n", (fingerprint & jumpMask));
-//                printf("JUMP i:%d\n", i);
+//                i += 2048;
+                i += jumpLen;
             }
         }
     }
