@@ -88,6 +88,7 @@ void destor_start() {
 	destor.chunk_max_size = 65536;
 	destor.chunk_min_size = 1024;
 	destor.chunk_avg_size = 8192;
+	destor.jumpOnes = 0;
 
 	destor.restore_cache[0] = RESTORE_CACHE_LRU;
 	destor.restore_cache[1] = 1024;

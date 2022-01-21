@@ -105,7 +105,7 @@ am__v_AR_1 =
 libchunk_a_AR = $(AR) $(ARFLAGS)
 libchunk_a_LIBADD =
 am_libchunk_a_OBJECTS = rabin_chunking.$(OBJEXT) ae_chunking.$(OBJEXT) \
-	fascdc_chunking.$(OBJEXT)
+	fastcdc_chunking.$(OBJEXT)
 libchunk_a_OBJECTS = $(am_libchunk_a_OBJECTS)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
@@ -123,7 +123,7 @@ DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/ae_chunking.Po \
-	./$(DEPDIR)/fascdc_chunking.Po ./$(DEPDIR)/rabin_chunking.Po
+	./$(DEPDIR)/fastcdc_chunking.Po ./$(DEPDIR)/rabin_chunking.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -193,7 +193,7 @@ INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 LDFLAGS = @LDFLAGS@
 LIBOBJS = @LIBOBJS@
-LIBS = @LIBS@
+LIBS = -lm
 LTLIBOBJS = @LTLIBOBJS@
 MAKEINFO = @MAKEINFO@
 MKDIR_P = @MKDIR_P@
@@ -255,7 +255,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 noinst_LIBRARIES = libchunk.a
-libchunk_a_SOURCES = rabin_chunking.c ae_chunking.c fascdc_chunking.c
+libchunk_a_SOURCES = rabin_chunking.c ae_chunking.c fastcdc_chunking.c
 all: all-am
 
 .SUFFIXES:
@@ -305,7 +305,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ae_chunking.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fascdc_chunking.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fastcdc_chunking.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rabin_chunking.Po@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
@@ -453,7 +453,7 @@ clean-am: clean-generic clean-noinstLIBRARIES mostlyclean-am
 
 distclean: distclean-am
 		-rm -f ./$(DEPDIR)/ae_chunking.Po
-	-rm -f ./$(DEPDIR)/fascdc_chunking.Po
+	-rm -f ./$(DEPDIR)/fastcdc_chunking.Po
 	-rm -f ./$(DEPDIR)/rabin_chunking.Po
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
@@ -501,7 +501,7 @@ installcheck-am:
 
 maintainer-clean: maintainer-clean-am
 		-rm -f ./$(DEPDIR)/ae_chunking.Po
-	-rm -f ./$(DEPDIR)/fascdc_chunking.Po
+	-rm -f ./$(DEPDIR)/fastcdc_chunking.Po
 	-rm -f ./$(DEPDIR)/rabin_chunking.Po
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic

@@ -41,12 +41,12 @@ enum{
 
 uint64_t g_condition_mask[] = {
     //Do not use 1-32B, for aligent usage
-        0x00001803110,// 1B
-        0x00001803110,// 2B
-        0x00001803110,// 4B
-        0x00001803110,// 8B
-        0x00001803110,// 16B
-        0x00001803110,// 32B
+        0x0000000000000000,// 1B
+        0x0000000001000000,// 2B
+        0x0000000003000000,// 4B
+        0x0000010003000000,// 8B
+        0x0000090003000000,// 16B
+        0x0000190003000000,// 32B
 
         0x0000590003000000,// 64B
         0x0000590003100000,// 128B
@@ -135,7 +135,12 @@ uint32_t gearjumpChunkSize;
 uint64_t Mask;
 uint64_t jumpMask;
 int jumpLen = 0;
+
+#if SENTEST
+void gearjump_init(int jMaskOnes){
+#else
 void gearjump_init(){
+#endif //SENTEST
     char seed[SeedLength];
     for(int i=0; i<SymbolCount; i++){
         for(int j=0; j<SeedLength; j++){
@@ -158,15 +163,21 @@ void gearjump_init(){
     assert(index>6);
     assert(index<17);
     Mask = g_condition_mask[index-1];
+#if SENTEST
+    jumpMask = g_condition_mask[jMaskOnes];
+//    jumpLen = power(2, jMaskOnes);
+    jumpLen = exp2(jMaskOnes);
+#else
     jumpMask = g_condition_mask[index-2];
     jumpLen = gearjumpChunkSize/4;
+#endif  //SENTEST
 
 //    gearjumpChunkSize = 4096;
 //    jumpLen = gearjumpChunkSize/2;
 //    Mask = g_condition_mask[11];
 //    jumpMask = g_condition_mask[10];
-    printf("\nMask:%lx\n", Mask);
-    printf("jumpMask:%lx\n", jumpMask);
+    printf("\nMask:  %16lx\n", Mask);
+    printf("jumpMask:%16lx\n", jumpMask);
     printf("jumpLen:%d\n\n", jumpLen);
 }
 
@@ -199,6 +210,7 @@ int gearjump_chunk_data(unsigned char *p, int n){
                 return i;
             } else {
 //                i += 2048;
+                //TODO xzjin here need to set the fingerprint to 0 ?
                 i += jumpLen;
             }
         }

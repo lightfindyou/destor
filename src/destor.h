@@ -32,6 +32,8 @@
 
 #include "utils/sds.h"
 
+#define SENTEST 1
+
 #define TIMER_DECLARE(n) struct timeval b##n,e##n
 #define TIMER_BEGIN(n) gettimeofday(&b##n, NULL)
 #define TIMER_END(n,t) gettimeofday(&e##n, NULL); \
@@ -203,6 +205,7 @@ struct destor {
 	int chunk_max_size;
 	int chunk_min_size;
 	int chunk_avg_size;
+	int jumpOnes;
 
 	/* the cache type and size */
 	int restore_cache[2];
