@@ -65,7 +65,7 @@ int jumpLen = 0;
 #if SENTEST
 void gearjump_init(int jMaskOnes){
 #else
-void gearjump_init(){
+void gearjump_init(int chunkSize){
 #endif //SENTEST
     char seed[SeedLength];
     for(int i=0; i<SymbolCount; i++){
@@ -84,7 +84,7 @@ void gearjump_init(){
         memcpy(&g_gear_matrix[i], md5_result, sizeof(uint64_t));
     }
 
-    gearjumpChunkSize = 4096;
+    gearjumpChunkSize = chunkSize;
     int index = log2(gearjumpChunkSize);
     assert(index>6);
     assert(index<17);
@@ -102,7 +102,7 @@ void gearjump_init(){
 //    jumpLen = gearjumpChunkSize/2;
 //    Mask = g_condition_mask[11];
 //    jumpMask = g_condition_mask[10];
-    printf("\nMask:  %16lx\n", Mask);
+    printf("Mask:    %16lx\n", Mask);
     printf("jumpMask:%16lx\n", jumpMask);
     printf("jumpLen:%d\n\n", jumpLen);
 }
@@ -113,6 +113,11 @@ int gearjump_chunk_data(unsigned char *p, int n){
     uint64_t fingerprint=0;
     int i=0;
     int minSize = 500;
+
+	//Used for rabin
+	int bufPos = -1;
+	unsigned char buf[128];
+	memset((char*) buf, 0, 128);
 
 	if (n <= minSize)
 		return n;

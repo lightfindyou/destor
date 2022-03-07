@@ -1,23 +1,29 @@
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 #include "JC.h"
 
-#define SIZE (8*1024*1024)
-#define SIZEOFRAND (8)
+#define SIZE (16*1024*1024)
+#define SIZEOFRAND (4)
+#define CHUNKSIZE (4096)
+//#define CHUNKSIZE (8192)
 
 void* getAddress(){
 	void* p = malloc(SIZE);
+	void* tail = p + SIZE;
 	time_t t = time(0);
 	srandom((unsigned)t);
-	int loop = SIZE/SIZEOFRAND;
+//	int loop = SIZE/SIZEOFRAND;
 	int *curp = (int *)p;
+	assert(sizeof(int) == 4);
 	printf("address start : %p\n", curp);
-	for(int i=0; i< loop; i++){
+	for( ; (unsigned long)curp < (unsigned long)tail; ){
 		*curp = random();
+//		printf("address:%p, num:%X\n", curp, *curp);
 		curp++;
 	}
-	printf("address end   : %p\n", curp);
+	printf("address end   : %p\n\n", curp);
 
 	return p;
 }
@@ -35,6 +41,7 @@ void chunkData(void* data, int* chunksNum, void** edge){
 	}
 	printf("Total chunks num:%d\n", *chunksNum);
 	printf("Average chunks size:%d\n", SIZE/(*chunksNum));
+	printf("chunk start:%p, chunk end:%p\n\n", edge[0], edge[(*chunksNum) -1 ]);
 	return;
 }
 
@@ -83,9 +90,9 @@ void testData(void* data, void ** edge, int chunksNum,
 
 int main(){
 	void *p = getAddress();
-	gearjump_init();
+	gearjump_init(CHUNKSIZE);
 	int chunksNum = 0;
-	void* edge[SIZE/4096];
+	void* edge[2*SIZE/CHUNKSIZE];
 	chunkData(p, &chunksNum, edge);
 	int unchanged = 0, change1 = 0, change2 = 0, change3 = 0, change4 = 0;
 	testData(p, edge, chunksNum,
