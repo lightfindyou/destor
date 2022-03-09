@@ -114,11 +114,6 @@ int gearjump_chunk_data(unsigned char *p, int n){
     int i=0;
     int minSize = 500;
 
-	//Used for rabin
-	int bufPos = -1;
-	unsigned char buf[128];
-	memset((char*) buf, 0, 128);
-
 	if (n <= minSize)
 		return n;
 #if !CHUNKMIN 

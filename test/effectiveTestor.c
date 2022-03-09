@@ -2,12 +2,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#include "JC.h"
+#include "chunking.h"
 
 #define SIZE (16*1024*1024)
 #define SIZEOFRAND (4)
 #define CHUNKSIZE (4096)
 //#define CHUNKSIZE (8192)
+
+int (*chunking)(unsigned char *p, int n);
+
+enum chunkMethod { JC, gear, rabin, nrRabin, TTTD };
 
 void* getAddress(){
 	void* p = malloc(SIZE);
@@ -28,13 +32,41 @@ void* getAddress(){
 	return p;
 }
 
-void chunkData(void* data, int* chunksNum, void** edge){
+void chunkData(void* data, int* chunksNum, void** edge, enum chunkMethod cM){
 	void *head = data;
 	void *tail = data + SIZE;
 	*chunksNum = 0;
+	switch (cM) {
+	case JC:
+		printf("JC:\n");
+		gearjump_init(CHUNKSIZE);
+		chunking =  gearjump_chunk_data;
+		break;
+	
+	case rabin:
+		printf("Rabin:\n");
+		chunkAlg_init(CHUNKSIZE);
+		chunking =  rabin_chunk_data;
+		break;
+
+	case nrRabin:
+		printf("normalized Rabin:\n");
+		chunkAlg_init(CHUNKSIZE);
+		chunking = normalized_rabin_chunk_data;
+		break;
+
+	case TTTD:
+		printf("TTTD:\n");
+		chunkAlg_init(CHUNKSIZE);
+		chunking = tttd_chunk_data;
+		break;
+
+	default:
+		break;
+	}
 
 	for(; (unsigned long)head < (unsigned long)tail;){
-		int len = gearjump_chunk_data(head, (int)((unsigned long)tail - (unsigned long)head ));
+		int len = chunking(head, (int)((unsigned long)tail - (unsigned long)head ));
 		edge[*chunksNum] = head + len;
 		head = edge[*chunksNum];
 		(*chunksNum)++;
@@ -90,10 +122,12 @@ void testData(void* data, void ** edge, int chunksNum,
 
 int main(){
 	void *p = getAddress();
-	gearjump_init(CHUNKSIZE);
-	int chunksNum = 0;
+	int chunksNum;
 	void* edge[2*SIZE/CHUNKSIZE];
-	chunkData(p, &chunksNum, edge);
+	chunkData(p, &chunksNum, edge, rabin);
+	chunkData(p, &chunksNum, edge, nrRabin);
+	chunkData(p, &chunksNum, edge, TTTD);
+	chunkData(p, &chunksNum, edge, JC);
 	int unchanged = 0, change1 = 0, change2 = 0, change3 = 0, change4 = 0;
 	testData(p, edge, chunksNum,
 		 &unchanged, &change1, &change2, &change3, &change4);

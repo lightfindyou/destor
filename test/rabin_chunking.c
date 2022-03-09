@@ -1,4 +1,4 @@
-#include <stddef.h>
+#include <string.h>
 
 #define MSB64 0x8000000000000000LL
 #define MAXBUF (128*1024)
@@ -38,9 +38,8 @@ UINT64 poly;
 char *eFiles[] = { ".pdf", ".rmv", "ra", ".bmp", ".vmem", ".vmdk", ".jpeg",
 		".rmvb", ".exe", ".mtv", "\\Program Files", "C:\\" };
 
-size_t _last_pos;
-size_t _cur_pos;
-int chunkSize, maxChunkSize, minChunkSize;
+unsigned long _last_pos;
+unsigned long _cur_pos;
 
 unsigned int _num_chunks;
 
@@ -111,7 +110,7 @@ UINT64 polymod(UINT64 nh, UINT64 nl, UINT64 d) {
 	}
 	for (i = 63; i >= k; i--) {
 		if (nl & (long long int) (1) << i)
-			nl ^= d >> 63 - i;
+			nl ^= d >> (63 - i);
 
 		//printf ("polymod : nl = %llu\n", nl);
 
@@ -237,69 +236,35 @@ void windows_reset() {
 
 static int rabin_mask = 0;
 
-void chunkAlg_init(int c) {
+static int chunkMax, chunkAvg, chunkMin;
+
+void chunkAlg_init(int chunkSize) {
 	window_init(FINGERPRINT_PT);
 	_last_pos = 0;
 	_cur_pos = 0;
 	windows_reset();
 	_num_chunks = 0;
-	chunkSize = c;
-	assert(sizeof(int)==4);
-	assert(sizeof(long)==8);
-	rabin_mask = chunkSize - 1;
-	maxChunkSize = 2*chunkSize;
-	minChunkSize = chunkSize/8;
+	chunkAvg = chunkSize;
+	chunkMax = chunkSize*2;
+	chunkMin = chunkSize/8;
+	rabin_mask = chunkAvg - 1;
 }
 
 /* The standard rabin chunking */
 int rabin_chunk_data(unsigned char *p, int n) {
 
-	UINT64 f_break = 0;
-	UINT64 count = 0;
 	UINT64 fp = 0;
 	int i = 1, bufPos = -1;
-
-	unsigned char om;
-	unsigned long x;
 
 	unsigned char buf[128];
 	memset((char*) buf, 0, 128);
 
-	if (n <= minChunkSize)
+	if (n <= chunkMin)
 		return n;
 	else
-		i = minChunkSize;
+		i = chunkMin;
 
-	int end = n > maxChunkSize ? maxChunkSize : n;
-	while (i < end) {
-
-		SLIDE(p[i - 1], fp, bufPos, buf);
-		if ((fp & rabin_mask) == BREAKMARK_VALUE)
-			break;
-		i++;
-	}
-	return i;
-}
-
-int jump_rabin_chunk_data(unsigned char *p, int n) {
-
-	UINT64 f_break = 0;
-	UINT64 count = 0;
-	UINT64 fp = 0;
-	int i = 1, bufPos = -1;
-
-	unsigned char om;
-	unsigned long x;
-
-	unsigned char buf[128];
-	memset((char*) buf, 0, 128);
-
-	if (n <= minChunkSize)
-		return n;
-	else
-		i = minChunkSize;
-
-	int end = n > maxChunkSize ? maxChunkSize : n;
+	int end = n > chunkMax ? chunkMax : n;
 	while (i < end) {
 
 		SLIDE(p[i - 1], fp, bufPos, buf);
@@ -317,30 +282,25 @@ int jump_rabin_chunk_data(unsigned char *p, int n) {
  * */
 int normalized_rabin_chunk_data(unsigned char *p, int n) {
 
-	UINT64 f_break = 0;
-	UINT64 count = 0;
 	UINT64 fp = 0;
 	int i = 1, bufPos = -1;
-
-	unsigned char om;
-	unsigned long x;
 
 	unsigned char buf[128];
 	memset((char*) buf, 0, 128);
 
-	if (n <= minChunkSize)
+	if (n <= chunkMin)
 		return n;
 	else
-		i = minChunkSize;
+		i = chunkMin;
 
-	int small_mask = chunkSize*2 - 1;
-	int large_mask = chunkSize/2 - 1;
-	int end = n > maxChunkSize ? maxChunkSize : n;
+	int small_mask = chunkAvg*2 - 1;
+	int large_mask = chunkAvg/2 - 1;
+	int end = n > chunkMax ? chunkMax : n;
 	while (i < end) {
 
 		SLIDE(p[i - 1], fp, bufPos, buf);
 
-		if (i < chunkSize) {
+		if (i < chunkAvg) {
 			if ((fp & small_mask) == BREAKMARK_VALUE)
 				break;
 			i++;
@@ -361,24 +321,19 @@ int normalized_rabin_chunk_data(unsigned char *p, int n) {
  */
 int tttd_chunk_data(unsigned char *p, int n) {
 
-	UINT64 f_break = 0;
-	UINT64 count = 0;
 	UINT64 fingerprint = 0;
 	int i = 1, bufPos = -1, m = 0;
-
-	unsigned char om;
-	unsigned long x;
 
 	unsigned char buf[128];
 	memset((char*) buf, 0, 128);
 
-	if (n <= minChunkSize)
+	if (n <= chunkMin)
 		return n;
 	else
-		i = minChunkSize;
+		i = chunkMin;
 
-	int back_mask = chunkSize/2 - 1;
-	int end = n > maxChunkSize ? maxChunkSize : n;
+	int back_mask = chunkAvg/2 - 1;
+	int end = n > chunkMax ? chunkMax : n;
 	while (i < end) {
 
 		SLIDE(p[i - 1], fingerprint, bufPos, buf);
