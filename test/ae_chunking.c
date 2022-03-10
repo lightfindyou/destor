@@ -3,25 +3,23 @@
  * See his INFOCOM paper for more details.
  */
 
-#include "../destor.h"
-
-//#define ae_memcmp(x, y) \
-//     ({ \
-//        int __ret; \
-//        uint64_t __a = __builtin_bswap64(*((uint64_t *) x)); \
-//        uint64_t __b = __builtin_bswap64(*((uint64_t *) y)); \
-//        if (__a > __b) \
-//              __ret = 1; \
-//        else \
-//              __ret = -1; \
-//        __ret;\
+//#define ae_memcmp(x, y) 
+//     ({ 
+//        int __ret; 
+//        unsigned long __a = __builtin_bswap64(*((unsigned long *) x)); 
+//        unsigned long __b = __builtin_bswap64(*((unsigned long *) y)); 
+//        if (__a > __b) 
+//              __ret = 1; 
+//        else 
+//              __ret = -1; 
+//        __ret;
 //      })
 
 #define ae_memcmp(x, y) \
      ({ \
         int __ret; \
-        uint64_t __a = (*((uint64_t *) x)); \
-        uint64_t __b = (*((uint64_t *) y)); \
+        unsigned long __a = (*((unsigned long *) x)); \
+        unsigned long __b = (*((unsigned long *) y)); \
         if (__a > __b) \
               __ret = 1; \
         else \
@@ -31,12 +29,16 @@
 
 static int window_size = 0;
 
+static int chunkMax, chunkAvg, chunkMin;
 /*
  * Calculating the window size
  */
-void ae_init(){
+void ae_init(int chunkSize){
 	double e = 2.718281828;
-	window_size = destor.chunk_avg_size/(e-1);
+	chunkAvg = chunkSize;
+	chunkMax = chunkSize*2;
+	chunkMin = chunkSize/8;
+	window_size = chunkAvg/(e-1);
 }
 
 /** n is the size of string p. */
@@ -47,7 +49,7 @@ int ae_chunk_data(unsigned char *p, int n) {
 	 * end points to the end of buffer.
 	 */
 	unsigned char *curr = p+1, *max = p, *end = p+n-8;
-	uint64_t maxValue = (*((uint64_t *)max));
+//	unsigned long maxValue = (*((unsigned long *)max));
 
 	if (n <= window_size + 8)
 		return n;
@@ -56,8 +58,8 @@ int ae_chunk_data(unsigned char *p, int n) {
 		int comp_res = ae_memcmp(curr, max);
 //		int comp_res = (
 //			{ int __ret;
-//			uint64_t __a = (*((uint64_t *) curr));
-//			//uint64_t __b = (*((uint64_t *) max));
+//			unsigned long __a = (*((unsigned long *) curr));
+//			//unsigned long __b = (*((unsigned long *) max));
 //			if (__a > maxValue ) __ret = 1;
 //			else __ret = -1;
 //			__ret;
@@ -69,18 +71,18 @@ int ae_chunk_data(unsigned char *p, int n) {
 		 */
 //		{	
 //			int __ret;
-//			uint64_t __a = (*((uint64_t *) curr));
-//			uint64_t __b = (*((uint64_t *) max));
+//			unsigned long __a = (*((unsigned long *) curr));
+//			unsigned long __b = (*((unsigned long *) max));
 //			if (__a > __b) __ret = 1;
 //			else __ret = -1;
 //			__ret;
 //		}
 		if (comp_res < 0) {
 			max = curr;
-			maxValue = (*((uint64_t *)max));
+//			maxValue = (*((unsigned long *)max));
 			continue;
 		}
-		if (curr == max + window_size || curr == p + destor.chunk_max_size)
+		if (curr == max + window_size || curr == p + chunkMax)
 			return curr - p;
 	}
 	return n;
@@ -89,8 +91,8 @@ int ae_chunk_data(unsigned char *p, int n) {
 #define ae_memcmp(x, y) \
      ({ \
         int __ret; \
-        uint64_t __a = (*((uint64_t *) x)); \
-        uint64_t __b = (*((uint64_t *) y)); \
+        unsigned long __a = (*((unsigned long *) x)); \
+        unsigned long __b = (*((unsigned long *) y)); \
         if (__a > __b) \
               __ret = 1; \
         else \
@@ -100,7 +102,7 @@ int ae_chunk_data(unsigned char *p, int n) {
 
 int expectedBiggerLen;
 void sc_init() {
-    int size = destor.chunk_avg_size;
+    int size = chunkAvg;
 	expectedBiggerLen = 0;
 	while(size){
 		size >>= 1;

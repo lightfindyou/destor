@@ -12,9 +12,7 @@
 #define MinChunkSizeOffset 2
 
 uint64_t g_gear_matrix[SymbolCount];
-uint32_t g_min_fastcdc_chunk_size;
-uint32_t g_max_fastcdc_chunk_size;
-uint32_t g_expect_fastcdc_chunk_size;
+static int chunkMax, chunkAvg, chunkMin;
 
 uint64_t MaskS;
 uint64_t MaskL;
@@ -84,6 +82,10 @@ void gearjump_init(int chunkSize){
         memcpy(&g_gear_matrix[i], md5_result, sizeof(uint64_t));
     }
 
+	chunkAvg = chunkSize;
+	chunkMax = chunkSize*2;
+	chunkMin = chunkSize/8;
+
     gearjumpChunkSize = chunkSize;
     int index = log2(gearjumpChunkSize);
     assert(index>6);
@@ -112,13 +114,12 @@ int gearjump_chunk_data(unsigned char *p, int n){
 
     uint64_t fingerprint=0;
     int i=0;
-    int minSize = 500;
 
-	if (n <= minSize)
+	if (n <= chunkMin)
 		return n;
 #if !CHUNKMIN 
 	else
-		i = minSize;
+		i = chunkMin;
 #endif  //MINJUMP 
 
     while(i < n){
@@ -128,7 +129,7 @@ int gearjump_chunk_data(unsigned char *p, int n){
         if(__glibc_unlikely(!(fingerprint & jumpMask)) ){
             if ((!(fingerprint & Mask))) { //AVERAGE*2, *4, *8
 #if CHUNKMIN 
-                if(i<minSize){
+                if(i<chunkMin){
                     i += 2048;
                     continue;
                 }
@@ -137,6 +138,61 @@ int gearjump_chunk_data(unsigned char *p, int n){
             } else {
 //                i += 2048;
                 //TODO xzjin here need to set the fingerprint to 0 ?
+                i += jumpLen;
+            }
+        }
+    }
+
+    return i<n?i:n;
+}
+
+void gear_init(int chunkSize){
+    char seed[SeedLength];
+    for(int i=0; i<SymbolCount; i++){
+        for(int j=0; j<SeedLength; j++){
+            seed[j] = i;
+        }
+
+        g_gear_matrix[i] = 0;
+        unsigned char md5_result[DigistLength];
+
+        MD5_CTX md5_ctx;
+        MD5_Init(&md5_ctx);
+        MD5_Update(&md5_ctx, seed, SeedLength);
+        MD5_Final(md5_result, &md5_ctx);
+
+        memcpy(&g_gear_matrix[i], md5_result, sizeof(uint64_t));
+    }
+
+	chunkAvg = chunkSize;
+	chunkMax = chunkSize*2;
+	chunkMin = chunkSize/8;
+
+    gearjumpChunkSize = chunkSize;
+    int index = log2(gearjumpChunkSize);
+    assert(index>6);
+    assert(index<17);
+    Mask = g_condition_mask[index];
+}
+
+int gear_chunk_data(unsigned char *p, int n){
+
+    uint64_t fingerprint=0;
+    int i=0;
+
+	if (n <= chunkMin)
+		return n;
+	else
+		i = chunkMin;
+
+    while(i < n){
+        fingerprint = (fingerprint<<1) + (g_gear_matrix[p[i]]);
+        i++;
+
+        if(__glibc_unlikely(!(fingerprint & jumpMask)) ){
+            if ((!(fingerprint & Mask))) { //AVERAGE*2, *4, *8
+                return i;
+            } else {
                 i += jumpLen;
             }
         }
