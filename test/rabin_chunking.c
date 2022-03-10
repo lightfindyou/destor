@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
+#include <limits.h>
 #include "chunking.h"
 
 #define MSB64 0x8000000000000000LL
@@ -298,6 +299,10 @@ int rabin_chunk_data(unsigned char *p, int n) {
 	else
 		i = chunkMin;
 
+	for(int k = i-32; k<i; k++){
+		SLIDE(p[k - 1], fp, bufPos, buf);
+	}
+
 	int end = n > chunkMax ? chunkMax : n;
 	while (i < end) {
 
@@ -311,8 +316,9 @@ int rabin_chunk_data(unsigned char *p, int n) {
 
 int rabinjump_chunk_data(unsigned char *p, int n) {
 
-	printf("p:%p\n", p);
+//	printf("p:%p\n", p);
 	UINT64 fp = 0;
+//	UINT64 fp = ULLONG_MAX;
 	int i = 1, bufPos = -1;
 
 	unsigned char buf[128];
@@ -323,6 +329,12 @@ int rabinjump_chunk_data(unsigned char *p, int n) {
 	else
 		i = chunkMin;
 
+	//pre-calculate
+	//fingerprint of rabin is small at begin, pre-calculate to avoid small chunks.
+	for(int k = i-32; k<i; k++){
+		SLIDE(p[k - 1], fp, bufPos, buf);
+	}
+
 	int end = n > chunkMax ? chunkMax : n;
 	while (i < end) {
 
@@ -330,15 +342,14 @@ int rabinjump_chunk_data(unsigned char *p, int n) {
 		i++;
         if(__glibc_unlikely(!(fp & jumpMask)) ){
             if ((!(fp & Mask))) { //AVERAGE*2, *4, *8
-				printf("Chunk length: %d\n", i);
-                return i;
+				break;
             } else {
                 //TODO xzjin here need to set the fingerprint to 0 ?
                 i += jumpLen;
             }
         }
 	}
-	printf("chunk length: %d\n", i);
+//	printf("fp: %llx, chunk length: %d\n", fp, i);
     return i<n?i:n;
 }
 /*

@@ -147,8 +147,8 @@ int main(){
 	chunkData(p, &chunksNum, edge, TTTD);
 	chunkData(p, &chunksNum, edge, AE);
 	chunkData(p, &chunksNum, edge, gear);
+	chunkData(p, &chunksNum, edge, rabinJump);
 	chunkData(p, &chunksNum, edge, JC);
-	//chunkData(p, &chunksNum, edge, rabinJump);
 	int unchanged = 0, change1 = 0, change2 = 0, change3 = 0, change4 = 0;
 	testData(p, edge, chunksNum,
 		 &unchanged, &change1, &change2, &change3, &change4);
