@@ -4,6 +4,7 @@
 #include <openssl/md5.h>
 #include <stdint.h>
 #include <stdio.h>
+#include "chunking.h"
 
 #define SymbolCount 256
 #define DigistLength 16
@@ -17,20 +18,10 @@ static int chunkMax, chunkAvg, chunkMin;
 uint64_t MaskS;
 uint64_t MaskL;
 
-enum{
-    Mask_64B,
-    Mask_128B,
-    Mask_256B,
-    Mask_512B,
-    Mask_1KB,
-    Mask_2KB,
-    Mask_4KB,
-    Mask_8KB,
-    Mask_16KB,
-    Mask_32KB,
-    Mask_64KB,
-    Mask_128KB
-};
+uint32_t gearjumpChunkSize;
+uint64_t Mask;
+uint64_t jumpMask;
+int jumpLen = 0;
 
 uint64_t g_condition_mask[] = {
     //Do not use 1-32B, for aligent usage
@@ -54,11 +45,6 @@ uint64_t g_condition_mask[] = {
         0x0000d90303537000,// 64KB
         0x0000d90703537000// 128KB
 };
-
-uint32_t gearjumpChunkSize;
-uint64_t Mask;
-uint64_t jumpMask;
-int jumpLen = 0;
 
 #if SENTEST
 void gearjump_init(int jMaskOnes){
@@ -189,14 +175,10 @@ int gear_chunk_data(unsigned char *p, int n){
         fingerprint = (fingerprint<<1) + (g_gear_matrix[p[i]]);
         i++;
 
-        if(__glibc_unlikely(!(fingerprint & jumpMask)) ){
-            if ((!(fingerprint & Mask))) { //AVERAGE*2, *4, *8
-                return i;
-            } else {
-                i += jumpLen;
-            }
+        if(__glibc_unlikely(!(fingerprint & Mask)) ){
+            return i;
         }
     }
 
-    return i<n?i:n;
+    return i;
 }

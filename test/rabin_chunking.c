@@ -1,4 +1,8 @@
+#include <assert.h>
+#include <stdio.h>
+#include <math.h>
 #include <string.h>
+#include "chunking.h"
 
 #define MSB64 0x8000000000000000LL
 #define MAXBUF (128*1024)
@@ -34,9 +38,6 @@ unsigned char buf[size];
 int shift;
 UINT64 T[256];
 UINT64 poly;
-
-char *eFiles[] = { ".pdf", ".rmv", "ra", ".bmp", ".vmem", ".vmdk", ".jpeg",
-		".rmvb", ".exe", ".mtv", "\\Program Files", "C:\\" };
 
 unsigned long _last_pos;
 unsigned long _cur_pos;
@@ -237,6 +238,9 @@ void windows_reset() {
 static int rabin_mask = 0;
 
 static int chunkMax, chunkAvg, chunkMin;
+extern unsigned long g_condition_mask[];
+extern unsigned long Mask, jumpMask;
+extern int jumpLen;
 
 void chunkAlg_init(int chunkSize) {
 	window_init(FINGERPRINT_PT);
@@ -248,6 +252,36 @@ void chunkAlg_init(int chunkSize) {
 	chunkMax = chunkSize*2;
 	chunkMin = chunkSize/8;
 	rabin_mask = chunkAvg - 1;
+
+    int index = log2(chunkAvg);
+    assert(index>6);
+    assert(index<17);
+    Mask = g_condition_mask[index-1];
+    jumpMask = g_condition_mask[index-2];
+    jumpLen = chunkAvg/4;
+}
+
+void rabinJump_init(int chunkSize) {
+	window_init(FINGERPRINT_PT);
+	_last_pos = 0;
+	_cur_pos = 0;
+	windows_reset();
+	_num_chunks = 0;
+	chunkAvg = chunkSize;
+	chunkMax = chunkSize*2;
+	chunkMin = chunkSize/8;
+	rabin_mask = chunkAvg - 1;
+
+    int index = log2(chunkAvg);
+    assert(index>6);
+    assert(index<17);
+    Mask = g_condition_mask[index-1];
+    jumpMask = g_condition_mask[index-2];
+    jumpLen = chunkAvg/4;
+
+    printf("Mask:    %16lx\n", Mask);
+    printf("jumpMask:%16lx\n", jumpMask);
+    printf("jumpLen:%d\n\n", jumpLen);
 }
 
 /* The standard rabin chunking */
@@ -275,6 +309,38 @@ int rabin_chunk_data(unsigned char *p, int n) {
 	return i;
 }
 
+int rabinjump_chunk_data(unsigned char *p, int n) {
+
+	printf("p:%p\n", p);
+	UINT64 fp = 0;
+	int i = 1, bufPos = -1;
+
+	unsigned char buf[128];
+	memset((char*) buf, 0, 128);
+
+	if (n <= chunkMin)
+		return n;
+	else
+		i = chunkMin;
+
+	int end = n > chunkMax ? chunkMax : n;
+	while (i < end) {
+
+		SLIDE(p[i - 1], fp, bufPos, buf);
+		i++;
+        if(__glibc_unlikely(!(fp & jumpMask)) ){
+            if ((!(fp & Mask))) { //AVERAGE*2, *4, *8
+				printf("Chunk length: %d\n", i);
+                return i;
+            } else {
+                //TODO xzjin here need to set the fingerprint to 0 ?
+                i += jumpLen;
+            }
+        }
+	}
+	printf("chunk length: %d\n", i);
+    return i<n?i:n;
+}
 /*
  * A variant of rabin chunking.
  * We use a larger avg chunk size when the current size is small,

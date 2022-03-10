@@ -9,5 +9,8 @@ int rabin_chunk_data(unsigned char *p, int n);
 int normalized_rabin_chunk_data(unsigned char *p, int n);
 int tttd_chunk_data(unsigned char *p, int n);
 
+void rabinJump_init(int chunkSize);
+int rabinjump_chunk_data(unsigned char *p, int n);
+
 void ae_init(int chunkSize);
 int ae_chunk_data(unsigned char *p, int n);
