@@ -11,7 +11,7 @@
 
 int (*chunking)(unsigned char *p, int n);
 
-enum chunkMethod { JC, gear, rabin, rabinJump, nrRabin, TTTD, AE };
+enum chunkMethod { JC, gear, rabin, rabinJump, nrRabin, TTTD, AE, leap };
 
 void* getAddress(){
 	void* p = malloc(SIZE);
@@ -59,6 +59,11 @@ void chunkData(void* data, int* chunksNum, void** edge, enum chunkMethod cM){
 		printf("Gear:\n");
 		gear_init(CHUNKSIZE);
 		chunking = gear_chunk_data;
+		break;
+
+	case leap:
+		printf("leap:\n");
+		chunking = leap_chunk_data;
 		break;
 
 	case nrRabin:
@@ -147,6 +152,7 @@ int main(){
 	chunkData(p, &chunksNum, edge, TTTD);
 	chunkData(p, &chunksNum, edge, AE);
 	chunkData(p, &chunksNum, edge, gear);
+	chunkData(p, &chunksNum, edge, leap);
 	chunkData(p, &chunksNum, edge, rabinJump);
 	chunkData(p, &chunksNum, edge, JC);
 	int unchanged = 0, change1 = 0, change2 = 0, change3 = 0, change4 = 0;

@@ -301,6 +301,18 @@ int rabin_chunk_data(unsigned char *p, int n) {
 
 	for(int k = i-32; k<i; k++){
 		SLIDE(p[k - 1], fp, bufPos, buf);
+//		do{
+//			unsigned char om;
+//			unsigned long x;
+//			if (++bufPos >= size) bufPos = 0;
+//			om = buf[bufPos];
+//			buf[bufPos] = p[k - 1];
+//			fp ^= U[om];
+//			x = fp >> shift;
+//			fp <<= 8;
+//			fp |= p[k - 1];
+//			fp ^= T[x];
+//		}while(0);
 	}
 
 	int end = n > chunkMax ? chunkMax : n;
