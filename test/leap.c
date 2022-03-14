@@ -554,7 +554,7 @@ int isEADisqualified(int **V){
                  hl[2]*c[2] + hl[3]*c[3] +
                  hl[4]*c[4] + hl[5]*c[5] +
                  hl[6]*c[6] + hl[7]*c[7];
-            if(sum>0) posNum++;
+            if(sum>=0) posNum++;
         }
     }
     return (posNum & 0x1);
@@ -574,7 +574,7 @@ int isGADisqualified(int **V){
                  gl[2]*c[2] + gl[3]*c[3] +
                  gl[4]*c[4] + gl[5]*c[5] +
                  gl[6]*c[6] + gl[7]*c[7];
-            if(sum>0) posNum++;
+            if(sum>=0) posNum++;
         }
     }
     return (posNum & 0x1);
