@@ -63,6 +63,7 @@ void chunkData(void* data, int* chunksNum, void** edge, enum chunkMethod cM){
 
 	case leap:
 		printf("leap:\n");
+		leap_init();
 		chunking = leap_chunk_data;
 		break;
 
