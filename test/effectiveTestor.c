@@ -4,7 +4,8 @@
 #include <time.h>
 #include "chunking.h"
 
-#define SIZE (16*1024*1024)
+//#define SIZE (16*1024*1024)
+#define SIZE (128*1024*1024)
 #define SIZEOFRAND (4)
 #define CHUNKSIZE (4096)
 //#define CHUNKSIZE (8192)
@@ -13,8 +14,15 @@ int (*chunking)(unsigned char *p, int n);
 
 enum chunkMethod { JC, gear, rabin, rabinJump, nrRabin, TTTD, AE, leap };
 
+static inline unsigned long time_nsec(void) {
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
+    return ts.tv_sec * (unsigned long)(1000000000) + ts.tv_nsec;
+}
+
 void* getAddress(){
 	void* p = malloc(SIZE);
+	assert(p);
 	void* tail = p + SIZE;
 	time_t t = time(0);
 	srandom((unsigned)t);
@@ -33,6 +41,7 @@ void* getAddress(){
 }
 
 void chunkData(void* data, int* chunksNum, void** edge, enum chunkMethod cM){
+	unsigned long start, end;
 	void *head = data;
 	void *tail = data + SIZE;
 	*chunksNum = 0;
@@ -89,15 +98,18 @@ void chunkData(void* data, int* chunksNum, void** edge, enum chunkMethod cM){
 		break;
 	}
 
+	start = time_nsec();
 	for(; (unsigned long)head < (unsigned long)tail;){
 		int len = chunking(head, (int)((unsigned long)tail - (unsigned long)head ));
 		edge[*chunksNum] = head + len;
 		head = edge[*chunksNum];
 		(*chunksNum)++;
 	}
+	end = time_nsec();
 	printf("Total chunks num:%d\n", *chunksNum);
 	printf("Average chunks size:%d\n", SIZE/(*chunksNum));
-	printf("chunk start:%p, chunk end:%p\n\n", edge[0], edge[(*chunksNum) -1 ]);
+	printf("chunk start:%p, chunk end:%p\n", edge[0], edge[(*chunksNum) -1 ]);
+	printf("Chunks time: %ld (us)\n\n", (end-start)/1000);
 	return;
 }
 
@@ -153,8 +165,8 @@ int main(){
 	chunkData(p, &chunksNum, edge, TTTD);
 	chunkData(p, &chunksNum, edge, AE);
 	chunkData(p, &chunksNum, edge, gear);
-	chunkData(p, &chunksNum, edge, leap);
 	chunkData(p, &chunksNum, edge, rabinJump);
+	chunkData(p, &chunksNum, edge, leap);
 	chunkData(p, &chunksNum, edge, JC);
 	int unchanged = 0, change1 = 0, change2 = 0, change3 = 0, change4 = 0;
 	testData(p, edge, chunksNum,

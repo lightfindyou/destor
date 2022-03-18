@@ -7,8 +7,8 @@
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_cblas.h>
 #include <gsl/gsl_blas.h>
-#include "chunking.h"
 
+#define CHECKWINNUM 24
 double H[2040] = {
  0.5377, -0.2365, -1.1407,  0.9704,  0.0964, -0.0276, -0.8833, -1.6149,
  1.8339,  2.0237, -1.0933, -0.5686, -0.8305,  0.9239,  0.0825,  2.2461,
@@ -826,7 +826,6 @@ void leap_init(){
 
 }
 
-#define CHECKWINNUM 24
 int leap_chunk_data(unsigned char *p, int n){
 
     int targetPoint= 172;

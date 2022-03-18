@@ -30,4 +30,8 @@ int gearjump_chunk_data(unsigned char *p, int n);
 
 void sc_init();
 int sc_chunk_data(unsigned char *p, int n);
+
+
+void leap_init();
+int leap_chunk_data(unsigned char *p, int n);
 #endif

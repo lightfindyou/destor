@@ -73,6 +73,7 @@
 #define CHUNK_FASTCDC 6
 #define CHUNK_SC 7
 #define CHUNK_GEARJUMP 8
+#define CHUNK_LEAP 9
 
 /*
  * A global fingerprint index is required.
