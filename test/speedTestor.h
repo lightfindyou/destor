@@ -12,5 +12,7 @@ extern pthread_cond_t cond;
 extern pthread_mutex_t lock;
 extern int readOver;
 void start_read_phase();
+void stop_read_phase();
+extern long curReadDataLen;
 
 #endif	// __SPEEDTESTOR_H

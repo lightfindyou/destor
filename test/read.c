@@ -12,7 +12,7 @@
 
 
 static pthread_t read_t;
-static long curReadDataLen;
+long curReadDataLen;
 static void* readPos;
 int readOver = 0;
 sds dedupRootPath;
@@ -39,13 +39,10 @@ static void read_file(sds path) {
 		exit(1);
 	}
 
-	printf("Read phase: %s", filename);
-
 	int size = 0;
 	int planToRead = SIZE - curReadDataLen;
 
 	while ((size = fread(readPos, 1, planToRead, fp)) != 0) {
-		printf("Read phase: read %d bytes", size);
 
 		readPos += size;
 		curReadDataLen += size;
@@ -54,7 +51,6 @@ static void read_file(sds path) {
 			pthread_cond_signal(&cond);
 			pthread_cond_wait(&cond, &lock);
 
-    		pthread_mutex_lock(&lock);
 			curReadDataLen = 0;
 			readPos = duplicateData;
 		}
@@ -103,11 +99,16 @@ static void find_one_file(sds path) {
 }
 
 static void* read_thread(void *argv) {
+
+    pthread_mutex_lock(&lock);
 	/* Each file will be processed separately */
 	curReadDataLen = 0;
 	dedupRootPath = sdsnew(dedupDir);
 	find_one_file(dedupRootPath);
 	readOver = 1;
+	printf("readOver!\n");
+	pthread_cond_signal(&cond);
+    pthread_mutex_unlock(&lock);
 	return NULL;
 }
 
@@ -121,6 +122,6 @@ void start_read_phase() {
 
 void stop_read_phase() {
 	pthread_join(read_t, NULL);
-	printf("read phase stops successfully!");
+	printf("read phase stops successfully!\n\n");
 }
 

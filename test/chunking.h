@@ -17,3 +17,6 @@ int ae_chunk_data(unsigned char *p, int n);
 
 void leap_init();
 int leap_chunk_data(unsigned char *p, int n);
+
+void fastcdc_init(int chunkSize);
+int fastcdc_chunk_data(unsigned char *p, int n);
