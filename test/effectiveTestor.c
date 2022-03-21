@@ -174,11 +174,16 @@ int main(){
 
 	int total = unchanged + change1 + change2 + change3 + change4;
 	printf("total:%d\n", total);
-	printf("unchanged:%d, percentage:%.2f%%\n", unchanged, (float)unchanged*100/total);
-	printf("change1:%d, percentage:%.2f%%\n", change1, (float)change1*100/total);
-	printf("change2:%d, percentage:%.2f%%\n", change2, (float)change2*100/total);
-	printf("change3:%d, percentage:%.2f%%\n", change3, (float)change3*100/total);
-	printf("change4:%d, percentage:%.2f%%\n", change4, (float)change4*100/total);
+	double perc = (float)unchanged*100/total;
+	printf("unchanged:%d, percentage:%.2f%%\n", unchanged, perc);
+	perc = (float)change1*100/total;
+	printf("change1:%d, percentage:%.2f%%\n", change1, perc);
+	perc = (float)change2*100/total;
+	printf("change2:%d, percentage:%.2f%%\n", change2, perc);
+	perc = (float)change3*100/total;
+	printf("change3:%d, percentage:%.2f%%\n", change3, perc);
+	perc = (float)change4*100/total;
+	printf("change4:%d, percentage:%.2f%%\n", change4, perc);
 
 	return 0;
 }

@@ -15,10 +15,10 @@
 #define MaxChunkSizeOffset 3
 #define MinChunkSizeOffset 2
 
-uint64_t g_gear_matrix[SymbolCount];
+uint64_t g_gear_matrix_fast[SymbolCount];
 
-uint64_t MaskS;
-uint64_t MaskL;
+uint64_t MaskS_fast;
+uint64_t MaskL_fast;
 
 enum{
     Mask_64B,
@@ -46,7 +46,7 @@ void fastcdc_init(int chunkSize){
             seed[j] = i;
         }
 
-        g_gear_matrix[i] = 0;
+        g_gear_matrix_fast[i] = 0;
         unsigned char md5_result[DigistLength];
 
         MD5_CTX md5_ctx;
@@ -54,7 +54,7 @@ void fastcdc_init(int chunkSize){
         MD5_Update(&md5_ctx, seed, SeedLength);
         MD5_Final(md5_result, &md5_ctx);
 
-        memcpy(&g_gear_matrix[i], md5_result, sizeof(uint64_t));
+        memcpy(&g_gear_matrix_fast[i], md5_result, sizeof(uint64_t));
     }
 
 //    chunkMin = 2048;
@@ -66,8 +66,8 @@ void fastcdc_init(int chunkSize){
     index = log2(chunkAvg);
     assert(index>6);
     assert(index<17);
-    MaskS = g_condition_mask[index+1];
-    MaskL = g_condition_mask[index-1];
+    MaskS_fast = g_condition_mask[index+1];
+    MaskL_fast = g_condition_mask[index-1];
 }
 
 
@@ -89,16 +89,16 @@ int fastcdc_chunk_data(unsigned char *p, int n){
         Mid = n;
 
     while(i<Mid){
-        fingerprint = (fingerprint<<1) + (g_gear_matrix[p[i]]);
-        if ((!(fingerprint & MaskS /*0x0000d90f03530000*/))) { //AVERAGE*2, *4, *8
+        fingerprint = (fingerprint<<1) + (g_gear_matrix_fast[p[i]]);
+        if ((!(fingerprint & MaskS_fast /*0x0000d90f03530000*/))) { //AVERAGE*2, *4, *8
             return i;
         }
         i++;
     }
 
     while(i<n){
-        fingerprint = (fingerprint<<1) + (g_gear_matrix[p[i]]);
-        if ((!(fingerprint & MaskL /*0x0000d90003530000*/))) { //Average/2, /4, /8
+        fingerprint = (fingerprint<<1) + (g_gear_matrix_fast[p[i]]);
+        if ((!(fingerprint & MaskL_fast /*0x0000d90003530000*/))) { //Average/2, /4, /8
             return i;
         }
         i++;
