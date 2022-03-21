@@ -122,7 +122,7 @@ void testData(void* data, void ** edge, int chunksNum,
 	*change4 = 0; 
 	void *tail = data + SIZE;
 	for(int i = 0, j = chunksNum -5; i<j; i++){
-		int jumpLen = random()%1024;
+		int jumpLen = random()%2048;
 		void* start = edge[i] + jumpLen;
 		int len = gearjump_chunk_data(start, (int)((unsigned long)tail - (unsigned long)start));
 		void* tail = start + len;
