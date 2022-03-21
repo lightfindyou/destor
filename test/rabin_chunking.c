@@ -71,6 +71,7 @@ static unsigned int fls32(UINT32 v) {
 		return bytemsb[v];
 }
 
+//Get the length of input
 static unsigned int fls64(UINT64 v) {
 	UINT32 h;
 	if ((h = v >> 32))
@@ -86,7 +87,7 @@ UINT64 polymod(UINT64 nh, UINT64 nl, UINT64 d) {
 
 	//printf ("polymod : k = %d\n", k);
 
-	d <<= 63 - k;
+	d <<= (63 - k);
 
 	//printf ("polymod : d = %llu\n", d);
 	//printf ("polymod : MSB64 = %llu\n", MSB64);
@@ -98,9 +99,9 @@ UINT64 polymod(UINT64 nh, UINT64 nl, UINT64 d) {
 		//printf ("polymod : nh = %llu\n", nh);
 
 		for (i = 62; i >= 0; i--)
-			if (nh & ((UINT64) 1) << i) {
-				nh ^= d >> (63 - i);
-				nl ^= d << (i + 1);
+			if (nh & (((UINT64) 1) << i)) {
+				nh ^= (d >> (63 - i));
+				nl ^= (d << (i + 1));
 
 				//printf ("polymod : i = %d\n", i);
 				//printf ("polymod : shift1 = %llu\n", (d >> (63 - i)));
@@ -111,8 +112,8 @@ UINT64 polymod(UINT64 nh, UINT64 nl, UINT64 d) {
 			}
 	}
 	for (i = 63; i >= k; i--) {
-		if (nl & (long long int) (1) << i)
-			nl ^= d >> (63 - i);
+		if (nl & ((long long int) (1) << i))
+			nl ^= (d >> (63 - i));
 
 		//printf ("polymod : nl = %llu\n", nl);
 

@@ -8,6 +8,8 @@
 #include <pthread.h>
 #include "speedTestor.h"
 
+#define countChunkDis 0
+
 char* dedupDir = "/home/xzjin/gcc_part1/";
 pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
@@ -17,6 +19,7 @@ int (*chunking)(unsigned char *p, int n);
 enum chunkMethod { gear, rabin, rabinJump, nrRabin, TTTD, AE, fastCDC, leap, JC, algNum };
 double chunkTime[algNum] = {0};
 int inited[algNum] = {0};
+unsigned long chunkDis[algNum][65] = {0};
 
 static inline unsigned long time_nsec(void) {
     struct timespec ts;
@@ -124,6 +127,11 @@ void chunkData(void* data, unsigned long dataSize, int* chunksNum, enum chunkMet
 //		head = edge[*chunksNum];
 		head = head + len;
 		(*chunksNum)++;
+#if countChunkDis 
+		int lenIdx = len/1024;
+		lenIdx = lenIdx<64?lenIdx:64;
+		chunkDis[cM][lenIdx]++;
+#endif //countChunkDis 
 	}
 	end = time_nsec();
 //	printf("Total chunks num:%d\n", *chunksNum);

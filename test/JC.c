@@ -83,7 +83,7 @@ void gearjump_init(int chunkSize){
     jumpLen = exp2(jMaskOnes);
 #else
     jumpMask = g_condition_mask[index-2];
-    jumpLen = gearjumpChunkSize/4;
+    jumpLen = gearjumpChunkSize/2;
 #endif  //SENTEST
 
 //    gearjumpChunkSize = 4096;
@@ -95,7 +95,7 @@ void gearjump_init(int chunkSize){
     printf("jumpLen:%d\n\n", jumpLen);
 }
 
-#define CHUNKMIN 0
+#define CHUNKMIN 1
 int gearjump_chunk_data(unsigned char *p, int n){
 
     uint64_t fingerprint=0;
@@ -114,15 +114,54 @@ int gearjump_chunk_data(unsigned char *p, int n){
 
         if(__glibc_unlikely(!(fingerprint & jumpMask)) ){
             if ((!(fingerprint & Mask))) { //AVERAGE*2, *4, *8
-#if CHUNKMIN 
-                if(i<chunkMin){
-                    i += 2048;
-                    continue;
-                }
-#endif  //MINJUMP 
                 return i;
             } else {
-//                i += 2048;
+                fingerprint=0;
+                //TODO xzjin here need to set the fingerprint to 0 ?
+                i += jumpLen;
+            }
+        }
+    }
+
+    return i<n?i:n;
+}
+
+uint64_t MaskLeap, jumpLeapMask, jumpLeapLen;
+
+void gearleap_init(int chunkSize){
+
+	chunkAvg = chunkSize;
+	chunkMax = chunkSize*2;
+	chunkMin = chunkSize/8;
+
+    gearjumpChunkSize = chunkSize;
+    int index = log2(gearjumpChunkSize);
+    assert(index>6);
+    assert(index<17);
+    jumpLeapMask = g_condition_mask[2];
+    jumpLeapLen = gearjumpChunkSize/2;
+
+    printf("jumpLeapMask:%16lx\n", jumpLeapMask);
+    printf("jumpLeapLen:%d\n\n", jumpLeapLen);
+}
+
+int gearleap_chunk_data(unsigned char *p, int n){
+
+    uint64_t fingerprint=0;
+    int i=0;
+
+	if (n <= chunkMin)
+		return n;
+
+    while(i < n){
+        fingerprint = (fingerprint<<1) + (g_gear_matrix[p[i]]);
+        i++;
+
+        if((!(fingerprint & jumpMask)) ){
+            if ((!(fingerprint & Mask))) { //AVERAGE*2, *4, *8
+                return i;
+            } else {
+                fingerprint=0;
                 //TODO xzjin here need to set the fingerprint to 0 ?
                 i += jumpLen;
             }
