@@ -148,6 +148,7 @@ void help(){
 
 int main(int argc, char **argv){
 
+	double processedLen = 0;
 	if(getopt(argc, argv, "d:")>0){
 		dedupDir = optarg;
 		if(dedupDir[strlen(dedupDir)-1] != '/'){
@@ -166,6 +167,7 @@ printHelp:
 	pthread_cond_wait(&cond, &lock);
 	while(1){
 		int dupDataSize = SIZE;
+		processedLen += (dupDataSize/1024/1024);
 		if(readOver){ dupDataSize = curReadDataLen;}
 		chunkData(duplicateData, dupDataSize, &chunksNum, rabin);
 		chunkData(duplicateData, dupDataSize, &chunksNum, nrRabin);
@@ -227,7 +229,7 @@ printHelp:
 			printf("Unknown number:%d.\n", i);
 			break;
 		}
-		printf("%.2f\n", chunkTime[i]);
+		printf("%.2f s, throughput %.2f MB/s\n", chunkTime[i], processedLen/chunkTime[i]);
 	}
 	
 	printf("Over.\n");

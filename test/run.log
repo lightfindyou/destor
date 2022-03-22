@@ -1,0 +1,153 @@
+Dedup dir: /home/xzjin/backupData/bbcNews/; chunk size: 4096
+Deduplication dir:/home/xzjin/backupData/bbcNews/
+address start : 0x7fdc62212010
+address end   : 0x7fdc6a212010
+
+Mask:        590103530000
+jumpMask:    590003530000
+jumpLen:1024
+
+sizeof EFTable: 5100
+
+Mask:        590103530000
+jumpMask:    590003530000
+jumpLen:2048
+
+readOver!
+read phase stops successfully!
+
+     gear time: 2801.39 s, throughput 1.74 MB/s
+    rabin time: 10778.00 s, throughput 0.45 MB/s
+rabinJump time: 4959.97 s, throughput 0.98 MB/s
+  nrRabin time: 10178.14 s, throughput 0.48 MB/s
+     TTTD time: 10725.43 s, throughput 0.45 MB/s
+       AE time: 2757.00 s, throughput 1.76 MB/s
+  fastCDC time: 4581.53 s, throughput 1.06 MB/s
+     leap time: 2335.51 s, throughput 2.08 MB/s
+       JC time: 1482.24 s, throughput 3.28 MB/s
+Over.
+
+
+Dedup dir: /home/xzjin/backupData/gcc/; chunk size: 4096
+Deduplication dir:/home/xzjin/backupData/gcc/
+address start : 0x7f0dac431010
+address end   : 0x7f0db4431010
+
+Mask:        590103530000
+jumpMask:    590003530000
+jumpLen:1024
+
+sizeof EFTable: 5100
+
+Mask:        590103530000
+jumpMask:    590003530000
+jumpLen:2048
+
+readOver!
+read phase stops successfully!
+
+     gear time: 26361.25 s, throughput 1.62 MB/s
+    rabin time: 102822.09 s, throughput 0.41 MB/s
+rabinJump time: 41929.83 s, throughput 1.02 MB/s
+  nrRabin time: 96129.65 s, throughput 0.44 MB/s
+     TTTD time: 103268.74 s, throughput 0.41 MB/s
+       AE time: 25780.52 s, throughput 1.65 MB/s
+  fastCDC time: 41384.43 s, throughput 1.03 MB/s
+     leap time: 20574.58 s, throughput 2.07 MB/s
+       JC time: 14501.95 s, throughput 2.94 MB/s
+Over.
+
+
+Dedup dir: /home/xzjin/backupData/Paper; chunk size: 4096
+Usage: 
+ 		speedTestor -d Dir(ends with "/")
+
+
+Dedup dir: /home/xzjin/backupData/VMB/; chunk size: 4096
+Deduplication dir:/home/xzjin/backupData/VMB/
+address start : 0x7fe7f5f4b010
+address end   : 0x7fe7fdf4b010
+
+Mask:        590103530000
+jumpMask:    590003530000
+jumpLen:1024
+
+sizeof EFTable: 5100
+
+Mask:        590103530000
+jumpMask:    590003530000
+jumpLen:2048
+
+readOver!
+read phase stops successfully!
+
+     gear time: 49803.33 s, throughput 1.61 MB/s
+    rabin time: 194426.88 s, throughput 0.41 MB/s
+rabinJump time: 80200.44 s, throughput 1.00 MB/s
+  nrRabin time: 182464.49 s, throughput 0.44 MB/s
+     TTTD time: 194447.69 s, throughput 0.41 MB/s
+       AE time: 49734.90 s, throughput 1.61 MB/s
+  fastCDC time: 78478.48 s, throughput 1.02 MB/s
+     leap time: 34833.56 s, throughput 2.30 MB/s
+       JC time: 27166.04 s, throughput 2.95 MB/s
+Over.
+
+
+Dedup dir: /home/xzjin/backupData/VMI/; chunk size: 4096
+Deduplication dir:/home/xzjin/backupData/VMI/
+address start : 0x7efe7cfac010
+address end   : 0x7efe84fac010
+
+Mask:        590103530000
+jumpMask:    590003530000
+jumpLen:1024
+
+sizeof EFTable: 5100
+
+Mask:        590103530000
+jumpMask:    590003530000
+jumpLen:2048
+
+readOver!
+read phase stops successfully!
+
+     gear time: 24950.47 s, throughput 1.64 MB/s
+    rabin time: 97306.62 s, throughput 0.42 MB/s
+rabinJump time: 42808.26 s, throughput 0.96 MB/s
+  nrRabin time: 91438.80 s, throughput 0.45 MB/s
+     TTTD time: 97273.81 s, throughput 0.42 MB/s
+       AE time: 24263.41 s, throughput 1.69 MB/s
+  fastCDC time: 40718.89 s, throughput 1.01 MB/s
+     leap time: 21914.12 s, throughput 1.87 MB/s
+       JC time: 13082.82 s, throughput 3.13 MB/s
+Over.
+
+Dedup dir: /home/xzjin/backupData/Paper/; chunk size: 4096
+Deduplication dir:/home/xzjin/backupData/Paper/
+address start : 0x7f62b1813010
+address end   : 0x7f62b9813010
+
+Mask:        590103530000
+jumpMask:    590003530000
+jumpLen:1024
+
+sizeof EFTable: 5100
+
+Mask:        590103530000
+jumpMask:    590003530000
+jumpLen:2048
+
+readOver!
+read phase stops successfully!
+
+     gear time: 1263.90 s, throughput 1.72 MB/s
+    rabin time: 4832.73 s, throughput 0.45 MB/s
+rabinJump time: 2227.56 s, throughput 0.98 MB/s
+  nrRabin time: 4513.08 s, throughput 0.48 MB/s
+     TTTD time: 4855.44 s, throughput 0.45 MB/s
+       AE time: 1223.90 s, throughput 1.78 MB/s
+  fastCDC time: 2046.16 s, throughput 1.06 MB/s
+     leap time: 1065.49 s, throughput 2.04 MB/s
+       JC time: 681.72 s, throughput 3.19 MB/s
+Over.
+

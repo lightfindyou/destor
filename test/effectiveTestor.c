@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <string.h>
 #include "chunking.h"
 
 //#define SIZE (16*1024*1024)
@@ -121,9 +122,18 @@ void testData(void* data, void ** edge, int chunksNum,
 	*change3 = 0; 
 	*change4 = 0; 
 	void *tail = data + SIZE;
+	const int insRangeL = 2, insRangeH = 20;
 	for(int i = 0, j = chunksNum -5; i<j; i++){
-		int jumpLen = random()%2048;
-		void* start = edge[i] + jumpLen;
+		int insertPos = random()%(edge[i+1] - edge[i]);
+		int insertLen = (random()%(insRangeH - insRangeL + 1)) + insRangeL;
+		memmove(edge[i]-insertLen, edge[i], insertPos);
+		//fill random data
+		char *changep = (char *)edge[i];
+		for(int k=0; k< insertLen; k++){
+			*changep = random();
+			changep++;
+		}
+		void* start = edge[i] - insertLen;
 		int len = gearjump_chunk_data(start, (int)((unsigned long)tail - (unsigned long)start));
 		void* tail = start + len;
 

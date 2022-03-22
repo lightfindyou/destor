@@ -142,7 +142,7 @@ void gearleap_init(int chunkSize){
     jumpLeapLen = gearjumpChunkSize/2;
 
     printf("jumpLeapMask:%16lx\n", jumpLeapMask);
-    printf("jumpLeapLen:%d\n\n", jumpLeapLen);
+    printf("jumpLeapLen:%ld\n\n", jumpLeapLen);
 }
 
 int gearleap_chunk_data(unsigned char *p, int n){
