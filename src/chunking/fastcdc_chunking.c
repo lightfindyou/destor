@@ -136,8 +136,11 @@ uint64_t Mask;
 uint64_t jumpMask;
 int jumpLen = 0;
 
+/**
+ * mto means "Mask Ones Less Than Chunk Ones"
+*/
 #if SENTEST
-void gearjump_init(int jMaskOnes){
+void gearjump_init(int mto){
 #else
 void gearjump_init(){
 #endif //SENTEST
@@ -160,16 +163,21 @@ void gearjump_init(){
 
     gearjumpChunkSize = destor.chunk_avg_size;
     int index = log2(gearjumpChunkSize);
+    int jOnes, cOnes = index - 1;
     assert(index>6);
     assert(index<17);
-    Mask = g_condition_mask[index-1];
+    Mask = g_condition_mask[cOnes];
 #if SENTEST
-    jumpMask = g_condition_mask[jMaskOnes];
-//    jumpLen = power(2, jMaskOnes);
-    jumpLen = exp2(jMaskOnes);
+    assert(mto>0);
+    assert(mto<(cOnes));
+    jOnes = cOnes - mto;
+    jumpMask = g_condition_mask[jOnes];
+//  jumpLen = power(2, jMaskOnes);
+    jumpLen = pow(2, (cOnes + jOnes))/(pow(2, cOnes) - pow(2, jOnes));
+    printf("cOnes:%d, jOnes:%d, jumpLen:%d.\n", cOnes, jOnes, jumpLen);
 #else
     jumpMask = g_condition_mask[index-2];
-    jumpLen = gearjumpChunkSize/4;
+    jumpLen = gearjumpChunkSize/2;
 #endif  //SENTEST
 
 //    gearjumpChunkSize = 4096;
@@ -194,6 +202,7 @@ int gearjump_chunk_data(unsigned char *p, int n){
 	else
 		i = minSize;
 #endif  //MINJUMP 
+    n = n<destor.chunk_max_size?n:destor.chunk_max_size;
 
     while(i < n){
         fingerprint = (fingerprint<<1) + (g_gear_matrix[p[i]]);
