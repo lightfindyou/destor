@@ -151,7 +151,7 @@ int main(int argc, char **argv){
 
 	int opt;
 	double processedLen = 0;
-	if((opt = getopt(argc, argv, "d:c:"))>0){
+	while((opt = getopt(argc, argv, "d:c:"))>0){
 		switch (opt) {
 		case 'd':
 			dedupDir = optarg;
@@ -166,15 +166,13 @@ int main(int argc, char **argv){
 				goto printHelp;
 			}
 			break;
+printHelp:
 		default:
-			goto printHelp;
+			help();
 			break;
 		}
-	}else{
-printHelp:
-		help();
-		return 0;
 	}
+
 	printf("Deduplication dir:%s\n", dedupDir);
 	printf("chunk size: %d\n", chunkSize);
 	duplicateData = getAddress();

@@ -1,7 +1,7 @@
 #!/bin/sh
 
-# avgChunk=(8192 16384 32768 65536)
-avgChunk=(4096 8192 16384 32768 65536)
+avgChunk=(8192 16384 32768 65536)
+# avgChunk=(4096 8192 16384 32768 65536)
 # maxChunk=(8192 16384 32768 65536 131072)
 # avgChunk=(4096)
 # maxChunk=(8192)
@@ -19,7 +19,7 @@ do
 	for dir in "${DedupDIR[@]}"
 	do
 		echo "Dedup dir: "$dir"; chunk size: "${avgChunk[s]}
-		/home/xzjin/src/destor/test/speedTestor -d $dir
+		/home/xzjin/src/destor/test/speedTestor -d $dir -c ${avgChunk[s]}
 		echo; echo;
 	done
 done
