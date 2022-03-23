@@ -1,15 +1,17 @@
 #!/bin/sh
 
-#avgChunk=(4096 8192 16384 32768 65536)
-#maxChunk=(8192 16384 32768 65536 131072)
-avgChunk=(4096)
-maxChunk=(8192)
-#DedupDIR=("/home/xzjin/backupData/bbcNews/" "/home/xzjin/backupData/gcc")
-#DedupDIR=("/home/xzjin/backupData/bbcNews/")
-#DedupDIR=("/home/xzjin/backupData/Paper")
-#DedupDIR=("/home/xzjin/backupData/VMI")
-#DedupDIR=("/home/xzjin/backupData/bbcNews/" "/home/xzjin/backupData/gcc/" "/home/xzjin/backupData/Paper/" "/home/xzjin/backupData/VMB/" "/home/xzjin/backupData/VMI/")
-DedupDIR=("/home/xzjin/backupData/Paper/")
+# avgChunk=(8192 16384 32768 65536)
+avgChunk=(4096 8192 16384 32768 65536)
+# maxChunk=(8192 16384 32768 65536 131072)
+# avgChunk=(4096)
+# maxChunk=(8192)
+# DedupDIR=("/home/xzjin/backupData/bbcNews/" "/home/xzjin/backupData/gcc")
+# DedupDIR=("/home/xzjin/backupData/bbcNews/")
+# DedupDIR=("/home/xzjin/backupData/Paper")
+# DedupDIR=("/home/xzjin/backupData/VMI")
+# DedupDIR=("/home/xzjin/backupData/bbcNews/" "/home/xzjin/backupData/gcc/" "/home/xzjin/backupData/Paper/" "/home/xzjin/backupData/VMB/" "/home/xzjin/backupData/VMI/")
+# DedupDIR=("/home/xzjin/backupData/Paper/")
+DedupDIR=("/home/xzjin/backupData/gcc/")
 
 
 for s in "${!avgChunk[@]}"

@@ -95,7 +95,7 @@ void gearjump_init(int chunkSize){
     printf("jumpLen:%d\n\n", jumpLen);
 }
 
-#define CHUNKMIN 1
+#define CHUNKMIN 0
 int gearjump_chunk_data(unsigned char *p, int n){
 
     uint64_t fingerprint=0;
@@ -107,6 +107,7 @@ int gearjump_chunk_data(unsigned char *p, int n){
 	else
 		i = chunkMin;
 #endif  //MINJUMP 
+    n = n<chunkMax?n:chunkMax;
 
     while(i < n){
         fingerprint = (fingerprint<<1) + (g_gear_matrix[p[i]]);

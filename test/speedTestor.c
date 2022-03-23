@@ -10,6 +10,7 @@
 
 #define countChunkDis 0
 
+int chunkSize = 4096;
 char* dedupDir = "/home/xzjin/gcc_part1/";
 pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
@@ -47,7 +48,7 @@ void chunkData(void* data, unsigned long dataSize, int* chunksNum, enum chunkMet
 	switch (cM) {
 	case JC:
 		if(!inited[JC]){
-			gearjump_init(CHUNKSIZE);
+			gearjump_init(chunkSize);
 			inited[JC] = 1;
 		}
 		chunking = gearjump_chunk_data;
@@ -55,7 +56,7 @@ void chunkData(void* data, unsigned long dataSize, int* chunksNum, enum chunkMet
 	
 	case rabin:
 		if(!inited[rabin]){
-			chunkAlg_init(CHUNKSIZE);
+			chunkAlg_init(chunkSize);
 			inited[rabin] = 1;
 		}
 		chunking = rabin_chunk_data;
@@ -63,7 +64,7 @@ void chunkData(void* data, unsigned long dataSize, int* chunksNum, enum chunkMet
 
 	case rabinJump:
 		if(!inited[rabinJump]){
-			rabinJump_init(CHUNKSIZE);
+			rabinJump_init(chunkSize);
 			inited[rabinJump] = 1;
 		}
 		chunking = rabinjump_chunk_data;
@@ -71,7 +72,7 @@ void chunkData(void* data, unsigned long dataSize, int* chunksNum, enum chunkMet
 
 	case gear:
 		if(!inited[gear]){
-			gear_init(CHUNKSIZE);
+			gear_init(chunkSize);
 			inited[gear] = 1;
 		}
 		chunking = gear_chunk_data;
@@ -87,7 +88,7 @@ void chunkData(void* data, unsigned long dataSize, int* chunksNum, enum chunkMet
 
 	case nrRabin:
 		if(!inited[nrRabin]){
-			chunkAlg_init(CHUNKSIZE);
+			chunkAlg_init(chunkSize);
 			inited[nrRabin] = 1;
 		}
 		chunking = normalized_rabin_chunk_data;
@@ -95,7 +96,7 @@ void chunkData(void* data, unsigned long dataSize, int* chunksNum, enum chunkMet
 
 	case TTTD:
 		if(!inited[TTTD]){
-			chunkAlg_init(CHUNKSIZE);
+			chunkAlg_init(chunkSize);
 			inited[TTTD] = 1;
 		}
 		chunking = tttd_chunk_data;
@@ -103,7 +104,7 @@ void chunkData(void* data, unsigned long dataSize, int* chunksNum, enum chunkMet
 
 	case AE:
 		if(!inited[AE]){
-			ae_init(CHUNKSIZE);
+			ae_init(chunkSize);
 			inited[AE] = 1;
 		}
 		chunking = ae_chunk_data;
@@ -111,7 +112,7 @@ void chunkData(void* data, unsigned long dataSize, int* chunksNum, enum chunkMet
 
 	case fastCDC:
 		if(!inited[fastCDC]){
-			fastcdc_init(CHUNKSIZE);
+			fastcdc_init(chunkSize);
 			inited[fastCDC] = 1;
 		}
 		chunking = fastcdc_chunk_data;
@@ -148,11 +149,26 @@ void help(){
 
 int main(int argc, char **argv){
 
+	int opt;
 	double processedLen = 0;
-	if(getopt(argc, argv, "d:")>0){
-		dedupDir = optarg;
-		if(dedupDir[strlen(dedupDir)-1] != '/'){
+	if((opt = getopt(argc, argv, "d:c:"))>0){
+		switch (opt) {
+		case 'd':
+			dedupDir = optarg;
+			if(dedupDir[strlen(dedupDir)-1] != '/'){
+				goto printHelp;
+			}
+			break;
+		
+		case 'c':
+			chunkSize = atoi(optarg);
+			if(!chunkSize){
+				goto printHelp;
+			}
+			break;
+		default:
 			goto printHelp;
+			break;
 		}
 	}else{
 printHelp:
@@ -160,6 +176,7 @@ printHelp:
 		return 0;
 	}
 	printf("Deduplication dir:%s\n", dedupDir);
+	printf("chunk size: %d\n", chunkSize);
 	duplicateData = getAddress();
 	int chunksNum;
     pthread_mutex_lock(&lock);

@@ -58,10 +58,6 @@ rabinJump time: 41929.83 s, throughput 1.02 MB/s
 Over.
 
 
-Dedup dir: /home/xzjin/backupData/Paper; chunk size: 4096
-Usage: 
- 		speedTestor -d Dir(ends with "/")
-
 
 Dedup dir: /home/xzjin/backupData/VMB/; chunk size: 4096
 Deduplication dir:/home/xzjin/backupData/VMB/

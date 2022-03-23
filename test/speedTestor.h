@@ -5,7 +5,7 @@
 
 #define SIZE (128*1024*1024)
 #define SIZEOFRAND (4)
-#define CHUNKSIZE (4096)
+extern int chunkSize;
 extern void* duplicateData;
 extern char* dedupDir;
 extern pthread_cond_t cond;
