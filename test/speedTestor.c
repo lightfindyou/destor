@@ -184,15 +184,15 @@ printHelp:
 		int dupDataSize = SIZE;
 		processedLen += (dupDataSize/1024/1024);
 		if(readOver){ dupDataSize = curReadDataLen;}
-		chunkData(duplicateData, dupDataSize, &chunksNum, rabin);
-		chunkData(duplicateData, dupDataSize, &chunksNum, nrRabin);
-		chunkData(duplicateData, dupDataSize, &chunksNum, TTTD);
-		chunkData(duplicateData, dupDataSize, &chunksNum, AE);
-		chunkData(duplicateData, dupDataSize, &chunksNum, gear);
-		chunkData(duplicateData, dupDataSize, &chunksNum, rabinJump);
+//		chunkData(duplicateData, dupDataSize, &chunksNum, rabin);
+//		chunkData(duplicateData, dupDataSize, &chunksNum, nrRabin);
+//		chunkData(duplicateData, dupDataSize, &chunksNum, TTTD);
+//		chunkData(duplicateData, dupDataSize, &chunksNum, AE);
+//		chunkData(duplicateData, dupDataSize, &chunksNum, gear);
+//		chunkData(duplicateData, dupDataSize, &chunksNum, rabinJump);
 		chunkData(duplicateData, dupDataSize, &chunksNum, fastCDC);
-		chunkData(duplicateData, dupDataSize, &chunksNum, leap);
-		chunkData(duplicateData, dupDataSize, &chunksNum, JC);
+//		chunkData(duplicateData, dupDataSize, &chunksNum, leap);
+//		chunkData(duplicateData, dupDataSize, &chunksNum, JC);
 
 		if(readOver){
 			stop_read_phase();

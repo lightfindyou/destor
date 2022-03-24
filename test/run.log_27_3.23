@@ -1,8 +1,8 @@
 Dedup dir: /home/xzjin/backupData/gcc/; chunk size: 4096
 Deduplication dir:/home/xzjin/backupData/gcc/
 chunk size: 4096
-address start : 0x7fe654030010
-address end   : 0x7fe65c030010
+address start : 0x7fdfb4feb010
+address end   : 0x7fdfbcfeb010
 
 Mask:        590103530000
 jumpMask:    590003530000
@@ -17,139 +17,138 @@ jumpLen:2048
 readOver!
 read phase stops successfully!
 
-     gear time: 25685.95 s, throughput 1.66 MB/s
-    rabin time: 98107.45 s, throughput 0.43 MB/s
-rabinJump time: 40879.48 s, throughput 1.04 MB/s
-  nrRabin time: 91552.36 s, throughput 0.47 MB/s
-     TTTD time: 99256.01 s, throughput 0.43 MB/s
-       AE time: 24905.52 s, throughput 1.71 MB/s
-  fastCDC time: 30206.31 s, throughput 1.41 MB/s
-     leap time: 19037.30 s, throughput 2.24 MB/s
-       JC time: 12919.17 s, throughput 3.30 MB/s
+     gear time: 29303.44 s, throughput 1.45 MB/s
+    rabin time: 97513.42 s, throughput 0.44 MB/s
+rabinJump time: 40597.61 s, throughput 1.05 MB/s
+  nrRabin time: 90978.07 s, throughput 0.47 MB/s
+     TTTD time: 98751.32 s, throughput 0.43 MB/s
+       AE time: 24847.16 s, throughput 1.72 MB/s
+  fastCDC time: 30154.67 s, throughput 1.41 MB/s
+     leap time: 18888.64 s, throughput 2.26 MB/s
+       JC time: 12938.01 s, throughput 3.29 MB/s
 Over.
 
 
 Dedup dir: /home/xzjin/backupData/gcc/; chunk size: 8192
 Deduplication dir:/home/xzjin/backupData/gcc/
-chunk size: 4096
-address start : 0x7f1792f90010
-address end   : 0x7f179af90010
+chunk size: 8192
+address start : 0x7fe6d9c78010
+address end   : 0x7fe6e1c78010
 
-Mask:        590103530000
-jumpMask:    590003530000
-jumpLen:1024
+Mask:        d90103530000
+jumpMask:    590103530000
+jumpLen:2048
 
 sizeof EFTable: 5100
 
-Mask:        590103530000
-jumpMask:    590003530000
-jumpLen:2048
+Mask:        d90103530000
+jumpMask:    590103530000
+jumpLen:4096
 
 readOver!
 read phase stops successfully!
 
-     gear time: 25654.92 s, throughput 1.66 MB/s
-    rabin time: 97666.29 s, throughput 0.44 MB/s
-rabinJump time: 40670.24 s, throughput 1.05 MB/s
-  nrRabin time: 91089.79 s, throughput 0.47 MB/s
-     TTTD time: 98814.58 s, throughput 0.43 MB/s
-       AE time: 24935.46 s, throughput 1.71 MB/s
-  fastCDC time: 30169.66 s, throughput 1.41 MB/s
-     leap time: 19018.83 s, throughput 2.24 MB/s
-       JC time: 12902.38 s, throughput 3.30 MB/s
+     gear time: 29350.36 s, throughput 1.45 MB/s
+    rabin time: 97939.10 s, throughput 0.44 MB/s
+rabinJump time: 39234.11 s, throughput 1.09 MB/s
+  nrRabin time: 91545.07 s, throughput 0.47 MB/s
+     TTTD time: 100256.86 s, throughput 0.43 MB/s
+       AE time: 24508.12 s, throughput 1.74 MB/s
+  fastCDC time: 30234.62 s, throughput 1.41 MB/s
+     leap time: 18904.06 s, throughput 2.25 MB/s
+       JC time: 12493.85 s, throughput 3.41 MB/s
 Over.
 
 
 Dedup dir: /home/xzjin/backupData/gcc/; chunk size: 16384
 Deduplication dir:/home/xzjin/backupData/gcc/
-chunk size: 4096
-address start : 0x7fa262ba8010
-address end   : 0x7fa26aba8010
+chunk size: 16384
+address start : 0x7f52dafa9010
+address end   : 0x7f52e2fa9010
 
-Mask:        590103530000
-jumpMask:    590003530000
-jumpLen:1024
+Mask:        d90303530000
+jumpMask:    d90103530000
+jumpLen:4096
 
 sizeof EFTable: 5100
 
-Mask:        590103530000
-jumpMask:    590003530000
-jumpLen:2048
+Mask:        d90303530000
+jumpMask:    d90103530000
+jumpLen:8192
 
 readOver!
 read phase stops successfully!
 
-     gear time: 25658.29 s, throughput 1.66 MB/s
-    rabin time: 97628.34 s, throughput 0.44 MB/s
-rabinJump time: 40685.00 s, throughput 1.05 MB/s
-  nrRabin time: 91086.03 s, throughput 0.47 MB/s
-     TTTD time: 98820.95 s, throughput 0.43 MB/s
-       AE time: 24910.44 s, throughput 1.71 MB/s
-  fastCDC time: 30183.01 s, throughput 1.41 MB/s
-     leap time: 19021.72 s, throughput 2.24 MB/s
-       JC time: 12907.50 s, throughput 3.30 MB/s
+     gear time: 29364.79 s, throughput 1.45 MB/s
+    rabin time: 97638.41 s, throughput 0.44 MB/s
+rabinJump time: 37459.62 s, throughput 1.14 MB/s
+  nrRabin time: 91937.60 s, throughput 0.46 MB/s
+     TTTD time: 100334.63 s, throughput 0.42 MB/s
+       AE time: 24308.88 s, throughput 1.75 MB/s
+  fastCDC time: 30406.44 s, throughput 1.40 MB/s
+     leap time: 18911.31 s, throughput 2.25 MB/s
+       JC time: 12284.82 s, throughput 3.47 MB/s
 Over.
 
 
 Dedup dir: /home/xzjin/backupData/gcc/; chunk size: 32768
 Deduplication dir:/home/xzjin/backupData/gcc/
-chunk size: 4096
-address start : 0x7f0ffb06d010
-address end   : 0x7f100306d010
+chunk size: 32768
+address start : 0x7fb203fa3010
+address end   : 0x7fb20bfa3010
 
-Mask:        590103530000
-jumpMask:    590003530000
-jumpLen:1024
+Mask:        d90303531000
+jumpMask:    d90303530000
+jumpLen:8192
 
 sizeof EFTable: 5100
 
-Mask:        590103530000
-jumpMask:    590003530000
-jumpLen:2048
+Mask:        d90303531000
+jumpMask:    d90303530000
+jumpLen:16384
 
 readOver!
 read phase stops successfully!
 
-     gear time: 25692.65 s, throughput 1.66 MB/s
-    rabin time: 97969.76 s, throughput 0.44 MB/s
-rabinJump time: 40825.59 s, throughput 1.04 MB/s
-  nrRabin time: 91518.07 s, throughput 0.47 MB/s
-     TTTD time: 99190.38 s, throughput 0.43 MB/s
-       AE time: 24917.55 s, throughput 1.71 MB/s
-  fastCDC time: 30180.04 s, throughput 1.41 MB/s
-     leap time: 19033.30 s, throughput 2.24 MB/s
-       JC time: 12924.96 s, throughput 3.30 MB/s
+     gear time: 28829.72 s, throughput 1.48 MB/s
+    rabin time: 97564.90 s, throughput 0.44 MB/s
+rabinJump time: 34541.09 s, throughput 1.23 MB/s
+  nrRabin time: 91355.73 s, throughput 0.47 MB/s
+     TTTD time: 100130.12 s, throughput 0.43 MB/s
+       AE time: 24147.52 s, throughput 1.77 MB/s
+  fastCDC time: 30444.26 s, throughput 1.40 MB/s
+     leap time: 18935.04 s, throughput 2.25 MB/s
+       JC time: 12528.27 s, throughput 3.40 MB/s
 Over.
 
 
 Dedup dir: /home/xzjin/backupData/gcc/; chunk size: 65536
 Deduplication dir:/home/xzjin/backupData/gcc/
-chunk size: 4096
-address start : 0x7f1f1a523010
-address end   : 0x7f1f22523010
+chunk size: 65536
+address start : 0x7f6a0537c010
+address end   : 0x7f6a0d37c010
 
-Mask:        590103530000
-jumpMask:    590003530000
-jumpLen:1024
+Mask:        d90303533000
+jumpMask:    d90303531000
+jumpLen:16384
 
 sizeof EFTable: 5100
 
-Mask:        590103530000
-jumpMask:    590003530000
-jumpLen:2048
+Mask:        d90303533000
+jumpMask:    d90303531000
+jumpLen:32768
 
 readOver!
 read phase stops successfully!
 
-     gear time: 25702.35 s, throughput 1.66 MB/s
-    rabin time: 98001.52 s, throughput 0.43 MB/s
-rabinJump time: 40858.74 s, throughput 1.04 MB/s
-  nrRabin time: 91597.61 s, throughput 0.47 MB/s
-     TTTD time: 99352.32 s, throughput 0.43 MB/s
-       AE time: 24953.02 s, throughput 1.71 MB/s
-  fastCDC time: 30194.01 s, throughput 1.41 MB/s
-     leap time: 19016.09 s, throughput 2.24 MB/s
-       JC time: 12913.50 s, throughput 3.30 MB/s
+     gear time: 28061.86 s, throughput 1.52 MB/s
+    rabin time: 97783.92 s, throughput 0.44 MB/s
+rabinJump time: 31518.54 s, throughput 1.35 MB/s
+  nrRabin time: 91713.92 s, throughput 0.46 MB/s
+     TTTD time: 101023.57 s, throughput 0.42 MB/s
+       AE time: 24044.96 s, throughput 1.77 MB/s
+  fastCDC time: 30556.93 s, throughput 1.39 MB/s
+     leap time: 18884.18 s, throughput 2.26 MB/s
+       JC time: 12421.79 s, throughput 3.43 MB/s
 Over.
-
 
