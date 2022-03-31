@@ -211,7 +211,7 @@ void start_chunk_phase() {
 		gearjump_init();
 #endif //SENTEST
 	} else if(destor.chunk_algorithm == CHUNK_LEAP){
-		leap_init();
+		leap_init(0);
 		chunking = leap_chunk_data;
 	} else{
 		NOTICE("Invalid chunking algorithm");

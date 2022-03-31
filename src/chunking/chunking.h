@@ -32,6 +32,6 @@ void sc_init();
 int sc_chunk_data(unsigned char *p, int n);
 
 
-void leap_init();
+void leap_init(int parIdx);
 int leap_chunk_data(unsigned char *p, int n);
 #endif
