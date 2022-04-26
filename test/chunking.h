@@ -20,3 +20,6 @@ int leap_chunk_data(unsigned char *p, int n);
 
 void fastcdc_init(int chunkSize);
 int fastcdc_chunk_data(unsigned char *p, int n);
+
+void rabin_simple_init(int chunkSize);
+int rabin_simple_chunk_data(unsigned char *p, int n);

@@ -17,7 +17,7 @@ pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 void* duplicateData;
 int (*chunking)(unsigned char *p, int n);
 
-enum chunkMethod { gear, rabin, rabinJump, nrRabin, TTTD, AE, fastCDC, leap, JC, algNum };
+enum chunkMethod { gear, rabin, rabin_simple, rabinJump, nrRabin, TTTD, AE, fastCDC, leap, JC, algNum };
 double chunkTime[algNum] = {0};
 int inited[algNum] = {0};
 unsigned long chunkDis[algNum][65] = {0};
@@ -117,6 +117,15 @@ void chunkData(void* data, unsigned long dataSize, int* chunksNum, enum chunkMet
 		}
 		chunking = fastcdc_chunk_data;
 		break;
+
+	case rabin_simple:
+		if(!inited[rabin_simple]){
+			rabin_simple_init(chunkSize);
+			inited[rabin_simple] = 1;
+		}
+		chunking = rabin_simple_chunk_data;
+		break;
+
 	default:
 		break;
 	}
@@ -151,7 +160,8 @@ int main(int argc, char **argv){
 
 	int opt;
 	double processedLen = 0;
-	while((opt = getopt(argc, argv, "d:c:"))>0){
+	opt = getopt(argc, argv, "d:c:");
+	do{
 		switch (opt) {
 		case 'd':
 			dedupDir = optarg;
@@ -169,9 +179,9 @@ int main(int argc, char **argv){
 printHelp:
 		default:
 			help();
-			break;
+			return 0;
 		}
-	}
+	}while((opt = getopt(argc, argv, "d:c:"))>0);
 
 	printf("Deduplication dir:%s\n", dedupDir);
 	printf("chunk size: %d\n", chunkSize);
@@ -184,7 +194,8 @@ printHelp:
 		int dupDataSize = SIZE;
 		processedLen += (dupDataSize/1024/1024);
 		if(readOver){ dupDataSize = curReadDataLen;}
-//		chunkData(duplicateData, dupDataSize, &chunksNum, rabin);
+		chunkData(duplicateData, dupDataSize, &chunksNum, rabin);
+		chunkData(duplicateData, dupDataSize, &chunksNum, rabin_simple);
 //		chunkData(duplicateData, dupDataSize, &chunksNum, nrRabin);
 //		chunkData(duplicateData, dupDataSize, &chunksNum, TTTD);
 //		chunkData(duplicateData, dupDataSize, &chunksNum, AE);
@@ -203,41 +214,47 @@ printHelp:
 	}
 
 	for(int i=0; i< algNum; i++){
+		if(!chunkTime[i]) continue;
+
 		switch (i) {
 		case JC:
-			printf("       JC time: ");
+			printf("          JC time: ");
 			break;
 
 		case rabin:
-			printf("    rabin time: ");
+			printf("       rabin time: ");
+			break;
+
+		case rabin_simple:
+			printf("rabin_simple time: ");
 			break;
 
 		case rabinJump:
-			printf("rabinJump time: ");
+			printf("   rabinJump time: ");
 			break;
 
 		case gear:
-			printf("     gear time: ");
+			printf("        gear time: ");
 			break;
 
 		case leap:
-			printf("     leap time: ");
+			printf("        leap time: ");
 			break;
 
 		case nrRabin:
-			printf("  nrRabin time: ");
+			printf("     nrRabin time: ");
 			break;
 
 		case TTTD:
-			printf("     TTTD time: ");
+			printf("        TTTD time: ");
 			break;
 
 		case AE:
-			printf("       AE time: ");
+			printf("          AE time: ");
 			break;
 
 		case fastCDC:
-			printf("  fastCDC time: ");
+			printf("     fastCDC time: ");
 			break;
 
 		default:

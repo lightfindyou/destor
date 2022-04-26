@@ -13,7 +13,7 @@
 
 int (*chunking)(unsigned char *p, int n);
 
-enum chunkMethod { JC, gear, rabin, rabinJump, nrRabin, TTTD, AE, leap };
+enum chunkMethod { JC, gear, rabin, rabinJump, nrRabin, TTTD, AE, leap, rabin_simple };
 
 static inline unsigned long time_nsec(void) {
     struct timespec ts;
@@ -95,6 +95,12 @@ void chunkData(void* data, int* chunksNum, void** edge, enum chunkMethod cM){
 		chunking = ae_chunk_data;
 		break;
 
+	case rabin_simple:
+		printf("rabin_simple:\n");
+		rabin_simple_init(CHUNKSIZE);
+		chunking = rabin_simple_chunk_data;
+		break;
+
 	default:
 		break;
 	}
@@ -171,6 +177,7 @@ int main(){
 	int chunksNum;
 	void* edge[2*SIZE/CHUNKSIZE];
 	chunkData(p, &chunksNum, edge, rabin);
+	chunkData(p, &chunksNum, edge, rabin_simple);
 	chunkData(p, &chunksNum, edge, nrRabin);
 	chunkData(p, &chunksNum, edge, TTTD);
 	chunkData(p, &chunksNum, edge, AE);
