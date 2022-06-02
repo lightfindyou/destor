@@ -270,7 +270,7 @@ printHelp:
 
 		printChunkName(i);
 		printf(" time: %.2f s, throughput %.2f MB/s, average chunk size:%7ld bytes\n",
-			 chunkTime[i], processedLen_MB/chunkTime[i],  processedLen_B/chunksNum[i]);
+			 chunkTime[i], processedLen_MB*1000/chunkTime[i],  processedLen_B/chunksNum[i]);
 	}
 	
 	printf("Over.\n");
