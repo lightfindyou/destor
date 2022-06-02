@@ -4,8 +4,9 @@
 #include <openssl/md5.h>
 #include <stdint.h>
 #include <stdio.h>
+#include "../destor.h"
 
-#define CHECKWINNUM 24
+int CHECKWINNUM;
 double H[40][255][8] = {
 {
 { 1.2045,  1.2045,  1.2013,  0.8630,  1.2844, -0.2952,  0.5632, -0.2049},
@@ -20844,17 +20845,40 @@ double byteTable[256][8] = {
 
 int EF[5][255];
 int hgIdx = 0;
+int interval = 90;
 
 int inline isWindowsQualified(unsigned char *p, int targetPoint, int windowNum){
 	int index = targetPoint - windowNum;
-    if(!(EF[0][p[index]]^EF[1][p[index-42]]^EF[2][p[index-84]]^EF[3][p[126]]^EF[4][p[168]])){
+//	if(!(EF[0][p[index]]^EF[1][p[index-42]]^EF[2][p[index-84]]^EF[3][p[index-126]]^EF[4][p[index-168]])){
+//		return 0;
+//	}
+
+    if(!(EF[0][p[index]]^EF[1][p[index-interval]]^EF[2][p[index-interval*2]]^EF[3][p[index-interval*3]]^EF[4][p[index-interval*4]])){
 		return 0;
 	}
 
     return 1;
 }
 
-void leap_init(int parIdx){
+int windowsNum[40][5]={
+	{26, 28, 32, 36, 43},	//parIdx = 0, interval = 90
+	{26, 29, 35, 47, 81},	//parIdx = 1, interval = 90
+};
+
+void leap_init(int chunkSize, int parIdx){
+	if(chunkSize < (4096+8192)/2){
+		CHECKWINNUM = windowsNum[parIdx][0];
+	}else if(chunkSize < (8192+16384)/2){
+		CHECKWINNUM = windowsNum[parIdx][1];
+	}else if(chunkSize < (16384+32768)/2){
+		CHECKWINNUM = windowsNum[parIdx][2];
+	}else if(chunkSize < (32768+65536)/2){
+		CHECKWINNUM = windowsNum[parIdx][3];
+	}else{
+		CHECKWINNUM = windowsNum[parIdx][4];
+	}
+
+	printf("windows number:%d\n", CHECKWINNUM);
 	bzero(EF, sizeof(EF));
 	hgIdx = parIdx;
 	printf("sizeof EFTable: %ld\n\n", sizeof(EF));
@@ -20901,7 +20925,8 @@ void leap_init(int parIdx){
 
 int leap_chunk_data(unsigned char *p, int n){
 
-    int targetPoint= 172;
+	int targetPoint = destor.chunk_min_size;
+	if(targetPoint >= n) return n;
 	int windowNum = 0;
 	int destWindowNum = CHECKWINNUM;	//The number of windows needs to be checked.
 

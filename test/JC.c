@@ -188,6 +188,9 @@ void gear_init(int chunkSize){
         MD5_Final(md5_result, &md5_ctx);
 
         memcpy(&g_gear_matrix[i], md5_result, sizeof(uint64_t));
+        if(i==0x0 || i==0x3D || i==0xFE || i==0xFF){
+            printf("i:%X, hash:%lX\n", i, g_gear_matrix[i]);
+        }
     }
 
 	chunkAvg = chunkSize;

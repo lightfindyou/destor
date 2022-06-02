@@ -13,7 +13,7 @@
 
 static pthread_t read_t;
 long curReadDataLen;
-static void* readPos;
+static void* readPos;	//The position to hold data
 int readOver = 0;
 sds dedupRootPath;
 
@@ -47,10 +47,11 @@ static void read_file(sds path) {
 		readPos += size;
 		curReadDataLen += size;
 
-		if(planToRead == size){
+		if(planToRead >= size){
 			pthread_cond_signal(&cond);
 			pthread_cond_wait(&cond, &lock);
 
+			//executed when wake up next time
 			curReadDataLen = 0;
 			readPos = duplicateData;
 		}

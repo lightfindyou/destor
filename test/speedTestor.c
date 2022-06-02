@@ -40,11 +40,10 @@ void* getAddress(){
 	return p;
 }
 
-void chunkData(void* data, unsigned long dataSize, int* chunksNum, enum chunkMethod cM){
+void chunkData(void* data, unsigned long dataSize, unsigned long* chunksNum, enum chunkMethod cM, int leapParIdx){
 	unsigned long start, end;
 	void *head = data;
 	void *tail = data + dataSize;
-	*chunksNum = 0;
 	switch (cM) {
 	case JC:
 		if(!inited[JC]){
@@ -80,7 +79,7 @@ void chunkData(void* data, unsigned long dataSize, int* chunksNum, enum chunkMet
 
 	case leap:
 		if(!inited[leap]){
-			leap_init();
+			leap_init(chunkSize, leapParIdx);
 			inited[leap] = 1;
 		}
 		chunking = leap_chunk_data;
@@ -133,6 +132,7 @@ void chunkData(void* data, unsigned long dataSize, int* chunksNum, enum chunkMet
 	start = time_nsec();
 	for(; (unsigned long)head < (unsigned long)tail;){
 		int len = chunking(head, (int)((unsigned long)tail - (unsigned long)head ));
+//		printf("chunk size:%d\n", len);
 //		edge[*chunksNum] = head + len;
 //		head = edge[*chunksNum];
 		head = head + len;
@@ -144,79 +144,18 @@ void chunkData(void* data, unsigned long dataSize, int* chunksNum, enum chunkMet
 #endif //countChunkDis 
 	}
 	end = time_nsec();
-//	printf("Total chunks num:%d\n", *chunksNum);
-//	printf("Average chunks size:%d\n", SIZE/(*chunksNum));
-//	printf("Chunks time: %ld (us)\n\n", (end-start)/1000);
 	chunkTime[cM] += ((double)end-start)/1000000;
 	return;
 }
 
 void help(){
 	printf("Usage: \n \
-		speedTestor -d Dir(ends with \"/\")\n");
+		speedTestor -d Dir(ends with \"/\") \n \
+					-p parameter to use for leapCDC \n");
 }
 
-int main(int argc, char **argv){
-
-	int opt;
-	double processedLen = 0;
-	opt = getopt(argc, argv, "d:c:");
-	do{
-		switch (opt) {
-		case 'd':
-			dedupDir = optarg;
-			if(dedupDir[strlen(dedupDir)-1] != '/'){
-				goto printHelp;
-			}
-			break;
-		
-		case 'c':
-			chunkSize = atoi(optarg);
-			if(!chunkSize){
-				goto printHelp;
-			}
-			break;
-printHelp:
-		default:
-			help();
-			return 0;
-		}
-	}while((opt = getopt(argc, argv, "d:c:"))>0);
-
-	printf("Deduplication dir:%s\n", dedupDir);
-	printf("chunk size: %d\n", chunkSize);
-	duplicateData = getAddress();
-	int chunksNum;
-    pthread_mutex_lock(&lock);
-	start_read_phase();
-	pthread_cond_wait(&cond, &lock);
-	while(1){
-		int dupDataSize = SIZE;
-		processedLen += (dupDataSize/1024/1024);
-		if(readOver){ dupDataSize = curReadDataLen;}
-		chunkData(duplicateData, dupDataSize, &chunksNum, rabin);
-		chunkData(duplicateData, dupDataSize, &chunksNum, rabin_simple);
-//		chunkData(duplicateData, dupDataSize, &chunksNum, nrRabin);
-//		chunkData(duplicateData, dupDataSize, &chunksNum, TTTD);
-//		chunkData(duplicateData, dupDataSize, &chunksNum, AE);
-//		chunkData(duplicateData, dupDataSize, &chunksNum, gear);
-//		chunkData(duplicateData, dupDataSize, &chunksNum, rabinJump);
-		chunkData(duplicateData, dupDataSize, &chunksNum, fastCDC);
-//		chunkData(duplicateData, dupDataSize, &chunksNum, leap);
-//		chunkData(duplicateData, dupDataSize, &chunksNum, JC);
-
-		if(readOver){
-			stop_read_phase();
-			break;
-		}
-		pthread_cond_signal(&cond);
-		pthread_cond_wait(&cond, &lock);
-	}
-
-	for(int i=0; i< algNum; i++){
-		if(!chunkTime[i]) continue;
-
-		switch (i) {
+void printChunkName(int chunkIdx){
+		switch (chunkIdx) {
 		case JC:
 			printf("          JC time: ");
 			break;
@@ -254,14 +193,84 @@ printHelp:
 			break;
 
 		case fastCDC:
-			printf("     fastCDC time: ");
+			printf("     fastCDC");
 			break;
 
 		default:
-			printf("Unknown number:%d.\n", i);
+			printf("Unknown number:%d.\n",  chunkIdx);
 			break;
 		}
-		printf("%.2f s, throughput %.2f MB/s\n", chunkTime[i], processedLen/chunkTime[i]);
+}
+
+int main(int argc, char **argv){
+
+	int opt, parIdx=1;
+	double processedLen_MB = 0;
+	unsigned long processedLen_B = 0;
+	opt = getopt(argc, argv, "d:c:p:");
+	do{
+		switch (opt) {
+		case 'd':
+			dedupDir = optarg;
+			if(dedupDir[strlen(dedupDir)-1] != '/'){
+				goto printHelp;
+			}
+			break;
+		
+		case 'c':
+			chunkSize = atoi(optarg);
+			printf("chunk size: %d\n", chunkSize);
+			break;
+
+		case 'p':
+			parIdx = atoi(optarg);
+			printf("parIdx: %d\n", parIdx);
+			break;
+printHelp:
+		default:
+			help();
+			return 0;
+		}
+	}while((opt = getopt(argc, argv, "d:c:p:"))>0);
+
+	printf("Deduplication dir:%s\n", dedupDir);
+	printf("chunk size: %d\n", chunkSize);
+	duplicateData = getAddress();
+	unsigned long chunksNum[algNum] = {0};
+    pthread_mutex_lock(&lock);
+	start_read_phase();
+	pthread_cond_wait(&cond, &lock);
+	while(1){
+		int dupDataSize = curReadDataLen;
+		processedLen_MB += (dupDataSize/1024/1024);
+		processedLen_B += dupDataSize;
+		if(readOver){ dupDataSize = curReadDataLen;}
+//		chunkData(duplicateData, dupDataSize, &chunksNum[rabin], rabin, 0);
+//		chunkData(duplicateData, dupDataSize, &chunksNum[rabin_simple], rabin_simple, 0);
+//		chunkData(duplicateData, dupDataSize, &chunksNum[nrRabin], nrRabin, 0);
+//		chunkData(duplicateData, dupDataSize, &chunksNum[TTTD], TTTD, 0);
+//		chunkData(duplicateData, dupDataSize, &chunksNum[AE], AE ,0);
+//		chunkData(duplicateData, dupDataSize, &chunksNum[gear], gear, 0);
+//		chunkData(duplicateData, dupDataSize, &chunksNum[rabinJump], rabinJump, 0);
+//		chunkData(duplicateData, dupDataSize, &chunksNum[fastCDC], fastCDC, 0);
+		chunkData(duplicateData, dupDataSize, &chunksNum[leap], leap, parIdx);
+		chunkData(duplicateData, dupDataSize, &chunksNum[JC], JC, 0);
+
+//		printf("chunks number:%ld\n", chunksNum[leap]);
+		if(readOver){
+			stop_read_phase();
+			break;
+		}
+		pthread_cond_signal(&cond);
+		pthread_cond_wait(&cond, &lock);
+	}
+
+	for(int i=0; i< algNum; i++){
+		if(!chunkTime[i]) continue;
+
+		printChunkName(i);
+		printf(" time: %.2f s, throughput %.2f MB/s, average chunk size:%7ld bytes\n",
+			 chunkTime[i], processedLen_MB/chunkTime[i],  processedLen_B/chunksNum[i]);
 	}
 	
 	printf("Over.\n");

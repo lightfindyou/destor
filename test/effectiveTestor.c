@@ -73,7 +73,7 @@ void chunkData(void* data, int* chunksNum, void** edge, enum chunkMethod cM){
 
 	case leap:
 		printf("leap:\n");
-		leap_init();
+		leap_init(CHUNKSIZE, 1);
 		chunking = leap_chunk_data;
 		break;
 
@@ -176,14 +176,14 @@ int main(){
 	void *p = getAddress();
 	int chunksNum;
 	void* edge[2*SIZE/CHUNKSIZE];
-	chunkData(p, &chunksNum, edge, rabin);
-	chunkData(p, &chunksNum, edge, rabin_simple);
-	chunkData(p, &chunksNum, edge, nrRabin);
-	chunkData(p, &chunksNum, edge, TTTD);
-	chunkData(p, &chunksNum, edge, AE);
-	chunkData(p, &chunksNum, edge, gear);
-	chunkData(p, &chunksNum, edge, rabinJump);
-	chunkData(p, &chunksNum, edge, leap);
+//	chunkData(p, &chunksNum, edge, rabin);
+//	chunkData(p, &chunksNum, edge, rabin_simple);
+//	chunkData(p, &chunksNum, edge, nrRabin);
+//	chunkData(p, &chunksNum, edge, TTTD);
+//	chunkData(p, &chunksNum, edge, AE);
+//	chunkData(p, &chunksNum, edge, gear);
+//	chunkData(p, &chunksNum, edge, rabinJump);
+//	chunkData(p, &chunksNum, edge, leap);
 	chunkData(p, &chunksNum, edge, JC);
 	int unchanged = 0, change1 = 0, change2 = 0, change3 = 0, change4 = 0;
 	testData(p, edge, chunksNum,

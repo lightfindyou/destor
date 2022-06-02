@@ -15,7 +15,7 @@ int rabinjump_chunk_data(unsigned char *p, int n);
 void ae_init(int chunkSize);
 int ae_chunk_data(unsigned char *p, int n);
 
-void leap_init();
+void leap_init(int chunkSize, int parIdx);
 int leap_chunk_data(unsigned char *p, int n);
 
 void fastcdc_init(int chunkSize);
