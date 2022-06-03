@@ -4,20 +4,53 @@
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
-#include "chunking.h"
 #include <pthread.h>
+#include <sys/types.h>
+#include <sys/syscall.h>
+#include "chunking.h"
 #include "speedTestor.h"
+
+extern char *optarg;
+extern int optind, opterr, optopt;
 
 #define countChunkDis 0
 
+pid_t chunkingTid;
 int chunkSize = 4096;
+int chunkAlg;
 char* dedupDir = "/home/xzjin/gcc_part1/";
 pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 void* duplicateData;
 int (*chunking)(unsigned char *p, int n);
 
-enum chunkMethod { gear, rabin, rabin_simple, rabinJump, nrRabin, TTTD, AE, fastCDC, leap, JC, algNum };
+enum chunkMethod { 	gear,
+					rabin,
+					rabin_simple,
+					rabinJump,
+					nrRabin,
+					TTTD,
+					AE,
+					fastCDC,
+					leap,
+					JC,
+					algNum
+				};
+
+char* chunkString[] = {
+	"gear",
+	"rabin",
+	"rabin_simple",
+	"rabinJump",
+	"nrRabin",
+	"TTTD",
+	"AE",
+	"fastCDC",
+	"leap",
+	"JC",
+	"algNum"
+};
+
 double chunkTime[algNum] = {0};
 int inited[algNum] = {0};
 unsigned long chunkDis[algNum][65] = {0};
@@ -40,7 +73,8 @@ void* getAddress(){
 	return p;
 }
 
-void chunkData(void* data, unsigned long dataSize, unsigned long* chunksNum, enum chunkMethod cM, int leapParIdx){
+void chunkData(void* data, unsigned long dataSize, unsigned long* chunksNum,
+							 enum chunkMethod cM, int leapParIdx){
 	unsigned long start, end;
 	void *head = data;
 	void *tail = data + dataSize;
@@ -151,7 +185,79 @@ void chunkData(void* data, unsigned long dataSize, unsigned long* chunksNum, enu
 void help(){
 	printf("Usage: \n \
 		speedTestor -d Dir(ends with \"/\") \n \
-					-p parameter to use for leapCDC \n");
+					-p parameter to use for leapCDC \n \
+					-c chunk size\n \
+					-a chunking algorithm\n \
+		\rChunking alg include:\n");
+	for(int i=0; i<algNum; i++){
+		printf("\t%s\n", chunkString[i]);
+	}
+}
+
+int main(int argc, char **argv){
+	unsigned long procStart, procEnd;
+	double procTime;
+	double processedLen_MB = 0;
+	unsigned long processedLen_B = 0;
+	chunkAlg = algNum;
+
+	if(parsePar(argc, argv)) {return 0;}
+	printf("chunking alg:%s\n \
+			Deduplication dir:%s\n \
+			chunk size: %d\n",
+			chunkString[chunkAlg], dedupDir, chunkSize);
+
+	duplicateData = getAddress();
+	unsigned long chunksNum[algNum] = {0};
+	procStart = time_nsec();
+    pthread_mutex_lock(&lock);
+	start_read_phase();
+//	start_cpu_phase();
+//	chunkingTid = syscall(SYS_gettid);
+//	printf("chunking thread syscall tid: %d\n", chunkingTid);
+	pthread_cond_wait(&cond, &lock);
+	while(1){
+		int dupDataSize = curReadDataLen;
+		processedLen_MB += (dupDataSize/1024/1024);
+		processedLen_B += dupDataSize;
+		if(readOver){ dupDataSize = curReadDataLen;}
+//		chunkData(duplicateData, dupDataSize, &chunksNum[rabin], rabin, 0);
+//		chunkData(duplicateData, dupDataSize, &chunksNum[rabin_simple], rabin_simple, 0);
+//		chunkData(duplicateData, dupDataSize, &chunksNum[nrRabin], nrRabin, 0);
+//		chunkData(duplicateData, dupDataSize, &chunksNum[TTTD], TTTD, 0);
+//		chunkData(duplicateData, dupDataSize, &chunksNum[AE], AE ,0);
+//		chunkData(duplicateData, dupDataSize, &chunksNum[gear], gear, 0);
+//		chunkData(duplicateData, dupDataSize, &chunksNum[rabinJump], rabinJump, 0);
+//		chunkData(duplicateData, dupDataSize, &chunksNum[fastCDC], fastCDC, 0);
+//		chunkData(duplicateData, dupDataSize, &chunksNum[leap], leap, parIdx);
+//		chunkData(duplicateData, dupDataSize, &chunksNum[JC], JC, 0);
+		chunkData(duplicateData, dupDataSize, &chunksNum[chunkAlg], chunkAlg, 0);
+
+		if(readOver){
+			stop_read_phase();
+			break;
+		}
+		pthread_cond_signal(&cond);
+		pthread_cond_wait(&cond, &lock);
+	}
+	procEnd = time_nsec();
+	procTime = ((double)procEnd-procStart)/1000000;
+
+	for(int i=0; i< algNum; i++){
+		if(!chunkTime[i]) continue;
+
+		printChunkName(i);
+		printf("\rChunking time: %.2f ms, cpu utilization: %.2f\n \
+				\rProcrss time: %.2f ms \n \
+				\rThroughput %.2f MB/s\n \
+				\rAverage chunk size:%7ld bytes\n",
+			  chunkTime[i], chunkTime[i]/procTime, procTime,
+			  processedLen_MB*1000/chunkTime[i],  processedLen_B/chunksNum[i]);
+	}
+	
+	printf("Over.\n");
+
+	return 0;
 }
 
 void printChunkName(int chunkIdx){
@@ -202,18 +308,24 @@ void printChunkName(int chunkIdx){
 		}
 }
 
-int main(int argc, char **argv){
-
+int parsePar(int argc, char **argv){
 	int opt, parIdx=1;
-	double processedLen_MB = 0;
-	unsigned long processedLen_B = 0;
-	opt = getopt(argc, argv, "d:c:p:");
+	opt = getopt(argc, argv, "d:c:p:a:");
 	do{
 		switch (opt) {
 		case 'd':
 			dedupDir = optarg;
 			if(dedupDir[strlen(dedupDir)-1] != '/'){
 				goto printHelp;
+			}
+			break;
+
+		case 'a':
+			for(int i=0; i< algNum; i++){
+				if(!strcmp(optarg, chunkString[i])){
+					chunkAlg = i;
+					break;
+				}
 			}
 			break;
 		
@@ -229,51 +341,15 @@ int main(int argc, char **argv){
 printHelp:
 		default:
 			help();
-			return 0;
+			return -1;
 		}
-	}while((opt = getopt(argc, argv, "d:c:p:"))>0);
+	}while((opt = getopt(argc, argv, "d:c:p:a:"))>0);
 
-	printf("Deduplication dir:%s\n", dedupDir);
-	printf("chunk size: %d\n", chunkSize);
-	duplicateData = getAddress();
-	unsigned long chunksNum[algNum] = {0};
-    pthread_mutex_lock(&lock);
-	start_read_phase();
-	pthread_cond_wait(&cond, &lock);
-	while(1){
-		int dupDataSize = curReadDataLen;
-		processedLen_MB += (dupDataSize/1024/1024);
-		processedLen_B += dupDataSize;
-		if(readOver){ dupDataSize = curReadDataLen;}
-//		chunkData(duplicateData, dupDataSize, &chunksNum[rabin], rabin, 0);
-//		chunkData(duplicateData, dupDataSize, &chunksNum[rabin_simple], rabin_simple, 0);
-//		chunkData(duplicateData, dupDataSize, &chunksNum[nrRabin], nrRabin, 0);
-//		chunkData(duplicateData, dupDataSize, &chunksNum[TTTD], TTTD, 0);
-//		chunkData(duplicateData, dupDataSize, &chunksNum[AE], AE ,0);
-//		chunkData(duplicateData, dupDataSize, &chunksNum[gear], gear, 0);
-//		chunkData(duplicateData, dupDataSize, &chunksNum[rabinJump], rabinJump, 0);
-//		chunkData(duplicateData, dupDataSize, &chunksNum[fastCDC], fastCDC, 0);
-		chunkData(duplicateData, dupDataSize, &chunksNum[leap], leap, parIdx);
-		chunkData(duplicateData, dupDataSize, &chunksNum[JC], JC, 0);
-
-//		printf("chunks number:%ld\n", chunksNum[leap]);
-		if(readOver){
-			stop_read_phase();
-			break;
-		}
-		pthread_cond_signal(&cond);
-		pthread_cond_wait(&cond, &lock);
+	if(chunkAlg == algNum){
+		printf("get chunk algorithm ERROR!\n");
+		help();
+		return -1;
 	}
-
-	for(int i=0; i< algNum; i++){
-		if(!chunkTime[i]) continue;
-
-		printChunkName(i);
-		printf(" time: %.2f s, throughput %.2f MB/s, average chunk size:%7ld bytes\n",
-			 chunkTime[i], processedLen_MB*1000/chunkTime[i],  processedLen_B/chunksNum[i]);
-	}
-	
-	printf("Over.\n");
 
 	return 0;
 }

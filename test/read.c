@@ -6,6 +6,7 @@
 #include <sys/stat.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/syscall.h>
 #include "speedTestor.h"
 #include "pthread.h"
 #include "sds.h"
@@ -119,10 +120,12 @@ void start_read_phase() {
 	readOver = 0;
 	readPos = duplicateData;
 	pthread_create(&read_t, NULL, read_thread, NULL);
+	pid_t readingTid = syscall(SYS_gettid);
+	printf(" reading thread syscall tid: %d\n", readingTid);
 }
 
 void stop_read_phase() {
 	pthread_join(read_t, NULL);
-	printf("read phase stops successfully!\n\n");
+	printf("read phase stops successfully!\n");
 }
 
