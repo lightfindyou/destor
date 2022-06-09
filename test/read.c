@@ -4,6 +4,7 @@
 #include <dirent.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/syscall.h>
@@ -11,13 +12,22 @@
 #include "pthread.h"
 #include "sds.h"
 
+#define TIMER_DECLARE(n) struct timeval b##n,e##n
+#define TIMER_BEGIN(n) gettimeofday(&b##n, NULL)
+#define TIMER_END(n,t) gettimeofday(&e##n, NULL); \
+    (t)+=e##n.tv_usec-b##n.tv_usec+1000000*(e##n.tv_sec-b##n.tv_sec)
 
+TIMER_DECLARE(1);
 static pthread_t read_t;
 long curReadDataLen;
 static void* readPos;	//The position to hold data
 int readOver = 0;
+static unsigned long curTotalRead = 0;
 sds dedupRootPath;
 
+#define THROUGHPUT (1000)
+#define TUNINGGAR (0.01)
+double readConsumeTime;
 
 static void read_file(sds path) {
 	sds filename = sdsdup(path);
@@ -44,6 +54,17 @@ static void read_file(sds path) {
 	int planToRead = SIZE - curReadDataLen;
 
 	while ((size = fread(readPos, 1, planToRead, fp)) != 0) {
+		readConsumeTime = 0;
+		curTotalRead += size;
+		TIMER_END(1, readConsumeTime);
+		double readTimeS = readConsumeTime/1000000;
+		double curShouldRead = readTimeS*THROUGHPUT;
+		double curTotalReadMB = curTotalRead/1024/1024;
+//		printf("readTimeS:%.2f, curShouldRead:%.2f, curTotalReadMB:%.2f\n",
+//			 readTimeS, curShouldRead, curTotalReadMB);
+		if((curTotalReadMB-curShouldRead)>THROUGHPUT*0.1){
+			usleep(100000);
+		}
 
 		readPos += size;
 		curReadDataLen += size;
@@ -117,6 +138,7 @@ static void* read_thread(void *argv) {
 //xzjin read file in new thread, add read file to read_queue
 void start_read_phase() {
     /* running job */
+	TIMER_BEGIN(1);
 	readOver = 0;
 	readPos = duplicateData;
 	pthread_create(&read_t, NULL, read_thread, NULL);

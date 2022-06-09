@@ -179,15 +179,16 @@ void chunkData(void* data, unsigned long dataSize, unsigned long* chunksNum,
 	}
 	end = time_nsec();
 	chunkTime[cM] += ((double)end-start)/1000000;
+//	printf("chunkTime:%f\n", chunkTime[cM]);
 	return;
 }
 
 void help(){
 	printf("Usage: \n \
 		speedTestor -d Dir(ends with \"/\") \n \
-					-p parameter to use for leapCDC \n \
-					-c chunk size\n \
-					-a chunking algorithm\n \
+			-p parameter to use for leapCDC \n \
+			-c chunk size\n \
+			-a chunking algorithm\n \
 		\rChunking alg include:\n");
 	for(int i=0; i<algNum; i++){
 		printf("\t%s\n", chunkString[i]);
@@ -202,9 +203,9 @@ int main(int argc, char **argv){
 	chunkAlg = algNum;
 
 	if(parsePar(argc, argv)) {return 0;}
-	printf("chunking alg:%s\n \
-			Deduplication dir:%s\n \
-			chunk size: %d\n",
+	printf("Chunking alg:%s\n \
+			\rDeduplication dir:%s\n \
+			\rChunk size: %d\n",
 			chunkString[chunkAlg], dedupDir, chunkSize);
 
 	duplicateData = getAddress();
@@ -221,16 +222,6 @@ int main(int argc, char **argv){
 		processedLen_MB += (dupDataSize/1024/1024);
 		processedLen_B += dupDataSize;
 		if(readOver){ dupDataSize = curReadDataLen;}
-//		chunkData(duplicateData, dupDataSize, &chunksNum[rabin], rabin, 0);
-//		chunkData(duplicateData, dupDataSize, &chunksNum[rabin_simple], rabin_simple, 0);
-//		chunkData(duplicateData, dupDataSize, &chunksNum[nrRabin], nrRabin, 0);
-//		chunkData(duplicateData, dupDataSize, &chunksNum[TTTD], TTTD, 0);
-//		chunkData(duplicateData, dupDataSize, &chunksNum[AE], AE ,0);
-//		chunkData(duplicateData, dupDataSize, &chunksNum[gear], gear, 0);
-//		chunkData(duplicateData, dupDataSize, &chunksNum[rabinJump], rabinJump, 0);
-//		chunkData(duplicateData, dupDataSize, &chunksNum[fastCDC], fastCDC, 0);
-//		chunkData(duplicateData, dupDataSize, &chunksNum[leap], leap, parIdx);
-//		chunkData(duplicateData, dupDataSize, &chunksNum[JC], JC, 0);
 		chunkData(duplicateData, dupDataSize, &chunksNum[chunkAlg], chunkAlg, 0);
 
 		if(readOver){
@@ -247,12 +238,15 @@ int main(int argc, char **argv){
 		if(!chunkTime[i]) continue;
 
 		printChunkName(i);
-		printf("\rChunking time: %.2f ms, cpu utilization: %.2f\n \
+		printf("\rChunking time: %.2f ms, \x1B[32mcpu utilization: %.2f\x1B[37m\n \
 				\rProcrss time: %.2f ms \n \
-				\rThroughput %.2f MB/s\n \
+				\r\x1B[32mChunking throughput %.2f MB/s\x1B[37m\n \
+				\rSystem throughput %.2f MB/s\n \
 				\rAverage chunk size:%7ld bytes\n",
 			  chunkTime[i], chunkTime[i]/procTime, procTime,
-			  processedLen_MB*1000/chunkTime[i],  processedLen_B/chunksNum[i]);
+			  processedLen_MB*1000/chunkTime[i],
+			  processedLen_MB*1000/procTime,
+			  processedLen_B/chunksNum[i]);
 	}
 	
 	printf("Over.\n");
@@ -263,39 +257,39 @@ int main(int argc, char **argv){
 void printChunkName(int chunkIdx){
 		switch (chunkIdx) {
 		case JC:
-			printf("          JC time: ");
+			printf("          JC ");
 			break;
 
 		case rabin:
-			printf("       rabin time: ");
+			printf("       rabin ");
 			break;
 
 		case rabin_simple:
-			printf("rabin_simple time: ");
+			printf("rabin_simple ");
 			break;
 
 		case rabinJump:
-			printf("   rabinJump time: ");
+			printf("   rabinJump ");
 			break;
 
 		case gear:
-			printf("        gear time: ");
+			printf("        gear ");
 			break;
 
 		case leap:
-			printf("        leap time: ");
+			printf("        leap ");
 			break;
 
 		case nrRabin:
-			printf("     nrRabin time: ");
+			printf("     nrRabin ");
 			break;
 
 		case TTTD:
-			printf("        TTTD time: ");
+			printf("        TTTD ");
 			break;
 
 		case AE:
-			printf("          AE time: ");
+			printf("          AE ");
 			break;
 
 		case fastCDC:
