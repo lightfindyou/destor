@@ -1,4 +1,6 @@
 #include <math.h>
+#include <sys/types.h>
+#include <sys/syscall.h>
 #include "destor.h"
 #include "jcr.h"
 #include "chunking/chunking.h"
@@ -221,6 +223,11 @@ void start_chunk_phase() {
 
 	chunk_queue = sync_queue_new(100);
 	pthread_create(&chunk_t, NULL, chunk_thread, NULL);
+    pid_t tid = gettid(); 
+	printf("chunking thread          id: %ld\n", chunk_t);
+	printf("chunking thread         tid: %d\n", tid);
+	tid = syscall(SYS_gettid);
+	printf("chunking thread syscall tid: %d\n", tid);
 }
 
 void stop_chunk_phase() {

@@ -2,7 +2,12 @@
 #include "jcr.h"
 #include "backup.h"
 
+#define THROUGHPUT 70	//MB/s
 static pthread_t read_t;
+static unsigned long curTotalRead = 0;
+//double readBeginTime;
+double readConsumeTime;
+TIMER_DECLARE(2);	//time consumed by reading
 
 static void read_file(sds path) {
 	static unsigned char buf[DEFAULT_BLOCK_SIZE];
@@ -41,6 +46,17 @@ static void read_file(sds path) {
 	int size = 0;
 
 	while ((size = fread(buf, 1, DEFAULT_BLOCK_SIZE, fp)) != 0) {
+		curTotalRead += size;
+//		readConsumeTime = 0;
+//		TIMER_END(2, readConsumeTime);
+//		double readTimeS = readConsumeTime/1000000;
+//		double curShouldRead = readTimeS*THROUGHPUT;
+//		double curReadMB = curTotalRead/1024/1024;
+////		printf("readTimeS:%.2f, curShouldRead:%.2f, curReadMB:%.2f\n",
+////			 readTimeS, curShouldRead, curReadMB);
+//		if((curReadMB-curShouldRead)>THROUGHPUT){
+//			sleep(1);
+//		}
 		TIMER_END(1, jcr.read_time);
 
 		VERBOSE("Read phase: read %d bytes", size);
@@ -107,6 +123,7 @@ static void* read_thread(void *argv) {
 
 //xzjin read file in new thread, add read file to read_queue
 void start_read_phase() {
+	TIMER_BEGIN(2);
     /* running job */
     jcr.status = JCR_STATUS_RUNNING;
 	read_queue = sync_queue_new(10);

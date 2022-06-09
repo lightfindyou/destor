@@ -14,7 +14,7 @@ void init_jcr(char *path) {
 
 	struct stat s;
 	if (stat(path, &s) != 0) {
-		fprintf(stderr, "backup path does not exist!");
+		fprintf(stderr, "backup path:%s does not exist!", path);
 		exit(1);
 	}
 	if (S_ISDIR(s.st_mode) && jcr.path[sdslen(jcr.path) - 1] != '/')
