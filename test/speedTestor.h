@@ -21,5 +21,6 @@ void start_cpu_phase();
 void stop_cpu_phase();
 void printChunkName(int chunkIdx);
 int parsePar(int argc, char **argv);
+void printSizeDist();
 
 #endif	// __SPEEDTESTOR_H

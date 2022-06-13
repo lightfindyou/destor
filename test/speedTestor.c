@@ -13,7 +13,7 @@
 extern char *optarg;
 extern int optind, opterr, optopt;
 
-#define countChunkDis 0
+#define countChunkDis 1
 
 pid_t chunkingTid;
 int chunkSize = 4096;
@@ -22,6 +22,8 @@ char* dedupDir = "/home/xzjin/gcc_part1/";
 pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 void* duplicateData;
+int sizeCate;
+int* sizeDist;
 int (*chunking)(unsigned char *p, int n);
 
 enum chunkMethod { 	gear,
@@ -172,9 +174,12 @@ void chunkData(void* data, unsigned long dataSize, unsigned long* chunksNum,
 		head = head + len;
 		(*chunksNum)++;
 #if countChunkDis 
-		int lenIdx = len/1024;
-		lenIdx = lenIdx<64?lenIdx:64;
-		chunkDis[cM][lenIdx]++;
+		int sizeIdx = (len)/1024;
+		if(sizeIdx<(sizeCate-1)){
+			sizeDist[sizeIdx]++;
+		}else{
+			sizeDist[sizeCate-1]++;
+		}
 #endif //countChunkDis 
 	}
 	end = time_nsec();
@@ -207,6 +212,9 @@ int main(int argc, char **argv){
 			\rDeduplication dir:%s\n \
 			\rChunk size: %d\n",
 			chunkString[chunkAlg], dedupDir, chunkSize);
+
+	sizeCate = (chunkSize*2.5)/1024;
+	sizeDist = calloc(sizeCate, sizeof(int));
 
 	duplicateData = getAddress();
 	unsigned long chunksNum[algNum] = {0};
@@ -248,6 +256,7 @@ int main(int argc, char **argv){
 			  processedLen_MB*1000/procTime,
 			  processedLen_B/chunksNum[i]);
 	}
+	printSizeDist();
 	
 	printf("Over.\n");
 
@@ -300,6 +309,17 @@ void printChunkName(int chunkIdx){
 			printf("Unknown number:%d.\n",  chunkIdx);
 			break;
 		}
+}
+
+void printSizeDist(){
+#if countChunkDis 
+	printf("Size distribution:\n");
+	for(int i=0; i< sizeCate-1; i++){
+		printf("%2d~%2d K: %6d chunks\n", i, i+1, sizeDist[i]);
+	}
+	printf("%2d~ inf: %6d chunks\n", sizeCate-1, sizeDist[sizeCate-1]);
+
+#endif	//countChunkDis 
 }
 
 int parsePar(int argc, char **argv){
