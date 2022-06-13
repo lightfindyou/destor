@@ -12,6 +12,10 @@
 #define MaxChunkSizeOffset 3
 #define MinChunkSizeOffset 2
 
+#define CHUNKMIN 0
+#define TTTD 0
+#define NOTContain 0
+
 uint64_t g_gear_matrix[SymbolCount];
 static int chunkMax, chunkAvg, chunkMin;
 
@@ -20,6 +24,7 @@ uint64_t MaskL;
 
 uint32_t gearjumpChunkSize;
 uint64_t Mask;
+uint64_t Mask_backup;
 uint64_t jumpMask;
 int jumpLen = 0;
 
@@ -77,6 +82,7 @@ void gearjump_init(int chunkSize){
     assert(index>6);
     assert(index<17);
     Mask = g_condition_mask[index-1];
+    Mask_backup = g_condition_mask[index-2];
 #if SENTEST
     jumpMask = g_condition_mask[jMaskOnes];
 //    jumpLen = power(2, jMaskOnes);
@@ -95,11 +101,13 @@ void gearjump_init(int chunkSize){
     printf("jumpLen:%d\n\n", jumpLen);
 }
 
-#define CHUNKMIN 0
 int gearjump_chunk_data(unsigned char *p, int n){
 
     uint64_t fingerprint=0;
     int i=0;
+#if TTTD
+    int smallerChunkPoint = 0;
+#endif //TTTD
 
 	if (n <= chunkMin)
 		return n;
@@ -117,6 +125,9 @@ int gearjump_chunk_data(unsigned char *p, int n){
             if ((!(fingerprint & Mask))) { //AVERAGE*2, *4, *8
                 return i;
             } else {
+#if TTTD 
+                smallerChunkPoint = i;
+#endif //TTTD 
                 fingerprint=0;
                 //TODO xzjin here need to set the fingerprint to 0 ?
                 i += jumpLen;
@@ -124,6 +135,11 @@ int gearjump_chunk_data(unsigned char *p, int n){
         }
     }
 
+#if TTTD 
+    if(smallerChunkPoint){
+        return smallerChunkPoint;
+    }
+#endif //TTTD 
     return i<n?i:n;
 }
 
@@ -150,6 +166,9 @@ int gearleap_chunk_data(unsigned char *p, int n){
 
     uint64_t fingerprint=0;
     int i=0;
+#if TTTD
+    int smallerChunkPoint = 0;
+#endif //TTTD
 
 	if (n <= chunkMin)
 		return n;
@@ -158,17 +177,36 @@ int gearleap_chunk_data(unsigned char *p, int n){
         fingerprint = (fingerprint<<1) + (g_gear_matrix[p[i]]);
         i++;
 
+#if NOTContain
+        if ((!(fingerprint & Mask))) { //AVERAGE*2, *4, *8
+            return i;
+        }
+
+        if((!(fingerprint & jumpMask)) ){
+                fingerprint=0;
+                i += jumpLen;
+        }
+#else  //NOTContain
+
         if((!(fingerprint & jumpMask)) ){
             if ((!(fingerprint & Mask))) { //AVERAGE*2, *4, *8
                 return i;
             } else {
+#if TTTD 
+                smallerChunkPoint = i;
+#endif //TTTD 
                 fingerprint=0;
                 //TODO xzjin here need to set the fingerprint to 0 ?
                 i += jumpLen;
             }
         }
+#endif  //NOTContain
     }
-
+#if TTTD 
+    if(smallerChunkPoint){
+        return smallerChunkPoint;
+    }
+#endif //TTTD 
     return i<n?i:n;
 }
 

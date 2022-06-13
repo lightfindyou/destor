@@ -1,7 +1,7 @@
-#!/bin/sh
+#!/bin/bash
 
-avgChunk=(8192 16384 32768 65536)
-# avgChunk=(4096 8192 16384 32768 65536)
+#avgChunk=(8192 16384)
+avgChunk=(4096 8192 16384 32768 65536)
 #avgChunk=(65536 32768 16384 8192 4096)
 #avgChunk=(65536)
 #avgChunk=(4096)
@@ -14,14 +14,15 @@ avgChunk=(8192 16384 32768 65536)
 # DedupDIR=("/home/xzjin/backupData/VMI")
 # DedupDIR=("/home/xzjin/backupData/bbcNews/" "/home/xzjin/backupData/gcc/" "/home/xzjin/backupData/Paper/" "/home/xzjin/backupData/VMB/" "/home/xzjin/backupData/VMI/")
 # DedupDIR=("/home/xzjin/backupData/Paper/")
-# DedupDIR=("/home/xzjin/backupData/gcc/")
+DedupDIR=("/home/xzjin/backupData/gcc/")
 # DedupDIR=("/home/xzjin/backupData/gcc_part/")
-DedupDIR=("/home/xzjin/tmpfs/gcc/")
 #parIdx={ 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 }
 parIdx=(0)
 #chunkMethod=( "gear" "rabin" "rabin_simple" "rabinJump" "nrRabin" "TTTD" "AE" "fastCDC" "leap" "JC" "algNum")
 
-chunkMethod=("rabin" "TTTD" "AE" "fastCDC" "JC" "leap" )
+# chunkMethod=("rabin" "TTTD" "AE" "fastCDC" "JC" "leap" )
+# chunkMethod=( "AE" "JC" "leap" )
+chunkMethod=("gear")
 
 
 for p in "${parIdx[@]}"
