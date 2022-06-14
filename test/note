@@ -1,0 +1,3 @@
+### size dist
+grep -e "-a" -e "chunks" chunkSize_default_jumpMin_limitMax.out | grep -e "8192" -A 20 | grep -e "VMB" -A 20 | grep -e "JC" -A 20 > tmp ; read chunkNum <<< $( awk '/chunks/{sum += $(NF-1)} END{print sum}' tmp ) ; echo "total chunks: "$chunkNum; awk -v c="$chunkNum" '/chunks/{print 100*$(NF-1)/c} ' tmp
+

@@ -1,0 +1,21 @@
++ ./speedTestor -d /home/xzjin/backupData/VMB/ -c 8192 -p 0 -a JC
+ 0~ 1 K:     81 chunks
+ 1~ 2 K: 2071958 chunks
+ 2~ 3 K: 1142560 chunks
+ 3~ 4 K: 710167 chunks
+ 4~ 5 K: 465773 chunks
+ 5~ 6 K: 501757 chunks
+ 6~ 7 K: 573828 chunks
+ 7~ 8 K: 528893 chunks
+ 8~ 9 K: 435061 chunks
+ 9~10 K: 345661 chunks
+10~11 K: 323346 chunks
+11~12 K: 307128 chunks
+12~13 K: 287786 chunks
+13~14 K: 246257 chunks
+14~15 K: 217729 chunks
+15~16 K: 199138 chunks
+16~17 K: 2140834 chunks
+17~18 K:      0 chunks
+18~19 K:      0 chunks
+19~ inf:      0 chunks

@@ -22,7 +22,8 @@ parIdx=(0)
 
 # chunkMethod=("rabin" "TTTD" "AE" "fastCDC" "JC" "leap" )
 # chunkMethod=( "AE" "JC" "leap" )
-chunkMethod=("gear")
+# chunkMethod=("rabin" "rabinJump")
+chunkMethod=("gear" "JC")
 
 
 for p in "${parIdx[@]}"
