@@ -15,6 +15,7 @@
 #define CHUNKMIN 0
 #define TTTD 0
 #define NOTContain 0
+#define BREAKDOWN 1
 
 uint64_t g_gear_matrix[SymbolCount];
 static int chunkMax, chunkAvg, chunkMin;
@@ -101,6 +102,40 @@ void gearjump_init(int chunkSize){
     printf("jumpLen:%d\n\n", jumpLen);
 }
 
+#if BREAKDOWN
+int gearjump_chunk_data(unsigned char *p, int n){
+
+    uint64_t fingerprint=0;
+    int i=0;
+
+	if (n <= chunkMin)
+		return n;
+#if !CHUNKMIN 
+	else
+		i = chunkMin;
+#endif  //MINJUMP 
+    n = n<chunkMax?n:chunkMax;
+
+    while(i < n){
+        fingerprint = (fingerprint<<1) + (g_gear_matrix[p[i]]);
+        i++;
+
+        if ((!(fingerprint & Mask))) { //AVERAGE*2, *4, *8
+            return i;
+        } 
+            
+        if(__glibc_unlikely(!(fingerprint & jumpMask)) ){
+                fingerprint=0;
+                //TODO xzjin here need to set the fingerprint to 0 ?
+                i += jumpLen;
+        }
+    }
+
+    return i<n?i:n;
+}
+
+#else
+
 int gearjump_chunk_data(unsigned char *p, int n){
 
     uint64_t fingerprint=0;
@@ -142,6 +177,7 @@ int gearjump_chunk_data(unsigned char *p, int n){
 #endif //TTTD 
     return i<n?i:n;
 }
+#endif  //BREAKDOWN
 
 uint64_t MaskLeap, jumpLeapMask, jumpLeapLen;
 
