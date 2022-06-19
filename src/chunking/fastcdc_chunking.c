@@ -333,12 +333,12 @@ void normalized_gearjump_init(int mto){
     printf(" jumpLen:%d\t    largeJumpLen:%d\n\n", jumpLen, largeJumpLen);
 }
 
-#define CHUNKMIN 0
 int normalized_gearjump_chunk_data(unsigned char *p, int n){
 
     uint64_t fingerprint=0;
     int i=0;
     int minSize = destor.chunk_min_size;
+    int middle = destor.chunk_avg_size<n?destor.chunk_avg_size:n;
 
 	if (n <= minSize)
 		return n;
@@ -348,22 +348,7 @@ int normalized_gearjump_chunk_data(unsigned char *p, int n){
 #endif  //MINJUMP 
     n = n<destor.chunk_max_size?n:destor.chunk_max_size;
 
-    while(i < destor.chunk_avg_size){
-        fingerprint = (fingerprint<<1) + (g_gear_matrix[p[i]]);
-        i++;
-
-        if( G_UNLIKELY(!(fingerprint & jumpMask)) ){
-            if ((!(fingerprint & Mask))) { //AVERAGE*2, *4, *8
-                return i;
-            } else {
-                fingerprint = 0;
-                //TODO xzjin here need to set the fingerprint to 0 ?
-                i += jumpLen;
-            }
-        }
-    }
-
-    while(i < n){
+    while(i < middle){
         fingerprint = (fingerprint<<1) + (g_gear_matrix[p[i]]);
         i++;
 
@@ -372,8 +357,21 @@ int normalized_gearjump_chunk_data(unsigned char *p, int n){
                 return i;
             } else {
                 fingerprint = 0;
-                //TODO xzjin here need to set the fingerprint to 0 ?
                 i += largeJumpLen;
+            }
+        }
+    }
+
+    while(i < n){
+        fingerprint = (fingerprint<<1) + (g_gear_matrix[p[i]]);
+        i++;
+
+        if( G_UNLIKELY(!(fingerprint & jumpMask)) ){
+            if ((!(fingerprint & Mask))) { //AVERAGE*2, *4, *8
+                return i;
+            } else {
+                fingerprint = 0;
+                i += jumpLen;
             }
         }
     }

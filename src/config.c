@@ -107,6 +107,8 @@ void load_config_from_string(sds config) {
 				destor.chunk_algorithm =  CHUNK_GEARJUMP;
 			} else if (strcasecmp(argv[1], "leap") == 0){
 				destor.chunk_algorithm =  CHUNK_LEAP;
+			} else if (strcasecmp(argv[1], "normalized-gearjump") == 0){
+				destor.chunk_algorithm = CHUNK_NORMALIZED_GEARJUMP;
 			} else {
 				printf("compared data: %s\n", argv[1]);
 				err = "Invalid chunk algorithm";

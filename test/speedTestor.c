@@ -36,6 +36,7 @@ enum chunkMethod { 	gear,
 					fastCDC,
 					leap,
 					JC,
+					normalizedgearjump,
 					algNum
 				};
 
@@ -50,6 +51,7 @@ char* chunkString[] = {
 	"fastCDC",
 	"leap",
 	"JC",
+	"normalized-gearjump",
 	"algNum"
 };
 
@@ -87,6 +89,14 @@ void chunkData(void* data, unsigned long dataSize, unsigned long* chunksNum,
 			inited[JC] = 1;
 		}
 		chunking = gearjump_chunk_data;
+		break;
+
+	case normalizedgearjump:
+		if(!inited[normalizedgearjump]){
+			normalized_gearjump_init(chunkSize);
+			inited[normalizedgearjump] = 1;
+		}
+		chunking = normalized_gearjump_chunk_data;
 		break;
 	
 	case rabin:

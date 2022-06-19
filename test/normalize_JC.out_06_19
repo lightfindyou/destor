@@ -1,0 +1,164 @@
++ ./speedTestor -d /home/xzjin/backupData/bbcNews/ -c 8192 -p 0 -a normalized-gearjump
+chunk size: 8192
+parIdx: 0
+Chunking alg:normalized-gearjump
+Deduplication dir:/home/xzjin/backupData/bbcNews/
+Chunk size: 8192	
+address start : 0x7f5ea440e010
+address end   : 0x7f5eac40e010
+
+ reading thread syscall tid: 11612
+cOnes:11, jOnes:10, jumpLen:2048.
+
+  Mask:    590103530000	    largeMask:    d90303530000
+jumpMask:    590003530000	largejumpMask:    d90103530000
+ jumpLen:2048	    largeJumpLen:8192
+
+readOver!
+read phase stops successfully!
+Unknown number:10.
+Chunking time: 5314.30 ms, cpu utilization: 0.32
+Procrss time: 16619.47 ms 	
+Procrss length: 4779.88 MB 	
+Chunking throughput 899.44 MB/s	
+System throughput 287.61 MB/s	
+Average chunk size:   8295 bytes
+Over.
+
+real	0m16.623s
+user	0m5.676s
+sys	0m4.040s
++ set +o xtrace
+
+
++ ./speedTestor -d /home/xzjin/backupData/gcc/ -c 8192 -p 0 -a normalized-gearjump
+chunk size: 8192
+parIdx: 0
+Chunking alg:normalized-gearjump
+Deduplication dir:/home/xzjin/backupData/gcc/
+Chunk size: 8192	
+address start : 0x7f9dd17c5010
+address end   : 0x7f9dd97c5010
+
+ reading thread syscall tid: 11614
+cOnes:11, jOnes:10, jumpLen:2048.
+
+  Mask:    590103530000	    largeMask:    d90303530000
+jumpMask:    590003530000	largejumpMask:    d90103530000
+ jumpLen:2048	    largeJumpLen:8192
+
+readOver!
+read phase stops successfully!
+Unknown number:10.
+Chunking time: 19978.54 ms, cpu utilization: 0.21
+Procrss time: 94895.71 ms 	
+Procrss length: 42623.81 MB 	
+Chunking throughput 2133.48 MB/s
+System throughput 449.16 MB/s	
+Average chunk size:   9364 bytes
+Over.
+
+real	1m34.905s
+user	0m20.142s
+sys	0m36.727s
++ set +o xtrace
+
+
++ ./speedTestor -d /home/xzjin/backupData/Paper/ -c 8192 -p 0 -a normalized-gearjump
+chunk size: 8192
+parIdx: 0
+Chunking alg:normalized-gearjump
+Deduplication dir:/home/xzjin/backupData/Paper/
+Chunk size: 8192	
+address start : 0x7f1a59987010
+address end   : 0x7f1a61987010
+
+ reading thread syscall tid: 11619
+cOnes:11, jOnes:10, jumpLen:2048.
+
+  Mask:    590103530000	    largeMask:    d90303530000
+jumpMask:    590003530000	largejumpMask:    d90103530000
+ jumpLen:2048	    largeJumpLen:8192
+
+readOver!
+read phase stops successfully!
+Unknown number:10.
+Chunking time: 1903.55 ms, cpu utilization: 0.50
+Procrss time: 3773.79 ms 	
+Procrss length: 2107.34 MB 	
+Chunking throughput 1107.06 MB/s
+System throughput 558.42 MB/s	
+Average chunk size:   9020 bytes
+Over.
+
+real	0m3.790s
+user	0m2.007s
+sys	0m0.930s
++ set +o xtrace
+
+
++ ./speedTestor -d /home/xzjin/backupData/VMB/ -c 8192 -p 0 -a normalized-gearjump
+chunk size: 8192
+parIdx: 0
+Chunking alg:normalized-gearjump
+Deduplication dir:/home/xzjin/backupData/VMB/
+Chunk size: 8192	
+address start : 0x7f47d2ad3010
+address end   : 0x7f47daad3010
+
+ reading thread syscall tid: 11621
+cOnes:11, jOnes:10, jumpLen:2048.
+
+  Mask:    590103530000	    largeMask:    d90303530000
+jumpMask:    590003530000	largejumpMask:    d90103530000
+ jumpLen:2048	    largeJumpLen:8192
+
+readOver!
+read phase stops successfully!
+Unknown number:10.
+Chunking time: 35522.42 ms, cpu utilization: 0.21
+Procrss time: 171767.27 ms 	
+Procrss length: 80181.20 MB 	
+Chunking throughput 2257.20 MB/s
+System throughput 466.80 MB/s	
+Average chunk size:   9187 bytes
+Over.
+
+real	2m51.775s
+user	0m35.894s
+sys	1m5.910s
++ set +o xtrace
+
+
++ ./speedTestor -d /home/xzjin/backupData/VMI/ -c 8192 -p 0 -a normalized-gearjump
+chunk size: 8192
+parIdx: 0
+Chunking alg:normalized-gearjump
+Deduplication dir:/home/xzjin/backupData/VMI/
+Chunk size: 8192	
+address start : 0x7f9f2f627010
+address end   : 0x7f9f37627010
+
+ reading thread syscall tid: 11624
+cOnes:11, jOnes:10, jumpLen:2048.
+
+  Mask:    590103530000	    largeMask:    d90303530000
+jumpMask:    590003530000	largejumpMask:    d90103530000
+ jumpLen:2048	    largeJumpLen:8192
+
+readOver!
+read phase stops successfully!
+Unknown number:10.
+Chunking time: 18174.43 ms, cpu utilization: 0.21
+Procrss time: 87268.20 ms 	
+Procrss length: 40919.19 MB 	
+Chunking throughput 2251.47 MB/s
+System throughput 468.89 MB/s	
+Average chunk size:   9088 bytes
+Over.
+
+real	1m27.279s
+user	0m18.559s
+sys	0m32.917s
++ set +o xtrace
+

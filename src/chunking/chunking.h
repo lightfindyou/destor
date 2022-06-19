@@ -13,8 +13,6 @@ int rabin_chunk_data(unsigned char *p, int n);
 int normalized_rabin_chunk_data(unsigned char *p, int n);
 void rabinJump_init(int chunkSize);
 int rabinjump_chunk_data(unsigned char *p, int n);
-void normalized_gearjump_init(int mto);
-int normalized_gearjump_chunk_data(unsigned char *p, int n);
 
 void ae_init();
 int ae_chunk_data(unsigned char *p, int n);
@@ -34,6 +32,9 @@ void gearjump_init(int i);
 void gearjump_init();
 #endif	//SENTEST
 int gearjump_chunk_data(unsigned char *p, int n);
+
+void normalized_gearjump_init(int mto);
+int normalized_gearjump_chunk_data(unsigned char *p, int n);
 
 void sc_init();
 int sc_chunk_data(unsigned char *p, int n);

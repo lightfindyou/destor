@@ -1,6 +1,9 @@
 void gearjump_init(int chunkSize);
 int gearjump_chunk_data(unsigned char *p, int n);
 
+void normalized_gearjump_init(int chunkSize);
+int normalized_gearjump_chunk_data(unsigned char *p, int n);
+
 void gear_init(int chunkSize);
 int gear_chunk_data(unsigned char *p, int n);
 

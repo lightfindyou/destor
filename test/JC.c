@@ -17,6 +17,7 @@
 #define NOTContain 0
 #define BREAKDOWN 1
 
+int chunkSize;
 uint64_t g_gear_matrix[SymbolCount];
 static int chunkMax, chunkAvg, chunkMin;
 
@@ -298,4 +299,100 @@ int gear_chunk_data(unsigned char *p, int n){
     }
 
     return i;
+}
+
+uint64_t largeMask;
+uint64_t largeJumpMask;
+int largeJumpLen = 0;
+/**
+ * mto means "Mask Ones Less Than Chunk Ones"
+*/
+void normalized_gearjump_init(int chunkS){
+    chunkSize = chunkS;
+    char seed[SeedLength];
+    for(int i=0; i<SymbolCount; i++){
+        for(int j=0; j<SeedLength; j++){
+            seed[j] = i;
+        }
+
+        g_gear_matrix[i] = 0;
+        unsigned char md5_result[DigistLength];
+
+        MD5_CTX md5_ctx;
+        MD5_Init(&md5_ctx);
+        MD5_Update(&md5_ctx, seed, SeedLength);
+        MD5_Final(md5_result, &md5_ctx);
+
+        memcpy(&g_gear_matrix[i], md5_result, sizeof(uint64_t));
+    }
+
+    gearjumpChunkSize = chunkS;
+    int index = log2(gearjumpChunkSize);
+    int jOnes = 0, cOnes = index - 2;
+    assert(index>6);
+    assert(index<17);
+    Mask = g_condition_mask[cOnes];
+    largeMask = g_condition_mask[cOnes+2];
+
+    jOnes = cOnes - 1;
+    jumpMask = g_condition_mask[jOnes];
+    largeJumpMask = g_condition_mask[jOnes+2];
+//  jumpLen = power(2, jMaskOnes);
+    jumpLen = pow(2, (cOnes + jOnes))/(pow(2, cOnes) - pow(2, jOnes));
+    largeJumpLen = pow(2, (cOnes + 2 + jOnes + 2))/(pow(2, cOnes+2) - pow(2, jOnes+2));
+    printf("cOnes:%d, jOnes:%d, jumpLen:%d.\n", cOnes, jOnes, jumpLen);
+
+//    gearjumpChunkSize = 4096;
+//    jumpLen = gearjumpChunkSize/2;
+//    Mask = g_condition_mask[11];
+//    jumpMask = g_condition_mask[10];
+    printf("\n  Mask:%16lx\t    largeMask:%16lx\n", Mask, largeMask);
+    printf("jumpMask:%16lx\tlargejumpMask:%16lx\n", jumpMask, largeJumpMask);
+    printf(" jumpLen:%d\t    largeJumpLen:%d\n\n", jumpLen, largeJumpLen);
+}
+
+int normalized_gearjump_chunk_data(unsigned char *p, int n){
+
+    uint64_t fingerprint=0;
+    int i=0;
+    int minSize = 512;
+    int middle = chunkSize<n?chunkSize:n;
+
+	if (n <= minSize)
+		return n;
+#if !CHUNKMIN 
+	else
+		i = minSize;
+#endif  //MINJUMP 
+    n = n<chunkSize*2?n:chunkSize*2;
+
+    while(i < middle){
+        fingerprint = (fingerprint<<1) + (g_gear_matrix[p[i]]);
+        i++;
+
+        if(__glibc_unlikely(!(fingerprint & largeJumpMask)) ){
+            if ((!(fingerprint & largeMask))) { //AVERAGE*2, *4, *8
+                return i;
+            } else {
+                fingerprint = 0;
+                i += largeJumpLen;
+            }
+        }
+    }
+
+    while(i < n){
+        fingerprint = (fingerprint<<1) + (g_gear_matrix[p[i]]);
+        i++;
+
+        if( __glibc_unlikely(!(fingerprint & jumpMask)) ){
+            if ((!(fingerprint & Mask))) { //AVERAGE*2, *4, *8
+                return i;
+            } else {
+                fingerprint = 0;
+                i += jumpLen;
+            }
+        }
+    }
+
+    return i<n?i:n;
 }
