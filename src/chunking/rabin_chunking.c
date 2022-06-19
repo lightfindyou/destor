@@ -3,6 +3,11 @@
 #define MSB64 0x8000000000000000LL
 #define MAXBUF (128*1024)
 
+static int chunkMax, chunkAvg, chunkMin;
+extern unsigned long g_condition_mask[];
+extern unsigned long Mask, jumpMask;
+extern int jumpLen;
+
 #define FINGERPRINT_PT  0xbfe6b8a5bf378d83LL
 #define BREAKMARK_VALUE 0x78
 
@@ -359,4 +364,68 @@ int tttd_chunk_data(unsigned char *p, int n) {
 		return m;
 	else
 		return i;
+}
+
+void rabinJump_init(int chunkSize) {
+	window_init(FINGERPRINT_PT);
+	_last_pos = 0;
+	_cur_pos = 0;
+	windows_reset();
+	_num_chunks = 0;
+	chunkAvg = chunkSize;
+	chunkMax = chunkSize*2;
+	chunkMin = chunkSize/8;
+	rabin_mask = chunkAvg - 1;
+
+    int index = log2(chunkAvg);
+    assert(index>6);
+    assert(index<17);
+    Mask = g_condition_mask[index-1];
+    jumpMask = g_condition_mask[index-2];
+    jumpLen = chunkAvg/2;
+
+    printf("Mask:    %16lx\n", Mask);
+    printf("jumpMask:%16lx\n", jumpMask);
+    printf("jumpLen:%d\n\n", jumpLen);
+}
+
+int rabinjump_chunk_data(unsigned char *p, int n) {
+
+//	printf("p:%p\n", p);
+	UINT64 fp = 0;
+//	UINT64 fp = ULLONG_MAX;
+	int i = 1, bufPos = -1;
+
+	unsigned char buf[128];
+	memset((char*) buf, 0, 128);
+
+	if (n <= chunkMin)
+		return n;
+	else
+		i = chunkMin;
+
+	//pre-calculate
+	//fingerprint of rabin is small at begin, pre-calculate to avoid small chunks.
+	for(int k = i-32; k<i; k++){
+		SLIDE(p[k - 1], fp, bufPos, buf);
+	}
+
+	int end = n > chunkMax ? chunkMax : n;
+	while (i < end) {
+
+		SLIDE(p[i - 1], fp, bufPos, buf);
+		i++;
+        if(__glibc_unlikely(!(fp & jumpMask)) ){
+            if ((!(fp & Mask))) { //AVERAGE*2, *4, *8
+				break;
+            } else {
+                //TODO xzjin here need to set the fingerprint to 0 ?
+				fp = 0;
+                i += jumpLen;
+				bufPos = i - 1;
+            }
+        }
+	}
+//	printf("fp: %llx, chunk length: %d\n", fp, i);
+    return i<n?i:n;
 }

@@ -278,12 +278,13 @@ void rabinJump_init(int chunkSize) {
     assert(index<17);
     Mask = g_condition_mask[index-1];
     jumpMask = g_condition_mask[index-2];
-    jumpLen = chunkAvg/4;
+    jumpLen = chunkAvg/2;
 
     printf("Mask:    %16lx\n", Mask);
     printf("jumpMask:%16lx\n", jumpMask);
     printf("jumpLen:%d\n\n", jumpLen);
 }
+
 
 /* The standard rabin chunking */
 int rabin_chunk_data(unsigned char *p, int n) {
@@ -357,7 +358,9 @@ int rabinjump_chunk_data(unsigned char *p, int n) {
 				break;
             } else {
                 //TODO xzjin here need to set the fingerprint to 0 ?
+				fp = 0;
                 i += jumpLen;
+				bufPos = i - 1;
             }
         }
 	}

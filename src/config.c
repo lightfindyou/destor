@@ -89,6 +89,8 @@ void load_config_from_string(sds config) {
 				destor.chunk_algorithm = CHUNK_RABIN;
 			} else if (strcasecmp(argv[1], "normalized rabin") == 0) {
 				destor.chunk_algorithm = CHUNK_NORMALIZED_RABIN;
+			} else if (strcasecmp(argv[1], "rabinJump") == 0) {
+				destor.chunk_algorithm = CHUNK_RABIN_JUMP;
 			} else if (strcasecmp(argv[1], "tttd") == 0) {
 				destor.chunk_algorithm = CHUNK_TTTD;
 			} else if (strcasecmp(argv[1], "file") == 0) {
@@ -104,6 +106,7 @@ void load_config_from_string(sds config) {
 			} else if (strcasecmp(argv[1], "leap") == 0){
 				destor.chunk_algorithm =  CHUNK_LEAP;
 			} else {
+				printf("compared data: %s\n", argv[1]);
 				err = "Invalid chunk algorithm";
 				goto loaderr;
 			}
