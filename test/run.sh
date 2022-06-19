@@ -5,6 +5,7 @@
 #avgChunk=(65536 32768 16384 8192 4096)
 #avgChunk=(65536)
 avgChunk=(8192)
+maxChunk=(16384)
 # maxChunk=(8192 16384 32768 65536 131072)
 #avgChunk=(4096)
 # maxChunk=(8192)
@@ -23,7 +24,7 @@ parIdx=(0)
 # chunkMethod=("rabin" "TTTD" "AE" "fastCDC" "JC" "leap" )
 # chunkMethod=( "AE" "JC" "leap" )
 # chunkMethod=("rabin" "rabinJump")
-chunkMethod=("gear" "JC")
+chunkMethod=("gear" "JC" "rabin" "rabinJump")
 
 
 for p in "${parIdx[@]}"

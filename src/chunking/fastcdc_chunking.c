@@ -131,8 +131,58 @@ int fastcdc_chunk_data(unsigned char *p, int n){
     return i;
 }
 
-uint32_t gearjumpChunkSize;
 uint64_t Mask;
+void gear_init(){
+    char seed[SeedLength];
+    for(int i=0; i<SymbolCount; i++){
+        for(int j=0; j<SeedLength; j++){
+            seed[j] = i;
+        }
+
+        g_gear_matrix[i] = 0;
+        unsigned char md5_result[DigistLength];
+
+        MD5_CTX md5_ctx;
+        MD5_Init(&md5_ctx);
+        MD5_Update(&md5_ctx, seed, SeedLength);
+        MD5_Final(md5_result, &md5_ctx);
+
+        memcpy(&g_gear_matrix[i], md5_result, sizeof(uint64_t));
+    }
+
+    int index = log2(destor.chunk_avg_size);
+    int cOnes = index;
+    assert(index>6);
+    assert(index<17);
+    Mask = g_condition_mask[cOnes];
+
+    printf("\nMask:  %16lx\n", Mask);
+}
+
+int gear_chunk_data(unsigned char *p, int n){
+
+    uint64_t fingerprint=0;
+    int i=0;
+    int minSize = destor.chunk_min_size;
+
+	if (n <= minSize)
+		return n;
+#if !CHUNKMIN 
+	else
+		i = minSize;
+#endif  //MINJUMP 
+    n = n<destor.chunk_max_size?n:destor.chunk_max_size;
+
+    while(i < n){
+        fingerprint = (fingerprint<<1) + (g_gear_matrix[p[i]]);
+        i++;
+
+        if( G_UNLIKELY(!(fingerprint & Mask)) ){ return i; }
+    }
+    return n;
+}
+
+uint32_t gearjumpChunkSize;
 uint64_t jumpMask;
 int jumpLen = 0;
 

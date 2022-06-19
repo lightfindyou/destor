@@ -227,7 +227,7 @@ int main(int argc, char **argv){
 	pthread_cond_wait(&cond, &lock);
 	while(1){
 		int dupDataSize = curReadDataLen;
-		processedLen_MB += (dupDataSize/1024/1024);
+		processedLen_MB += ((double)dupDataSize/1024/1024);
 		processedLen_B += dupDataSize;
 		if(readOver){ dupDataSize = curReadDataLen;}
 		chunkData(duplicateData, dupDataSize, &chunksNum[chunkAlg], chunkAlg, 0);
@@ -248,10 +248,12 @@ int main(int argc, char **argv){
 		printChunkName(i);
 		printf("\rChunking time: %.2f ms, \x1B[32mcpu utilization: %.2f\x1B[37m\n \
 				\rProcrss time: %.2f ms \n \
+				\rProcrss length: %.2f MB \n \
 				\r\x1B[32mChunking throughput %.2f MB/s\x1B[37m\n \
 				\rSystem throughput %.2f MB/s\n \
 				\rAverage chunk size:%7ld bytes\n",
 			  chunkTime[i], chunkTime[i]/procTime, procTime,
+			  processedLen_MB,
 			  processedLen_MB*1000/chunkTime[i],
 			  processedLen_MB*1000/procTime,
 			  processedLen_B/chunksNum[i]);
