@@ -357,6 +357,7 @@ int rabinjump_chunk_data(unsigned char *p, int n) {
             if ((!(fp & Mask))) { //AVERAGE*2, *4, *8
 				break;
             } else {
+				fp = 0;
                 //TODO xzjin here need to set the fingerprint to 0 ?
 				fp = 0;
                 i += jumpLen;

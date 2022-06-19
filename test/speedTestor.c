@@ -13,7 +13,7 @@
 extern char *optarg;
 extern int optind, opterr, optopt;
 
-#define countChunkDis 1
+#define countChunkDis 0
 
 pid_t chunkingTid;
 int chunkSize = 4096;
