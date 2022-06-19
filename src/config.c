@@ -101,6 +101,8 @@ void load_config_from_string(sds config) {
 				destor.chunk_algorithm = CHUNK_FASTCDC;
 			} else if (strcasecmp(argv[1], "sc") == 0){
 				destor.chunk_algorithm = CHUNK_SC;
+			} else if (strcasecmp(argv[1], "gear") == 0){
+				destor.chunk_algorithm =  CHUNK_GEAR;
 			} else if (strcasecmp(argv[1], "gearjump") == 0){
 				destor.chunk_algorithm =  CHUNK_GEARJUMP;
 			} else if (strcasecmp(argv[1], "leap") == 0){

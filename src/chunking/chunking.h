@@ -25,6 +25,9 @@ int tttd_chunk_data(unsigned char *p, int n);
 void fastcdc_init();
 int fastcdc_chunk_data(unsigned char *p, int n);
 
+void gear_init();
+int gear_chunk_data(unsigned char *p, int n);
+
 #if SENTEST
 void gearjump_init(int i);
 #else

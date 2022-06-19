@@ -229,6 +229,9 @@ void start_chunk_phase() {
 	} else if(destor.chunk_algorithm == CHUNK_LEAP){
 		leap_init(destor.chunk_avg_size, 0);
 		chunking = leap_chunk_data;
+	} else if(destor.chunk_algorithm == CHUNK_GEAR){
+		gear_init(destor.chunk_avg_size, 0);
+		chunking = gear_chunk_data;
 	} else{
 		NOTICE("Invalid chunking algorithm");
 		exit(1);
