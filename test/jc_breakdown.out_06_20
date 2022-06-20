@@ -1,0 +1,149 @@
++ ./speedTestor -d /home/xzjin/backupData/bbcNews/ -c 8192 -p 0 -a JC
+chunk size: 8192
+parIdx: 0
+Chunking alg:JC
+Deduplication dir:/home/xzjin/backupData/bbcNews/
+Chunk size: 8192	
+address start : 0x7f12ea414010
+address end   : 0x7f12f2414010
+
+ reading thread syscall tid: 32063
+Mask:        d90103530000
+jumpMask:    590103530000
+jumpLen:4096
+
+readOver!
+read phase stops successfully!
+Chunking time: 5134.74 ms, cpu utilization: 0.38
+Procrss time: 13346.63 ms 	
+Procrss length: 4779.88 MB 	
+Chunking throughput 930.89 MB/s	
+System throughput 358.13 MB/s	
+Average chunk size:   7155 bytes
+Over.
+
+real	0m13.351s
+user	0m5.396s
+sys	0m3.445s
++ set +o xtrace
+
+
++ ./speedTestor -d /home/xzjin/backupData/gcc/ -c 8192 -p 0 -a JC
+chunk size: 8192
+parIdx: 0
+Chunking alg:JC
+Deduplication dir:/home/xzjin/backupData/gcc/
+Chunk size: 8192	
+address start : 0x7fd6e4957010
+address end   : 0x7fd6ec957010
+
+ reading thread syscall tid: 32065
+Mask:        d90103530000
+jumpMask:    590103530000
+jumpLen:4096
+
+^[[DreadOver!
+read phase stops successfully!
+Chunking time: 21360.82 ms, cpu utilization: 0.22
+Procrss time: 97507.10 ms 	
+Procrss length: 42623.81 MB 	
+Chunking throughput 1995.42 MB/s
+System throughput 437.14 MB/s	
+Average chunk size:   7955 bytes
+Over.
+
+real	1m37.517s
+user	0m21.633s
+sys	0m37.126s
++ set +o xtrace
+
+
++ ./speedTestor -d /home/xzjin/backupData/Paper/ -c 8192 -p 0 -a JC
+chunk size: 8192
+parIdx: 0
+Chunking alg:JC
+Deduplication dir:/home/xzjin/backupData/Paper/
+Chunk size: 8192	
+address start : 0x7f0ee49f9010
+address end   : 0x7f0eec9f9010
+
+ reading thread syscall tid: 32067
+Mask:        d90103530000
+jumpMask:    590103530000
+jumpLen:4096
+
+readOver!
+read phase stops successfully!
+Chunking time: 1948.86 ms, cpu utilization: 0.51
+Procrss time: 3821.13 ms 	
+Procrss length: 2107.34 MB 	
+Chunking throughput 1081.32 MB/s
+System throughput 551.50 MB/s	
+Average chunk size:   7642 bytes
+Over.
+
+real	0m3.835s
+user	0m1.993s
+sys	0m0.973s
++ set +o xtrace
+
+
++ ./speedTestor -d /home/xzjin/backupData/VMB/ -c 8192 -p 0 -a JC
+chunk size: 8192
+parIdx: 0
+Chunking alg:JC
+Deduplication dir:/home/xzjin/backupData/VMB/
+Chunk size: 8192	
+address start : 0x7f6fb0f0a010
+address end   : 0x7f6fb8f0a010
+
+ reading thread syscall tid: 32069
+Mask:        d90103530000
+jumpMask:    590103530000
+jumpLen:4096
+
+readOver!
+read phase stops successfully!
+Chunking time: 37987.28 ms, cpu utilization: 0.23
+Procrss time: 166488.74 ms 	
+Procrss length: 80181.20 MB 	
+Chunking throughput 2110.74 MB/s
+System throughput 481.60 MB/s	
+Average chunk size:   8008 bytes
+Over.
+
+real	2m46.495s
+user	0m38.468s
+sys	1m1.159s
++ set +o xtrace
+
+
++ ./speedTestor -d /home/xzjin/backupData/VMI/ -c 8192 -p 0 -a JC
+chunk size: 8192
+parIdx: 0
+Chunking alg:JC
+Deduplication dir:/home/xzjin/backupData/VMI/
+Chunk size: 8192	
+address start : 0x7f1029145010
+address end   : 0x7f1031145010
+
+ reading thread syscall tid: 32632
+Mask:        d90103530000
+jumpMask:    590103530000
+jumpLen:4096
+
+readOver!
+read phase stops successfully!
+Chunking time: 20713.98 ms, cpu utilization: 0.23
+Procrss time: 88635.59 ms 	
+Procrss length: 40919.19 MB 	
+Chunking throughput 1975.44 MB/s
+System throughput 461.66 MB/s	
+Average chunk size:   7716 bytes
+Over.
+
+real	1m28.645s
+user	0m21.066s
+sys	0m32.628s
++ set +o xtrace
+

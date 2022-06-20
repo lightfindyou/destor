@@ -15,7 +15,7 @@
 #define CHUNKMIN 0
 #define TTTD 0
 #define NOTContain 0
-#define BREAKDOWN 1
+#define BREAKDOWN 0
 
 int chunkSize;
 uint64_t g_gear_matrix[SymbolCount];
