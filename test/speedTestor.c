@@ -36,7 +36,9 @@ enum chunkMethod { 	gear,
 					fastCDC,
 					leap,
 					JC,
+					JCTTTD,
 					normalizedgearjump,
+					TTTDGear,
 					algNum
 				};
 
@@ -51,7 +53,9 @@ char* chunkString[] = {
 	"fastCDC",
 	"leap",
 	"JC",
+	"JCTTTD",
 	"normalized-gearjump",
+	"TTTDGear",
 	"algNum"
 };
 
@@ -65,7 +69,7 @@ static inline unsigned long time_nsec(void) {
     return ts.tv_sec * (unsigned long)(1000000000) + ts.tv_nsec;
 }
 
-void* getAddress(){
+void* getChunkData(){
 	void* p = malloc(SIZE);
 	assert(p);
 	void* tail = p + SIZE;
@@ -90,6 +94,15 @@ void chunkData(void* data, unsigned long dataSize, unsigned long* chunksNum,
 		}
 		chunking = gearjump_chunk_data;
 		break;
+
+	case JCTTTD:
+		if(!inited[JC]){
+			gearjump_init(chunkSize);
+			inited[JC] = 1;
+		}
+		chunking = gearjumpTTTD_chunk_data;
+		break;
+ 
 
 	case normalizedgearjump:
 		if(!inited[normalizedgearjump]){
@@ -121,6 +134,14 @@ void chunkData(void* data, unsigned long dataSize, unsigned long* chunksNum,
 			inited[gear] = 1;
 		}
 		chunking = gear_chunk_data;
+		break;
+
+	case TTTDGear:
+		if(!inited[gear]){
+			gear_init(chunkSize);
+			inited[gear] = 1;
+		}
+		chunking = TTTD_gear_chunk_data;
 		break;
 
 	case leap:
@@ -226,7 +247,7 @@ int main(int argc, char **argv){
 	sizeCate = (chunkSize*2.5)/1024;
 	sizeDist = calloc(sizeCate, sizeof(int));
 
-	duplicateData = getAddress();
+	duplicateData = getChunkData();
 	unsigned long chunksNum[algNum] = {0};
 	procStart = time_nsec();
     pthread_mutex_lock(&lock);
@@ -295,6 +316,10 @@ void printChunkName(int chunkIdx){
 
 		case gear:
 			printf("        gear ");
+			break;
+
+		case TTTDGear:
+			printf("    TTTDGear ");
 			break;
 
 		case leap:

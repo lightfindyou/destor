@@ -1,21 +1,83 @@
-+ ./speedTestor -d /home/xzjin/backupData/VMB/ -c 8192 -p 0 -a JC
- 0~ 1 K:     81 chunks
- 1~ 2 K: 2071958 chunks
- 2~ 3 K: 1142560 chunks
- 3~ 4 K: 710167 chunks
- 4~ 5 K: 465773 chunks
- 5~ 6 K: 501757 chunks
- 6~ 7 K: 573828 chunks
- 7~ 8 K: 528893 chunks
- 8~ 9 K: 435061 chunks
- 9~10 K: 345661 chunks
-10~11 K: 323346 chunks
-11~12 K: 307128 chunks
-12~13 K: 287786 chunks
-13~14 K: 246257 chunks
-14~15 K: 217729 chunks
-15~16 K: 199138 chunks
-16~17 K: 2140834 chunks
-17~18 K:      0 chunks
-18~19 K:      0 chunks
-19~ inf:      0 chunks
+xzjin!node2727/11:01:~/src/destor/test% ./effectiveTestor -a rabin               on branch CJ
+address start : 0x7f3dc18df010
+address end   : 0x7f3dc98df010
+
+JC:
+Mask:        d90103530000
+jumpMask:    590103530000
+jumpLen:4096
+
+Total chunks num:17523
+Average chunks size:7659
+chunk start:0x7f3dc18e23d2, chunk end:0x7f3dc98df010
+Chunks time: 33742 (us)
+
+total:17518
+unchanged:13799, percentage:78.77%
+change1:2873, percentage:16.40%
+change2:617, percentage:3.52%
+change3:161, percentage:0.92%
+change4:68, percentage:0.39%
+xzjin!node2727/11:01:~/src/destor/test% ./effectiveTestor -a gear                on branch CJ
+address start : 0x7f33774e9010
+address end   : 0x7f337f4e9010
+
+JC:
+Mask:        d90103530000
+jumpMask:    590103530000
+jumpLen:4096
+
+Total chunks num:17580
+Average chunks size:7634
+chunk start:0x7f33774e952e, chunk end:0x7f337f4e9010
+Chunks time: 33487 (us)
+
+total:17575
+unchanged:13842, percentage:78.76%
+change1:2869, percentage:16.32%
+change2:628, percentage:3.57%
+change3:177, percentage:1.01%
+change4:59, percentage:0.34%
+xzjin!node2727/11:01:~/src/destor/test% ./effectiveTestor -a AE                  on branch CJ
+address start : 0x7f6b8bc6c010
+address end   : 0x7f6b93c6c010
+
+JC:
+Mask:        d90103530000
+jumpMask:    590103530000
+jumpLen:4096
+
+Total chunks num:17636
+Average chunks size:7610
+chunk start:0x7f6b8bc70010, chunk end:0x7f6b93c6c010
+Chunks time: 33391 (us)
+
+total:17631
+unchanged:13901, percentage:78.84%
+change1:2853, percentage:16.18%
+change2:647, percentage:3.67%
+change3:157, percentage:0.89%
+change4:73, percentage:0.41%
+xzjin!node2727/11:01:~/src/destor/test% ./effectiveTestor -a JC                  on branch CJ
+address start : 0x7fbabeb8d010
+address end   : 0x7fbac6b8d010
+
+JC:
+Mask:        d90103530000
+jumpMask:    590103530000
+jumpLen:4096
+
+Total chunks num:17534
+Average chunks size:7654
+chunk start:0x7fbabeb91010, chunk end:0x7fbac6b8d010
+Chunks time: 33592 (us)
+
+total:17529
+unchanged:13860, percentage:79.07%
+change1:2778, percentage:15.85%
+change2:628, percentage:3.58%
+change3:168, percentage:0.96%
+change4:95, percentage:0.54%
+xzjin!node2727/11:01:~/src/destor/test%                                          on branch CJ
+
+

@@ -20842,7 +20842,7 @@ double byteTable[256][8] = {
 { 1, 1, 1, 1, 1, 1, 1, 1},
 };
 
-int EF[5][255];
+int EF[5][256];
 int hgIdx = 0;
 int interval = 90;
 

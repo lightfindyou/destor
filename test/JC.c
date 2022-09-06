@@ -26,6 +26,7 @@ uint64_t MaskL;
 
 uint32_t gearjumpChunkSize;
 uint64_t Mask;
+uint64_t back_mask_TTTD;
 uint64_t Mask_backup;
 uint64_t jumpMask;
 int jumpLen = 0;
@@ -141,9 +142,6 @@ int gearjump_chunk_data(unsigned char *p, int n){
 
     uint64_t fingerprint=0;
     int i=0;
-#if TTTD
-    int smallerChunkPoint = 0;
-#endif //TTTD
 
 	if (n <= chunkMin)
 		return n;
@@ -161,9 +159,6 @@ int gearjump_chunk_data(unsigned char *p, int n){
             if ((!(fingerprint & Mask))) { //AVERAGE*2, *4, *8
                 return i;
             } else {
-#if TTTD 
-                smallerChunkPoint = i;
-#endif //TTTD 
                 fingerprint=0;
                 //TODO xzjin here need to set the fingerprint to 0 ?
                 i += jumpLen;
@@ -171,11 +166,6 @@ int gearjump_chunk_data(unsigned char *p, int n){
         }
     }
 
-#if TTTD 
-    if(smallerChunkPoint){
-        return smallerChunkPoint;
-    }
-#endif //TTTD 
     return i<n?i:n;
 }
 #endif  //BREAKDOWN
@@ -277,6 +267,7 @@ void gear_init(int chunkSize){
     assert(index>6);
     assert(index<17);
     Mask = g_condition_mask[index];
+	back_mask_TTTD = g_condition_mask[index - 1];
 }
 
 int gear_chunk_data(unsigned char *p, int n){
@@ -299,6 +290,69 @@ int gear_chunk_data(unsigned char *p, int n){
     }
 
     return i;
+}
+
+int TTTD_gear_chunk_data(unsigned char *p, int n){
+
+    uint64_t fingerprint=0;
+    int i=0, m=0;
+
+	if (n <= chunkMin)
+		return n;
+	else
+		i = chunkMin;
+
+    int end = n < chunkMax ? n:chunkMax;
+    while(i < end){
+        fingerprint = (fingerprint<<1) + (g_gear_matrix[p[i]]);
+        i++;
+
+        if(__glibc_unlikely(!(fingerprint & back_mask_TTTD)) ){
+
+            if(!(fingerprint & Mask)){
+                return i;
+            }
+            m = i;
+        }
+    }
+
+	if (m != 0)
+		return m;
+	else
+		return i;
+}
+
+int gearjumpTTTD_chunk_data(unsigned char *p, int n){
+
+    uint64_t fingerprint=0;
+    int i=0, m = 0;
+
+	if (n <= chunkMin)
+		return n;
+	else
+		i = chunkMin;
+    unsigned long end = n < chunkMax? n:chunkMax;
+
+    while(i < end){
+        fingerprint = (fingerprint<<1) + (g_gear_matrix[p[i]]);
+        i++;
+
+        if(__glibc_unlikely(!(fingerprint & jumpMask)) ){
+
+            if ((!(fingerprint & Mask))) { //AVERAGE*2, *4, *8
+                return i;
+            } 
+            m = i;
+            fingerprint=0;
+            //TODO xzjin here need to set the fingerprint to 0 ?
+            i += jumpLen;
+        }
+    }
+
+    if(m != 0){
+        return m;
+    }
+    return i<end?i:end;
 }
 
 uint64_t largeMask;

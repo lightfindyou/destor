@@ -6,6 +6,8 @@ int normalized_gearjump_chunk_data(unsigned char *p, int n);
 
 void gear_init(int chunkSize);
 int gear_chunk_data(unsigned char *p, int n);
+int TTTD_gear_chunk_data(unsigned char *p, int n);
+int gearjumpTTTD_chunk_data(unsigned char *p, int n);
 
 void chunkAlg_init(int chunkSize);
 int rabin_chunk_data(unsigned char *p, int n);
