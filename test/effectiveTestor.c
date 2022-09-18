@@ -162,6 +162,7 @@ void testData(void* data, void ** edge, int chunksNum,
 	*change4 = 0; 
 
 	int len, k;
+//	int debug = 0;
 	void *tail = data + SIZE;
 	void* chunkTail;
 	const int insRangeL = 1, insRangeH = 20;
@@ -187,10 +188,15 @@ chunk:
 //			printf("i: %d, k: %d\n", i, k);
 			if((unsigned long)chunkTail <= (unsigned long)edge[k]){
 				if((unsigned long)chunkTail == (unsigned long)edge[k]){
+//					if(debug){
+//						printf("k: %d, equal to %p\n\n", k, edge[k]);
+//						debug = 0;
+//					}
 //					printf("break\n");
 					break;
 				}else{
-//					printf("restart, start: %p, tail: %p, len: %d\n", start, chunkTail, len);
+//					printf("restart, k: %d, start: %p, tail: %p, len: %d, compared to edge :%p\n", k, start, chunkTail, len, edge[k]);
+//					debug = 1;
 					start = chunkTail;
 					goto chunk;
 				}
@@ -233,13 +239,14 @@ int chunkAlg;
 int main(int argc, char **argv){
 	void *p = getChunkData();
 	int chunksNum;
+	float average = 0;
 	void* edge[2*SIZE/CHUNKSIZE];
 
 	if(parsePar(argc, argv)){
 		printf("ERROR parse para!\n");
 		return -1;
 	}
-	chunkData(p, &chunksNum, edge, JC);
+	chunkData(p, &chunksNum, edge, chunkAlg);
 	int unchanged = 0, change1 = 0, change2 = 0, change3 = 0, change4 = 0;
 	testData(p, edge, chunksNum,
 		 &unchanged, &change1, &change2, &change3, &change4);
@@ -247,15 +254,24 @@ int main(int argc, char **argv){
 	int total = unchanged + change1 + change2 + change3 + change4;
 	printf("total:%d\n", total);
 	double perc = (float)unchanged*100/total;
+	average += 1*perc;
 	printf("unchanged:%d, percentage:%.2f%%\n", unchanged, perc);
 	perc = (float)change1*100/total;
+	average += 2*perc;
 	printf("change1:%d, percentage:%.2f%%\n", change1, perc);
 	perc = (float)change2*100/total;
+	average += 3*perc;
 	printf("change2:%d, percentage:%.2f%%\n", change2, perc);
 	perc = (float)change3*100/total;
+	average += 4*perc;
 	printf("change3:%d, percentage:%.2f%%\n", change3, perc);
 	perc = (float)change4*100/total;
+	average += 5*perc;
 	printf("change4:%d, percentage:%.2f%%\n", change4, perc);
+
+	average /=100;
+	printf("\nAverage changed:%.2f\n", average);
+
 
 	return 0;
 }
