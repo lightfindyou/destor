@@ -20881,6 +20881,7 @@ int windowsNum[40][5]={
 	{26, 29, 35, 47, 81},	//parIdx = 1, interval = 90
 };
 
+long chunkMax = 0;
 void leap_init(int chunkSize, int parIdx){
 	if(chunkSize < (4096+8192)/2){
 		CHECKWINNUM = windowsNum[parIdx][0];
@@ -20893,6 +20894,7 @@ void leap_init(int chunkSize, int parIdx){
 	}else{
 		CHECKWINNUM = windowsNum[parIdx][4];
 	}
+	chunkMax = chunkSize*2;
 
 	printf("windows number:%d\n", CHECKWINNUM);
 	bzero(EF, sizeof(EF));
@@ -20944,6 +20946,7 @@ int leap_chunk_data(unsigned char *p, int n){
     int targetPoint= 512;
 	int windowNum = 0;
 	int destWindowNum = CHECKWINNUM;	//The number of windows needs to be checked.
+	n = n<chunkMax?n:chunkMax;
 
 checkQualified:
 	for(windowNum = 0; windowNum < destWindowNum; windowNum++){

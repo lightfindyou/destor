@@ -280,6 +280,7 @@ int gear_chunk_data(unsigned char *p, int n){
 	else
 		i = chunkMin;
 
+    n = n<chunkMax?n:chunkMax;
     while(i < n){
         fingerprint = (fingerprint<<1) + (g_gear_matrix[p[i]]);
         i++;

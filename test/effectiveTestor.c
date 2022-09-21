@@ -8,6 +8,7 @@
 
 extern char *optarg;
 extern int optind, opterr, optopt;
+int insRangeL = 1, insRangeH = 20;
 
 //#define SIZE (16*1024*1024)
 #define SIZE (128*1024*1024)
@@ -55,8 +56,9 @@ static inline unsigned long time_nsec(void) {
 }
 
 void* getChunkData(){
-	void* p = malloc(SIZE);
+	void* p = malloc(SIZE+CHUNKSIZE*2);
 	assert(p);
+	p += CHUNKSIZE;
 	void* tail = p + SIZE;
 	time_t t = time(0);
 	srandom((unsigned)t);
@@ -134,6 +136,16 @@ void chunkData(void* data, int* chunksNum, void** edge, enum chunkMethod cM){
 		chunking = rabin_simple_chunk_data;
 		break;
 
+	case fastCDC:
+		printf("fastCDC:\n");
+		fastcdc_init(CHUNKSIZE);
+		chunking = fastcdc_chunk_data;
+		break;
+
+		rabin_simple_init(CHUNKSIZE);
+		chunking = rabin_simple_chunk_data;
+		break;
+
 	default:
 		break;
 	}
@@ -165,7 +177,6 @@ void testData(void* data, void ** edge, int chunksNum,
 //	int debug = 0;
 	void *tail = data + SIZE;
 	void* chunkTail;
-	const int insRangeL = 1, insRangeH = 20;
 	for(int i = 0, j = chunksNum -5; i<j; i++){
 		int insertPos = random()%(edge[i+1] - edge[i]);
 		int insertLen = (random()%(insRangeH - insRangeL + 1)) + insRangeL;
@@ -184,7 +195,7 @@ chunk:
 
 		k = i+1;
 		// i is the begin of the inserted chunk
-		for(; k < chunksNum && (k - i) <5; k++){
+		for(; k < chunksNum && (k - i) <4; k++){
 //			printf("i: %d, k: %d\n", i, k);
 			if((unsigned long)chunkTail <= (unsigned long)edge[k]){
 				if((unsigned long)chunkTail == (unsigned long)edge[k]){
@@ -216,11 +227,8 @@ chunk:
 			case 4:
 				(*change3)++;
 				break;
-			case 5:
- 				(*change4)++; 
-				break;
 			default:
- 				(*change4)++; 
+ 				(*change3)++; 
 				printf("jumped %d chunks.\n", k-i);
 				break;
 		}
@@ -228,7 +236,8 @@ chunk:
 }
 
 void help(){
-	printf("Usage: effectiveTestor -a chunking algorithm\n \
+	printf("Usage: effectiveTestor -l insert length (20 by default) \n \
+		\r\t\t\t-a chunking algorithm\n \
 		\rChunking alg include:\n");
 	for(int i=0; i<algNum; i++){
 		printf("\t%s\n", chunkString[i]);
@@ -241,6 +250,7 @@ int main(int argc, char **argv){
 	int chunksNum;
 	float average = 0;
 	void* edge[2*SIZE/CHUNKSIZE];
+//	char dedupRatio[7][100];
 
 	if(parsePar(argc, argv)){
 		printf("ERROR parse para!\n");
@@ -251,26 +261,24 @@ int main(int argc, char **argv){
 	testData(p, edge, chunksNum,
 		 &unchanged, &change1, &change2, &change3, &change4);
 
-	int total = unchanged + change1 + change2 + change3 + change4;
-	printf("total:%d\n", total);
-	double perc = (float)unchanged*100/total;
-	average += 1*perc;
-	printf("unchanged:%d, percentage:%.2f%%\n", unchanged, perc);
-	perc = (float)change1*100/total;
-	average += 2*perc;
-	printf("change1:%d, percentage:%.2f%%\n", change1, perc);
-	perc = (float)change2*100/total;
-	average += 3*perc;
-	printf("change2:%d, percentage:%.2f%%\n", change2, perc);
-	perc = (float)change3*100/total;
-	average += 4*perc;
-	printf("change3:%d, percentage:%.2f%%\n", change3, perc);
-	perc = (float)change4*100/total;
-	average += 5*perc;
-	printf("change4:%d, percentage:%.2f%%\n", change4, perc);
+	int total = unchanged + change1 + change2 + change3;
+	printf("total: %d\n", total);
+	printf("insert length: %d\n", insRangeH);
+	
+	double perc1 = (float)unchanged*100/total;
+	double perc2 = (float)change1*100/total;
+	double perc3 = (float)change2*100/total;
+	double perc4 = (float)change3*100/total;
+
+	average += 1*perc1 + 2*perc2 + 3*perc3 + 4*perc4;
+	printf("unchanged:%d, percentage:%.2f%%\n", unchanged, perc1);
+	printf("change1:%d, percentage:%.2f%%\n", change1, perc2);
+	printf("change2:%d, percentage:%.2f%%\n", change2, perc3);
+	printf("change3:%d, percentage:%.2f%%\n", change3, perc4);
 
 	average /=100;
 	printf("\nAverage changed:%.2f\n", average);
+	printf("\n& %.2f\\%% & %.2f\\%% & %.2f\\%% & %.2f\\%% & %.2f \\\\\n", perc1, perc2, perc3, perc4, average);
 
 
 	return 0;
@@ -285,18 +293,22 @@ int parsePar(int argc, char **argv){
 		switch (opt) {
 		case 'a':
 			for(int i=0; i< algNum; i++){
-				if(!strcmp(optarg, chunkString[i])){
+				if(!strcasecmp(optarg, chunkString[i])){
 					chunkAlg = i;
 					break;
 				}
 			}
+			break;
+
+		case 'l':
+			insRangeH = atoi(optarg);
 			break;
 		
 		default:
 			help();
 			return -1;
 		}
-	}while((opt = getopt(argc, argv, "a:"))>0);
+	}while((opt = getopt(argc, argv, "a:l:"))>0);
 
 	if(chunkAlg == algNum){
 		printf("get chunk algorithm ERROR!\n");
