@@ -57,7 +57,10 @@ uint64_t g_condition_mask[] = {
 #if SENTEST
 void gearjump_init(int jMaskOnes){
 #else
-void gearjump_init(int chunkSize){
+/**
+ * mto means "Mask Ones Less Than Chunk Ones"
+*/
+void gearjump_init(int chunkSize, int mto){
 #endif //SENTEST
     char seed[SeedLength];
     for(int i=0; i<SymbolCount; i++){
@@ -84,15 +87,21 @@ void gearjump_init(int chunkSize){
     int index = log2(gearjumpChunkSize);
     assert(index>6);
     assert(index<17);
-    Mask = g_condition_mask[index-1];
+    int jOnes = 0, cOnes = index - 1;
+    Mask = g_condition_mask[cOnes];
+    //NOT delete, for TTTD
     Mask_backup = g_condition_mask[index-2];
 #if SENTEST
     jumpMask = g_condition_mask[jMaskOnes];
 //    jumpLen = power(2, jMaskOnes);
     jumpLen = exp2(jMaskOnes);
 #else
-    jumpMask = g_condition_mask[index-2];
-    jumpLen = gearjumpChunkSize/2;
+    assert(mto<(cOnes));
+    if(!mto) mto = 1;
+    jOnes = cOnes - mto;
+    jumpMask = g_condition_mask[jOnes];
+//  jumpLen = power(2, jMaskOnes);
+    jumpLen = pow(2, (cOnes + jOnes))/(pow(2, cOnes) - pow(2, jOnes));
 #endif  //SENTEST
 
 //    gearjumpChunkSize = 4096;

@@ -76,7 +76,7 @@ void* getChunkData(){
 	return p;
 }
 
-void chunkData(void* data, int* chunksNum, void** edge, enum chunkMethod cM){
+void chunkData(void* data, int* chunksNum, void** edge, enum chunkMethod cM, int mto){
 	unsigned long start, end;
 	void *head = data;
 	void *tail = data + SIZE;
@@ -84,7 +84,7 @@ void chunkData(void* data, int* chunksNum, void** edge, enum chunkMethod cM){
 	switch (cM) {
 	case JC:
 		printf("JC:\n");
-		gearjump_init(CHUNKSIZE);
+		gearjump_init(CHUNKSIZE, mto);
 		chunking = gearjump_chunk_data;
 		break;
 	
@@ -238,13 +238,17 @@ chunk:
 void help(){
 	printf("Usage: effectiveTestor -l insert length (20 by default) \n \
 		\r\t\t\t-a chunking algorithm\n \
+		\r\t\t\t-m the ones jMask less than cMask, default 1\n \
 		\rChunking alg include:\n");
 	for(int i=0; i<algNum; i++){
 		printf("\t%s\n", chunkString[i]);
 	}
 }
 
-int chunkAlg;
+/**
+ * mto means "Mask Ones Less Than Chunk Ones"
+*/
+int chunkAlg, mto = 1;
 int main(int argc, char **argv){
 	void *p = getChunkData();
 	int chunksNum;
@@ -256,7 +260,7 @@ int main(int argc, char **argv){
 		printf("ERROR parse para!\n");
 		return -1;
 	}
-	chunkData(p, &chunksNum, edge, chunkAlg);
+	chunkData(p, &chunksNum, edge, chunkAlg, mto);
 	int unchanged = 0, change1 = 0, change2 = 0, change3 = 0, change4 = 0;
 	testData(p, edge, chunksNum,
 		 &unchanged, &change1, &change2, &change3, &change4);
@@ -288,7 +292,7 @@ int parsePar(int argc, char **argv){
 	int opt;
 	chunkAlg = algNum;
 
-	opt = getopt(argc, argv, "a:");
+	opt = getopt(argc, argv, "a:l:m:");
 	do{
 		switch (opt) {
 		case 'a':
@@ -303,12 +307,17 @@ int parsePar(int argc, char **argv){
 		case 'l':
 			insRangeH = atoi(optarg);
 			break;
+
+		case 'm':
+			mto = atoi(optarg);
+			printf("mto: %d\n", mto);
+			break;
 		
 		default:
 			help();
 			return -1;
 		}
-	}while((opt = getopt(argc, argv, "a:l:"))>0);
+	}while((opt = getopt(argc, argv, "a:l:m:"))>0);
 
 	if(chunkAlg == algNum){
 		printf("get chunk algorithm ERROR!\n");

@@ -18,6 +18,7 @@ extern int optind, opterr, optopt;
 pid_t chunkingTid;
 int chunkSize = 4096;
 int chunkAlg;
+int mto = 1;
 char* dedupDir = "/home/xzjin/gcc_part1/";
 pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
@@ -89,7 +90,7 @@ void chunkData(void* data, unsigned long dataSize, unsigned long* chunksNum,
 	switch (cM) {
 	case JC:
 		if(!inited[JC]){
-			gearjump_init(chunkSize);
+			gearjump_init(chunkSize, mto);
 			inited[JC] = 1;
 		}
 		chunking = gearjump_chunk_data;
@@ -97,7 +98,7 @@ void chunkData(void* data, unsigned long dataSize, unsigned long* chunksNum,
 
 	case JCTTTD:
 		if(!inited[JC]){
-			gearjump_init(chunkSize);
+			gearjump_init(chunkSize, mto);
 			inited[JC] = 1;
 		}
 		chunking = gearjumpTTTD_chunk_data;
@@ -224,6 +225,7 @@ void help(){
 		speedTestor -d Dir(ends with \"/\") \n \
 			-p parameter to use for leapCDC \n \
 			-c chunk size\n \
+			-m the ones jMask less than cMask, default 1\n \
 			-a chunking algorithm\n \
 		\rChunking alg include:\n");
 	for(int i=0; i<algNum; i++){
@@ -361,7 +363,7 @@ void printSizeDist(){
 
 int parsePar(int argc, char **argv){
 	int opt, parIdx=1;
-	opt = getopt(argc, argv, "d:c:p:a:");
+	opt = getopt(argc, argv, "d:c:p:a:m:");
 	do{
 		switch (opt) {
 		case 'd':
@@ -389,12 +391,18 @@ int parsePar(int argc, char **argv){
 			parIdx = atoi(optarg);
 			printf("parIdx: %d\n", parIdx);
 			break;
+
+		case 'm':
+			mto = atoi(optarg);
+			printf("mto: %d\n", mto);
+			break;
+		
 printHelp:
 		default:
 			help();
 			return -1;
 		}
-	}while((opt = getopt(argc, argv, "d:c:p:a:"))>0);
+	}while((opt = getopt(argc, argv, "d:c:p:a:m:"))>0);
 
 	if(chunkAlg == algNum){
 		printf("get chunk algorithm ERROR!\n");
