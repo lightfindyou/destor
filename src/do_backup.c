@@ -37,15 +37,14 @@ void do_backup(char *path) {
         start_read_phase();
         TIMER_BEGIN(2);
         start_chunk_phase();
-#ifndef NODEDUP
         start_hash_phase();
-#endif //NODEDUP
     }
-#ifndef NODEDUP
     start_dedup_phase();
+    start_feature_phase();
+    start_simi_phase();
+    start_xdelta_phase();
     start_rewrite_phase();
     start_filter_phase();
-#endif //NODEDUP
 
     do {
 //        sleep(2);

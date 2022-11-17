@@ -245,11 +245,14 @@ int index_lookup(struct segment* s) {
     if(destor.index_category[1] == INDEX_CATEGORY_LOGICAL_LOCALITY
             && destor.index_segment_selection_method[0] != INDEX_SEGMENT_SELECT_BASE){
         /* Similarity-based */
+        /*prefetch feature of chunk into LRU cache*/
         s->features = sampling(s->chunks, s->chunk_num);
         index_lookup_similarity_detection(s);
+        printf("index look up similarity detection!");
     }else{
         /* Base */
         index_lookup_base(s);
+        printf("index look up fix!");
     }
     TIMER_END(1, jcr.dedup_time);
 

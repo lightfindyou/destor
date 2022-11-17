@@ -65,69 +65,53 @@ void send_segment(struct segment* s) {
 
 }
 
-void *dedup_thread(void *arg) {
-	struct segment* s = NULL;
+void *feature_thread(void *arg) {
+	char code[41];
 	while (1) {
-		struct chunk *c = NULL;
-		if (destor.simulation_level != SIMULATION_ALL)
-			c = sync_queue_pop(hash_queue);
-		else
-			c = sync_queue_pop(trace_queue);
+		struct chunk* c = sync_queue_pop(dedup_queue);
 
-		/* Add the chunk to the segment. */
-		s = segmenting(c);
-		if (!s)
-			continue;
-		/* segmenting success */
-		if (s->chunk_num > 0) {
-			VERBOSE("Dedup phase: the %lldth segment of %lld chunks", segment_num++,
-					s->chunk_num);
-			/* Each duplicate chunk will be marked. */
-			pthread_mutex_lock(&index_lock.mutex);
-			while (index_lookup(s) == 0) {
-				pthread_cond_wait(&index_lock.cond, &index_lock.mutex);
-			}
-			pthread_mutex_unlock(&index_lock.mutex);
-		} else {
-			VERBOSE("Dedup phase: an empty segment");
-		}
-		/* Send chunks in the segment to the next phase.
-		 * The segment will be cleared. */
-		send_segment(s);
-
-		free_segment(s);
-		s = NULL;
-
-		if (c == NULL)
+		if (c == NULL) {
+			sync_queue_term(feature_queue);
 			break;
+		}
+
+		if (CHECK_CHUNK(c, CHUNK_FILE_START) || CHECK_CHUNK(c, CHUNK_FILE_END)) {
+			sync_queue_push(feature_queue, c);
+			continue;
+		}
+
+		TIMER_DECLARE(1);
+		TIMER_BEGIN(1);
+		/*calculate features*/
+		featuring(c->data, c->size, &c->fea);
+		TIMER_END(1, jcr.hash_time);
+
+		VERBOSE("Feature phase: %ldth chunk identified by %s", chunk_num++, code);
+
+		sync_queue_push(feature_queue, c);
 	}
-
-	sync_queue_term(dedup_queue);
-
 	return NULL;
+
 }
 
-void start_dedup_phase() {
+void start_simi_phase() {
 
-	if(destor.index_segment_algorithm[0] == INDEX_SEGMENT_CONTENT_DEFINED)
-		index_lock.wait_threshold = destor.rewrite_algorithm[1] + destor.index_segment_max - 1;
-	else if(destor.index_segment_algorithm[0] == INDEX_SEGMENT_FIXED)
-		index_lock.wait_threshold = destor.rewrite_algorithm[1] + destor.index_segment_algorithm[1] - 1;
-	else
-		index_lock.wait_threshold = -1; // file-defined segmenting has no threshold.
+//	if(destor.index_segment_algorithm[0] == INDEX_SEGMENT_CONTENT_DEFINED)
+//		index_lock.wait_threshold = destor.rewrite_algorithm[1] + destor.index_segment_max - 1;
+//	else if(destor.index_segment_algorithm[0] == INDEX_SEGMENT_FIXED)
+//		index_lock.wait_threshold = destor.rewrite_algorithm[1] + destor.index_segment_algorithm[1] - 1;
+//	else
+//		index_lock.wait_threshold = -1; // file-defined segmenting has no threshold.
 
 	pthread_mutex_init(&index_lock.mutex, NULL);
 	pthread_cond_init(&index_lock.cond, NULL);
 
-#ifndef NODEDUP
-	dedup_queue = sync_queue_new(1000);
+	simi_queue = sync_queue_new(1000);
 
-	pthread_create(&feature_t, NULL, dedup_thread, NULL);
-#endif	//NODEDUP
+	pthread_create(&feature_t, NULL, feature_thread, NULL);
 }
 
 void stop_dedup_phase() {
 	pthread_join(feature_t, NULL);
-	NOTICE("dedup phase stops successfully: %d segments of %d chunks on average",
-			segment_num, segment_num ? chunk_num / segment_num : 0);
+	NOTICE("feature phase stops successfully: %d chunks", chunk_num);
 }

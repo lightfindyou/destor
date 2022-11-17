@@ -59,6 +59,7 @@ static void top_segment_select(GHashTable* features) {
 	/* Iterate the features of the segment. */
 	while (g_hash_table_iter_next(&iter, &key, &value)) {
 		/* Each feature is mapped to several segment IDs. */
+		//search segment accroding to fingerprint/features
 		segmentid *ids = kvstore_lookup((fingerprint*) key);
 		if (ids) {
 			index_overhead.lookup_requests++;

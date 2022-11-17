@@ -80,6 +80,11 @@
 #define CHUNK_TTTDGEAR 13
 #define CHUNK_JCTTTD 14
 
+#define FEAUTRE_NO 0
+#define FEAUTRE_NTRANSFORM 1
+#define FEAUTRE_FINENESS 2
+#define FEAUTRE_DEEPSKETCH 3
+
 /*
  * A global fingerprint index is required.
  * A successful query returns a container id or a segment id for prefetching.
@@ -212,6 +217,7 @@ struct destor {
 	int chunk_min_size;
 	int chunk_avg_size;
 	int jumpOnes;
+	int feature_algorithm;
 
 	/* the cache type and size */
 	int restore_cache[2];
@@ -293,6 +299,7 @@ struct destor {
 } destor;
 
 typedef unsigned char fingerprint[20];
+typedef unsigned char feature[128];
 typedef int64_t containerid; //container id
 typedef int64_t segmentid;
 
@@ -301,6 +308,7 @@ struct chunk {
 	int flag;
 	containerid id;
 	fingerprint fp;
+	feature fea;
 	unsigned char *data;
 };
 

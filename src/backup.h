@@ -66,6 +66,12 @@ SyncQueue* hash_queue;
 SyncQueue* trace_queue;
 /* Output of dedup phase */
 SyncQueue* dedup_queue;
+/* Output of feature phase */
+SyncQueue* feature_queue;
+/* Output of simi phase */
+SyncQueue* simi_queue;
+/* Output of xdelta phase */
+SyncQueue* xdelta_queue;
 /* Output of rewrite phase. */
 SyncQueue* rewrite_queue;
 
