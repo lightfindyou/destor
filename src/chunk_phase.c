@@ -21,6 +21,7 @@ static inline int fixed_chunk_data(unsigned char* buf, int size){
  * Destor currently supports fixed-sized chunking and (normalized) rabin-based chunking.
  */
 static void* chunk_thread(void *arg) {
+	static chunkid cid = 1;
 	int leftlen = 0;
 	int leftoff = 0;
 	unsigned char *leftbuf = malloc(DEFAULT_BLOCK_SIZE + destor.chunk_max_size);
@@ -89,6 +90,7 @@ static void* chunk_thread(void *arg) {
 			memcpy(nc->data, leftbuf + leftoff, chunk_size);
 			leftlen -= chunk_size;
 			leftoff += chunk_size;
+			nc->cid = cid++;
 
 			if (memcmp(zeros, nc->data, chunk_size) == 0) {
 				VERBOSE("Chunk phase: %ldth chunk  of %d zero bytes",

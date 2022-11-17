@@ -42,9 +42,9 @@ void do_backup(char *path) {
     start_dedup_phase();
     start_feature_phase();
     start_simi_phase();
-    start_xdelta_phase();
-    start_rewrite_phase();
-    start_filter_phase();
+//  start_xdelta_phase();
+//  start_rewrite_phase();
+//  start_filter_phase();
 
     do {
 //        sleep(2);

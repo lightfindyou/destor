@@ -1,50 +1,53 @@
 #include <xxhash.h>
+#include "featuring.h"
 #include "../destor.h"
+#define FEATURE_NUM 12
+#define SF_NUM 4
 
-static void* fineness_featuring(unsigned char* buf, int size, unsigned char* fea){
-	for (int i = 0; i < FEATURE_NUM; ++i) feature[i] = 0;
+int compar(const void * a, const void * b){
+	feature* f1 = a;
+	feature* f2 = b;
+
+	if(f1<f2){
+		return 1;
+	}else if(f1 > f2){
+		return -1;
+	}
+
+	return 0;
+}
+
+static void* finesse_featuring(unsigned char* buf, int size, unsigned char* fea){
+	feature curFea[FEATURE_NUM];
+	sufeature* superfeature = (sufeature)fea;
+
+	int subchs = size/FEATURE_NUM;
+
+	for (int i = 0; i < FEATURE_NUM; ++i) curFea[i] = 0;
 	for (int i = 0; i < SF_NUM; ++i) superfeature[i] = 0;
 
 	for (int i = 0; i < FEATURE_NUM; ++i) {
 		int64_t fp = 0;
-
-		for (int j = subchunkIndex[i]; j < subchunkIndex[i] + W; ++j) {
-			fp *= A;
-			fp += (unsigned char)buf[j];
-			fp %= MOD;
+		int len = subchs;
+		if(i== (FEATURE_NUM - 1)){
+			len = size - (subchs * i);
 		}
 
-		for (int j = subchunkIndex[i]; j < subchunkIndex[i + 1] - W + 1; ++j) {
-			if (fp > feature[i]) feature[i] = fp;
-
-			fp -= (buf[j] * Apower) % MOD;
-			while (fp < 0) fp += MOD;
-			if (j != subchunkIndex[i + 1] - W) {
-				fp *= A;
-				fp += buf[j + W];
-				fp %= MOD;
-			}
-		}
+		curFea[i] = rabin_maxfp(buf[subchs*i], len);
 	}
 
 	for (int i = 0; i < FEATURE_NUM / SF_NUM; ++i) {
-		std::sort(feature + i * SF_NUM, feature + (i + 1) * SF_NUM);
+		//sort in descending
+		qsort(curFea, FEATURE_NUM, sizeof(feature), compar);
 	}
 
 	for (int i = 0; i < SF_NUM; ++i) {
-		uint64_t temp[FEATURE_NUM / SF_NUM];
+		feature temp[FEATURE_NUM / SF_NUM];
 		for (int j = 0; j < FEATURE_NUM / SF_NUM; ++j) {
-			temp[j] = feature[j * SF_NUM + i];
+			temp[j] = curFea[j * SF_NUM + i];
 		}
-		superfeature[i] = XXH64(temp, sizeof(uint64_t) * FEATURE_NUM / SF_NUM, 0);
+		superfeature[i] = XXH64(temp, sizeof(feature) * FEATURE_NUM / SF_NUM, 0);
 	}
 
-	uint32_t r = full_uint32_t(gen2) % SF_NUM;
-	for (int i = 0; i < SF_NUM; ++i) {
-		int index = (r + i) % SF_NUM;
-		if (sfTable[index].count(superfeature[index])) {
-			return sfTable[index][superfeature[index]].back();
-		}
-	}
 	return -1;
 }

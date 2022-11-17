@@ -11,62 +11,16 @@
 #include "index/index.h"
 #include "backup.h"
 #include "storage/containerstore.h"
+#include "similariting/similariting.h"
+#include "xdelta3/xdelta3.h"
 
-static pthread_t feature_t;
+static pthread_t simi_t;
 static int64_t chunk_num;
-static int64_t segment_num;
 
-struct {
-	/* g_mutex_init() is unnecessary if in static storage. */
-	pthread_mutex_t mutex;
-	pthread_cond_t cond; // index buffer is not full
-	// index buffer is full, waiting
-	// if threshold < 0, it indicates no threshold.
-	int wait_threshold;
-} index_lock;
+static chunkid (*similariting)(feature fea);
 
-void send_segment(struct segment* s) {
-	/*
-	 * CHUNK_SEGMENT_START and _END are used for
-	 * reconstructing the segment in filter phase.
-	 */
-	struct chunk* ss = new_chunk(0);
-	SET_CHUNK(ss, CHUNK_SEGMENT_START);
-	sync_queue_push(dedup_queue, ss);
-
-	GSequenceIter *end = g_sequence_get_end_iter(s->chunks);
-	GSequenceIter *begin = g_sequence_get_begin_iter(s->chunks);
-	while(begin != end) {
-		struct chunk* c = g_sequence_get(begin);
-		if (!CHECK_CHUNK(c, CHUNK_FILE_START) && !CHECK_CHUNK(c, CHUNK_FILE_END)) {
-			if (CHECK_CHUNK(c, CHUNK_DUPLICATE)) {
-				if (c->id == TEMPORARY_ID) {
-					DEBUG("Dedup phase: %ldth chunk is identical to a unique chunk",
-							chunk_num++);
-				} else {
-					DEBUG("Dedup phase: %ldth chunk is duplicate in container %lld",
-							chunk_num++, c->id);
-				}
-			} else {
-				DEBUG("Dedup phase: %ldth chunk is unique", chunk_num++);
-			}
-
-		}
-		sync_queue_push(dedup_queue, c);
-		g_sequence_remove(begin);
-		begin = g_sequence_get_begin_iter(s->chunks);
-	}
-
-	struct chunk* se = new_chunk(0);
-	SET_CHUNK(se, CHUNK_SEGMENT_END);
-	sync_queue_push(dedup_queue, se);
-
-	s->chunk_num = 0;
-
-}
-
-void *feature_thread(void *arg) {
-	char code[41];
+void *simi_thread(void *arg) {
+	char deltaOut[2*destor.chunk_avg_size];
 	while (1) {
 		struct chunk* c = sync_queue_pop(dedup_queue);
 
@@ -83,11 +37,18 @@ void *feature_thread(void *arg) {
 		TIMER_DECLARE(1);
 		TIMER_BEGIN(1);
 		/*calculate features*/
-		featuring(c->data, c->size, &c->fea);
+		chunkid basecid = similariting(c->fea);
 		TIMER_END(1, jcr.hash_time);
 
-		VERBOSE("Feature phase: %ldth chunk identified by %s", chunk_num++, code);
+		VERBOSE("Similariting phase: %ldth chunk similar with %ld", chunk_num++, basecid);
 
+		//TODO get chunk by id
+		struct chunk* basec;
+		//TODO xdelta
+		xdelta3_compress(c->data, c->size, basec->data, basec->size, deltaOut, 1);
+		//TODO calcualte output size
+
+		//TODO store chunk
 		sync_queue_push(feature_queue, c);
 	}
 	return NULL;
@@ -96,22 +57,19 @@ void *feature_thread(void *arg) {
 
 void start_simi_phase() {
 
-//	if(destor.index_segment_algorithm[0] == INDEX_SEGMENT_CONTENT_DEFINED)
-//		index_lock.wait_threshold = destor.rewrite_algorithm[1] + destor.index_segment_max - 1;
-//	else if(destor.index_segment_algorithm[0] == INDEX_SEGMENT_FIXED)
-//		index_lock.wait_threshold = destor.rewrite_algorithm[1] + destor.index_segment_algorithm[1] - 1;
-//	else
-//		index_lock.wait_threshold = -1; // file-defined segmenting has no threshold.
+	if (destor.similarity_algorithm == SIMILARITY_NTRANSFORM){
+		similariting = ntransform_similariting;
+	}else if(destor.similarity_algorithm == SIMILARITY_DEEPSKETCH){
+		similariting = deepsketch_similariting;
+	}else if(destor.similarity_algorithm == SIMILARITY_FINENESS){
+		similariting = fineness_similariting;
+	}
 
-	pthread_mutex_init(&index_lock.mutex, NULL);
-	pthread_cond_init(&index_lock.cond, NULL);
-
-	simi_queue = sync_queue_new(1000);
-
-	pthread_create(&feature_t, NULL, feature_thread, NULL);
+	feature_queue = sync_queue_new(1000);
+	pthread_create(&simi_t, NULL, simi_thread, NULL);
 }
 
 void stop_dedup_phase() {
-	pthread_join(feature_t, NULL);
-	NOTICE("feature phase stops successfully: %d chunks", chunk_num);
+	pthread_join(simi_t, NULL);
+	NOTICE("similarity phase stops successfully: %d chunks", chunk_num);
 }

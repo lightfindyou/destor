@@ -54,10 +54,11 @@ void start_feature_phase() {
 	}else if(destor.feature_algorithm == FEAUTRE_DEEPSKETCH){
 		featuring = deepsketch_featuring;
 	}else if(destor.feature_algorithm == FEAUTRE_FINENESS){
-		featuring = fineness_featuring;
+		featuring = finesse_featuring;
 	}
 
 	feature_queue = sync_queue_new(1000);
+
 	pthread_create(&feature_t, NULL, feature_thread, NULL);
 }
 
