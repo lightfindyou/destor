@@ -286,7 +286,7 @@ feature rabin_maxfp(unsigned char *p, int n) {
 }
 
 
-void rabin_ntransform(unsigned char *p, int size, sufeature* sf, int sfnum) {
+void rabin_ntransform(unsigned char *p, int size, feature* fea, int featureNum) {
 
 	UINT64 f_break = 0;
 	UINT64 count = 0;
@@ -304,9 +304,9 @@ void rabin_ntransform(unsigned char *p, int size, sufeature* sf, int sfnum) {
 	while (i < size) {
 
 		SLIDE(p[i - 1], fp, bufPos, buf);
-		for(int j = 0; j< sfnum; j++){
+		for(int j = 0; j< featureNum; j++){
 			s = (fp*maMatrix[j][0] + maMatrix[1]);
-			if(s>sf[j]){ sf[j] = s; }
+			if(s>fea[j]){ fea[j] = s; }
 		}
 		i++;
 	}

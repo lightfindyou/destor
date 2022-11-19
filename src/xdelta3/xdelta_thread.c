@@ -41,8 +41,10 @@ void *xdelta_thread(void *arg) {
 			int deltaSize = xdelta3_compress(c->data, c->size, basec->data, basec->size, deltaOut, 1);
 			if(deltaSize< c->size){
 				memcpy(c->data, deltaOut, deltaSize);
+				int32_t ori_size = c->size;
 				c->size = deltaSize;
 				jcr.total_xdelta_size += c->size;
+				jcr.total_xdelta_saved_size += ori_size - c->size;
 			}else{
 				jcr.total_unique_size += c->size;
 			}

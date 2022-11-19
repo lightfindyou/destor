@@ -16,7 +16,7 @@
 static pthread_t feature_t;
 static int64_t chunk_num;
 
-static void (*featuring)(unsigned char* buf, int size, unsigned char* fea);
+static void (*featuring)(unsigned char* buf, int size, unsigned char* sufea);
 
 void *feature_thread(void *arg) {
 	while (1) {

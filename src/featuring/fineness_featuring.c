@@ -16,9 +16,9 @@ int compar(const void * a, const void * b){
 	return 0;
 }
 
-static void* finesse_featuring(unsigned char* buf, int size, unsigned char* fea){
+static void* finesse_featuring(unsigned char* buf, int size, unsigned char* sufea){
 	feature curFea[FINESSE_FEATURE_NUM];
-	sufeature* superfeature = (sufeature)fea;
+	sufeature* superfeature = (sufeature)sufea;
 
 	int subchs = size/FINESSE_FEATURE_NUM;
 

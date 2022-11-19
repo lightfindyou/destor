@@ -6,14 +6,14 @@
 #define SIMILARITY_H_
 
 #include "destor.h"
-
-#define FINESSE_FEATURE_NUM 12
-#define FINESSE_SF_NUM 4
+#include "featuring/featuring.h"
 
 GHashTable* fineness_sufeature_tab;
 static void fineness_similariting_init();
 static unsigned char* fineness_similariting(struct chunk* c);
 
+GHashTable* ntransform_sufeature_tab;
+static void ntransform_similariting_init();
 chunkid ntransform_similariting(feature fea);
 chunkid deepsketch_similariting(feature fea);
 

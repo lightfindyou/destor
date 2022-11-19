@@ -102,13 +102,16 @@ void do_backup(char *path) {
     printf("total size(B): %" PRId64 "\n", jcr.data_size);
     printf("stored data size(B): %" PRId64 "\n",
            jcr.unique_data_size + jcr.rewritten_chunk_size);
+    printf("xdelta compress ratio: %.4f\n",
+           jcr.data_size != 0 ? (jcr.total_xdelta_saved_size)*100 /
+                                    (double)(jcr.data_size):0);
     printf("deduplication ratio: \x1B[32m%.4f\x1B[37m, %.4f\n",
-           jcr.data_size != 0 ? (jcr.data_size - jcr.unique_data_size -
-                                 jcr.rewritten_chunk_size) /
+           jcr.data_size != 0 ? (jcr.data_size - jcr.total_unique_size -
+                                 jcr.total_xdelta_size)*100 /
                                     (double)(jcr.data_size)
                               : 0,
-           jcr.data_size /
-               (double)(jcr.unique_data_size + jcr.rewritten_chunk_size));
+           jcr.data_size*100 /(double)(jcr.data_size - jcr.total_unique_size -
+                                 jcr.total_xdelta_size));
     printf("\x1B[32mTotal time(s): %.3f\x1B[37m\n", jcr.total_time / 1000000);
     printf("throughput(MB/s): %.2f\n",
            (double)jcr.data_size * 1000000 / (1024 * 1024 * jcr.total_time));
