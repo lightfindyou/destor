@@ -14,7 +14,7 @@
 #include "similariting/similariting.h"
 #include "xdelta3/xdelta3.h"
 
-static pthread_t store_t;
+static pthread_t xdelta_t;
 static int64_t chunk_num;
 
 static chunkid (*similariting)(feature fea);
@@ -49,6 +49,8 @@ void *store_thread(void *arg) {
 
 		VERBOSE("Similariting phase: %ldth chunk similar with %ld", chunk_num++, c->basefp);
 
+		// Add chunk into table here to enable xdelta search base chunk unorderly
+		g_hash_table_replace(fp_tab, &(c->fp), c);
 		//TODO store chunk
 		sync_queue_push(simi_queue, c);
 	}
@@ -67,11 +69,12 @@ void start_simi_phase() {
 		similariting = fineness_similariting;
 	}
 
+	fp_tab = g_hash_table_new(g_int64_hash, g_fingerprint_equal);
 	feature_queue = sync_queue_new(1000);
-	pthread_create(&store_t, NULL, store_thread, NULL);
+	pthread_create(&xdelta_t, NULL, store_thread, NULL);
 }
 
 void stop_simi_phase() {
-	pthread_join(store_t, NULL);
+	pthread_join(xdelta_t, NULL);
 	NOTICE("similarity phase stops successfully: %d chunks", chunk_num);
 }

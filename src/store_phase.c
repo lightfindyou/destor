@@ -2,7 +2,7 @@
 #include "jcr.h"
 #include "backup.h"
 
-static pthread_t store_t;
+static pthread_t xdelta_t;
 static int64_t chunk_num;
 
 
@@ -39,10 +39,10 @@ void *store_thread(void *arg) {
 
 void start_store_phase() {
 	store_phase_init();
-	pthread_create(&store_t, NULL, store_thread, NULL);
+	pthread_create(&xdelta_t, NULL, store_thread, NULL);
 }
 
 void stop_store_phase() {
-	pthread_join(store_t, NULL);
+	pthread_join(xdelta_t, NULL);
 	NOTICE("store phase stops successfully: %d chunks", chunk_num);
 }

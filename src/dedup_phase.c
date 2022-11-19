@@ -47,6 +47,7 @@ void send_segment(struct segment* s) {
 					DEBUG("Dedup phase: %ldth chunk is duplicate in container %lld",
 							chunk_num++, c->id);
 				}
+				jcr.total_dup_size += c->size;
 			} else {
 				DEBUG("Dedup phase: %ldth chunk is unique", chunk_num++);
 			}
