@@ -48,10 +48,13 @@ struct jcr{
 	double read_time;
 	double chunk_time;
 	double hash_time;
+	double simi_time;
+	double xdelta_time;
 	double dedup_time;
 	double rewrite_time;
 	double filter_time;
 	double write_time;
+	double store_time;
 
 	double read_recipe_time;
 	double read_chunk_time;

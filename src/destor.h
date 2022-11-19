@@ -188,6 +188,7 @@
 
 /* states of normal chunks. */
 #define CHUNK_UNIQUE (0x0000)
+#define CHUNK_SIMILAR (0x0080)
 #define CHUNK_DUPLICATE (0x0100)
 #define CHUNK_SPARSE (0x0200)
 #define CHUNK_OUT_OF_ORDER (0x0400)
@@ -316,6 +317,7 @@ struct chunk {
 	int flag;
 	containerid id;
 	chunkid cid;
+	unsigned char* basefp;	//chunk fingerprint of basechunk
 	fingerprint fp;
 	feature fea[12];
 	unsigned char *data;

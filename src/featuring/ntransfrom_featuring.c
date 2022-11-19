@@ -5,7 +5,7 @@
 
 static void* ntransfrom_featuring(unsigned char* buf, int size, unsigned char* fea){
 	sufeature* superfeature = (sufeature)fea;
-	for (int i = 0; i < SF_NUM; ++i) superfeature[i] = 0;
+	for (int i = 0; i < FINESSE_SF_NUM; ++i) superfeature[i] = 0;
 
-	rabin_ntransform(buf, size, superfeature, SF_NUM);
+	rabin_ntransform(buf, size, superfeature, FINESSE_SF_NUM);
 }

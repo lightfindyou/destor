@@ -75,4 +75,6 @@ SyncQueue* xdelta_queue;
 /* Output of rewrite phase. */
 SyncQueue* rewrite_queue;
 
+GHashTable* fp_tab;
+
 #endif /* BACKUP_H_ */
