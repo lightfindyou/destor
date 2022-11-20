@@ -16,7 +16,7 @@
 static pthread_t feature_t;
 static int64_t chunk_num;
 
-static void (*featuring)(unsigned char* buf, int size, unsigned char* sufea);
+static void (*featuring)(unsigned char* buf, int size, struct chunk* c);
 
 void *feature_thread(void *arg) {
 	while (1) {
@@ -50,11 +50,16 @@ void *feature_thread(void *arg) {
 void start_feature_phase() {
 
 	if (destor.feature_algorithm == FEAUTRE_NTRANSFORM){
+		rabin_init();
 		featuring = ntransform_featuring;
 	}else if(destor.feature_algorithm == FEAUTRE_DEEPSKETCH){
 		featuring = deepsketch_featuring;
 	}else if(destor.feature_algorithm == FEAUTRE_FINENESS){
+		rabin_init();
 		featuring = finesse_featuring;
+	}else if(destor.feature_algorithm == FEAUTRE_HIGHDEDUP){
+		gear_init(HIGHDEDUP_FEATURE_NUM);
+		featuring = highdedup_featuring;
 	}
 
 	feature_queue = sync_queue_new(1000);

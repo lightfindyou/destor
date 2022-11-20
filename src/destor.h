@@ -84,11 +84,15 @@
 #define FEAUTRE_NTRANSFORM 1
 #define FEAUTRE_FINENESS 2
 #define FEAUTRE_DEEPSKETCH 3
+#define FEAUTRE_HIGHDEDUP 4
+#define FEAUTRE_ODESS 5
 
 #define SIMILARITY_NO 0
 #define SIMILARITY_NTRANSFORM 1
 #define SIMILARITY_DEEPSKETCH 2
 #define SIMILARITY_FINENESS 3
+#define SIMILARITY_HIGHDEDUP 4
+#define SIMILARITY_ODESS 5
 /*
  * A global fingerprint index is required.
  * A successful query returns a container id or a segment id for prefetching.
@@ -305,6 +309,7 @@ struct destor {
 } destor;
 
 typedef unsigned char fingerprint[20];
+typedef unsigned char* fpp;
 //typedef unsigned char feature[128];
 typedef uint64_t feature;
 typedef uint64_t sufeature;
@@ -316,9 +321,9 @@ struct chunk {
 	int32_t size;
 	int flag;
 	containerid id;
-	chunkid cid;
 	unsigned char* basefp;	//chunk fingerprint of basechunk
 	fingerprint fp;
+	short feaNum;			//	number of feature
 	feature fea[12];
 	unsigned char *data;
 };

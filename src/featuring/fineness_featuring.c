@@ -16,9 +16,9 @@ int compar(const void * a, const void * b){
 	return 0;
 }
 
-static void* finesse_featuring(unsigned char* buf, int size, unsigned char* sufea){
+static void finesse_featuring(unsigned char* buf, int size, struct chunk* c){
 	feature curFea[FINESSE_FEATURE_NUM];
-	sufeature* superfeature = (sufeature)sufea;
+	sufeature* superfeature = c->fea;
 
 	int subchs = size/FINESSE_FEATURE_NUM;
 
@@ -32,7 +32,7 @@ static void* finesse_featuring(unsigned char* buf, int size, unsigned char* sufe
 			len = size - (subchs * i);
 		}
 
-		curFea[i] = rabin_maxfp(buf[subchs*i], len);
+		curFea[i] = rabin_finesse(buf[subchs*i], len);
 	}
 
 	for (int i = 0; i < FINESSE_FEATURE_NUM / FINESSE_SF_NUM; ++i) {
@@ -47,6 +47,4 @@ static void* finesse_featuring(unsigned char* buf, int size, unsigned char* sufe
 		}
 		superfeature[i] = XXH64(temp, sizeof(feature) * FINESSE_FEATURE_NUM / FINESSE_SF_NUM, 0);
 	}
-
-	return -1;
 }

@@ -1,15 +1,8 @@
 #include "../destor.h"
 
 #define MSB64 0x8000000000000000LL
-#define MAXBUF (128*1024)
-
-static int chunkMax, chunkAvg, chunkMin;
-extern unsigned long g_condition_mask[];
-extern unsigned long Mask, jumpMask;
-extern int jumpLen;
 
 #define FINGERPRINT_PT  0xbfe6b8a5bf378d83LL
-#define BREAKMARK_VALUE 0x78
 
 #define SLIDE(m,fp,bufPos,buf) do{	\
 	    unsigned char om;   \
@@ -253,7 +246,7 @@ void windows_reset() {
 
 static int rabin_mask = 0;
 
-void chunkAlg_init() {
+void rabin_init() {
 	window_init(FINGERPRINT_PT);
 	_last_pos = 0;
 	_cur_pos = 0;
@@ -262,7 +255,7 @@ void chunkAlg_init() {
 	rabin_mask = destor.chunk_avg_size - 1;
 }
 
-feature rabin_maxfp(unsigned char *p, int n) {
+feature rabin_finesse(unsigned char *p, int n) {
 
 	UINT64 f_break = 0;
 	UINT64 count = 0;

@@ -3,7 +3,7 @@
 #include "featuring.h"
 #define SF_NUM 4
 
-static void* ntransfrom_featuring(unsigned char* buf, int size, unsigned char* sufea){
+static void ntransfrom_featuring(unsigned char* buf, int size, unsigned char* sufea){
 	feature fea[NTRANSFORM_FEATURE_NUM];
 	sufeature* superfeature = (sufeature)sufea;
 	for (int i = 0; i < NTRANSFORM_SF_NUM; ++i) fea[i] = 0;

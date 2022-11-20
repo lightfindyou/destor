@@ -2,41 +2,40 @@
 #include "../destor.h"
 #include "similariting.h"
 
-static void ntransform_similariting_init(){
-	ntransform_sufeature_tab = g_hash_table_new(g_int64_hash, g_fingerprint_equal);
+static void highdedup_similariting_init(){
+	highdedup_sufeature_tab = g_hash_table_new(g_int64_hash, g_fingerprint_equal);
 }
 
 /*Insert super features into the hash table*/
-void ntransform_insert_sufeature(struct chunk* c){
+void highdedup_insert_sufeature(struct chunk* c){
 	GSequence* targetSeq;
-	for (int i = 0; i < NTRANSFORM_SF_NUM; i++) {
+	for (int i = 0; i < c->feaNum; i++) {
 		
-		GQueue *tq = g_hash_table_lookup(ntransform_sufeature_tab, &(c->fea[i]));
+		GQueue *tq = g_hash_table_lookup(highdedup_sufeature_tab, &(c->fea[i]));
 		if (tq) {
 			targetSeq = g_queue_peek_head(tq);
 		}else{
 			targetSeq = g_sequence_new(NULL);
-			g_hash_table_replace(ntransform_sufeature_tab, &(c->fea[i]), targetSeq);
+			g_hash_table_replace(highdedup_sufeature_tab, &(c->fea[i]), targetSeq);
 		}
 		g_sequence_prepend(targetSeq, c);
 	}
 }
 
-fpp searchMostSimiChunk(GHashTable* cand_tab, fpp fp, int* curMaxHit, fpp curCandFp){
+//TODO seem uncorrect
+fpp highdedupSearchMostSimiChunk(GHashTable* cand_tab, fpp fp, int* curMaxHit, fpp curCandFp){
 
-	int* hitTime = NULL;
-	GQueue *tq = g_hash_table_lookup(cand_tab, fp);
-	if(tq){
-		hitTime = (int*)g_queue_peek_head(tq);
+	int* hitTime = g_hash_table_lookup(cand_tab, fp);
+
+	if(hitTime){
 		*hitTime = *hitTime + 1;
-		g_hash_table_replace (cand_tab, fp, hitTime);
-
 	}else{
 		hitTime = malloc(sizeof(int));
 		assert(hitTime);
 		*hitTime = 1;
-		g_hash_table_replace (cand_tab, fp, hitTime);
+		g_hash_table_replace(cand_tab, fp, hitTime);
 	}
+	//why here return fp?
 	if(*hitTime > *curMaxHit) return fp;
 
 	return curCandFp;
@@ -45,7 +44,7 @@ fpp searchMostSimiChunk(GHashTable* cand_tab, fpp fp, int* curMaxHit, fpp curCan
 /** return base chunk fingerprint if similary chunk is found
  *  else return 0
 */
-static fpp ntransform_similariting(struct chunk* c){
+static fpp highdedup_similariting(struct chunk* c){
 
 	fpp ret = NULL;
 	GHashTable* cand_tab = g_hash_table_new_full(g_int64_hash,
@@ -53,14 +52,14 @@ static fpp ntransform_similariting(struct chunk* c){
 	int r = rand();
 	int curMaxHitTime = 0;
 
-	for (int i = 0; i < NTRANSFORM_SF_NUM; i++) {
-		GQueue *tq = g_hash_table_lookup(ntransform_sufeature_tab, &(c->fea[i]));
+	for (int i = 0; i < c->feaNum; i++) {
+		GSequence *tq = (GSequence*)g_hash_table_lookup(highdedup_sufeature_tab, &(c->fea[i]));
 		GSequenceIter *end = g_sequence_get_end_iter(tq);
 		GSequenceIter *iter = g_sequence_get_begin_iter(tq);
 		for (; iter != end; iter = g_sequence_iter_next(iter)) {
 			struct chunk* c = (struct chunk*)g_sequence_get(iter);
 			fpp fp = c->fp;
-			ret = searchMostSimiChunk(cand_tab, fp, &curMaxHitTime, ret);
+			ret = highdedupSearchMostSimiChunk(cand_tab, fp, &curMaxHitTime, ret);
 		}
 	}
 
@@ -69,6 +68,6 @@ static fpp ntransform_similariting(struct chunk* c){
 	if(ret){ return ret; }
 
 	/*Only if the chunk is unique, add the chunk into sufeature table*/
-	ntransform_insert_sufeature(c);
+	highdedup_insert_sufeature(c);
 	return NULL;
 }

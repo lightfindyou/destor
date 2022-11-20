@@ -37,7 +37,7 @@ void *xdelta_thread(void *arg) {
 			}else{
 				DEBUG("find chunk wrong.\n");
 			}
-			VERBOSE("Similariting phase: %ldth chunk similar with %d", chunk_num++, basec->cid);
+			VERBOSE("Similariting phase: %ldth chunk similar with %d", chunk_num++, basec->basefp);
 			int deltaSize = xdelta3_compress(c->data, c->size, basec->data, basec->size, deltaOut, 1);
 			if(deltaSize< c->size){
 				memcpy(c->data, deltaOut, deltaSize);

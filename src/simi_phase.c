@@ -61,12 +61,16 @@ void *store_thread(void *arg) {
 void start_simi_phase() {
 
 	if (destor.similarity_algorithm == SIMILARITY_NTRANSFORM){
+		ntransform_similariting_init();
 		similariting = ntransform_similariting;
 	}else if(destor.similarity_algorithm == SIMILARITY_DEEPSKETCH){
 		similariting = deepsketch_similariting;
 	}else if(destor.similarity_algorithm == SIMILARITY_FINENESS){
 		fineness_similariting_init();
 		similariting = fineness_similariting;
+	}else if(destor.similarity_algorithm == SIMILARITY_HIGHDEDUP){
+
+		similariting = highdedup_similariting;
 	}
 
 	fp_tab = g_hash_table_new(g_int64_hash, g_fingerprint_equal);
