@@ -8,29 +8,22 @@ static void ntransform_similariting_init(){
 
 /*Insert super features into the hash table*/
 void ntransform_insert_sufeature(struct chunk* c){
-	GSequence* targetSeq;
+
 	for (int i = 0; i < NTRANSFORM_SF_NUM; i++) {
-		
-		GQueue *tq = g_hash_table_lookup(ntransform_sufeature_tab, &(c->fea[i]));
-		if (tq) {
-			targetSeq = g_queue_peek_head(tq);
-		}else{
-			targetSeq = g_sequence_new(NULL);
-			g_hash_table_replace(ntransform_sufeature_tab, &(c->fea[i]), targetSeq);
+		GSequence *tq = g_hash_table_lookup(ntransform_sufeature_tab, &(c->fea[i]));
+		if (!tq) {
+			tq = g_sequence_new(NULL);
+			g_hash_table_replace(ntransform_sufeature_tab, &(c->fea[i]), tq);
 		}
-		g_sequence_prepend(targetSeq, c);
+		g_sequence_prepend(tq, c);
 	}
 }
 
 fpp searchMostSimiChunk(GHashTable* cand_tab, fpp fp, int* curMaxHit, fpp curCandFp){
 
-	int* hitTime = NULL;
-	GQueue *tq = g_hash_table_lookup(cand_tab, fp);
-	if(tq){
-		hitTime = (int*)g_queue_peek_head(tq);
+	int* hitTime = g_hash_table_lookup(cand_tab, fp);
+	if(hitTime){
 		*hitTime = *hitTime + 1;
-		g_hash_table_replace (cand_tab, fp, hitTime);
-
 	}else{
 		hitTime = malloc(sizeof(int));
 		assert(hitTime);
@@ -54,7 +47,7 @@ static fpp ntransform_similariting(struct chunk* c){
 	int curMaxHitTime = 0;
 
 	for (int i = 0; i < NTRANSFORM_SF_NUM; i++) {
-		GQueue *tq = g_hash_table_lookup(ntransform_sufeature_tab, &(c->fea[i]));
+		GSequence *tq = g_hash_table_lookup(ntransform_sufeature_tab, &(c->fea[i]));
 		GSequenceIter *end = g_sequence_get_end_iter(tq);
 		GSequenceIter *iter = g_sequence_get_begin_iter(tq);
 		for (; iter != end; iter = g_sequence_iter_next(iter)) {

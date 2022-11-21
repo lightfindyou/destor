@@ -10,7 +10,7 @@
 #define XDELTA_THREAD_NUM 12
 pthread_t xdelta_tid[XDELTA_THREAD_NUM];
 
-static pthread_t xdelta_t;
+static pthread_t simi_t;
 static int64_t chunk_num;
 
 void start_xdelta_phase() {

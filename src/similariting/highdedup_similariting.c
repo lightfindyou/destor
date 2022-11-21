@@ -8,25 +8,20 @@ static void highdedup_similariting_init(){
 
 /*Insert super features into the hash table*/
 void highdedup_insert_sufeature(struct chunk* c){
-	GSequence* targetSeq;
+
 	for (int i = 0; i < c->feaNum; i++) {
-		
-		GQueue *tq = g_hash_table_lookup(highdedup_sufeature_tab, &(c->fea[i]));
-		if (tq) {
-			targetSeq = g_queue_peek_head(tq);
-		}else{
-			targetSeq = g_sequence_new(NULL);
-			g_hash_table_replace(highdedup_sufeature_tab, &(c->fea[i]), targetSeq);
+		GSequence *tq = g_hash_table_lookup(highdedup_sufeature_tab, &(c->fea[i]));
+		if (!tq) {
+			tq = g_sequence_new(NULL);
+			g_hash_table_replace(highdedup_sufeature_tab, &(c->fea[i]), tq);
 		}
-		g_sequence_prepend(targetSeq, c);
+		g_sequence_prepend(tq, c);
 	}
 }
 
-//TODO seem uncorrect
 fpp highdedupSearchMostSimiChunk(GHashTable* cand_tab, fpp fp, int* curMaxHit, fpp curCandFp){
 
 	int* hitTime = g_hash_table_lookup(cand_tab, fp);
-
 	if(hitTime){
 		*hitTime = *hitTime + 1;
 	}else{
@@ -35,7 +30,6 @@ fpp highdedupSearchMostSimiChunk(GHashTable* cand_tab, fpp fp, int* curMaxHit, f
 		*hitTime = 1;
 		g_hash_table_replace(cand_tab, fp, hitTime);
 	}
-	//why here return fp?
 	if(*hitTime > *curMaxHit) return fp;
 
 	return curCandFp;

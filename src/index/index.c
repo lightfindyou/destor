@@ -1,5 +1,6 @@
 #include "index.h"
 #include "kvstore.h"
+#include "backup.h"
 #include "fingerprint_cache.h"
 #include "index_buffer.h"
 #include "../storage/containerstore.h"
@@ -26,6 +27,8 @@ extern void init_segmenting_method();
 extern void init_sampling_method();
 
 void init_index() {
+
+	fp_tab = g_hash_table_new(g_int64_hash, g_fingerprint_equal);
     /* Do NOT assign a free function for value. */
     index_buffer.buffered_fingerprints = g_hash_table_new_full(g_int64_hash,
             g_fingerprint_equal, NULL, NULL);
@@ -232,32 +235,60 @@ extern struct {
  */
 int index_lookup(struct segment* s) {
 
-    /* Ensure the next phase not be blocked. */
-    if (index_lock.wait_threshold > 0
-            && index_buffer.chunk_num >= index_lock.wait_threshold) {
-        DEBUG("The index buffer is full (%d chunks in buffer)",
-                index_buffer.chunk_num);
-        return 0;
-    }
-
     TIMER_DECLARE(1);
     TIMER_BEGIN(1);
-    if(destor.index_category[1] == INDEX_CATEGORY_LOGICAL_LOCALITY
-            && destor.index_segment_selection_method[0] != INDEX_SEGMENT_SELECT_BASE){
-        /* Similarity-based */
-        /*prefetch feature of chunk into LRU cache*/
-        s->features = sampling(s->chunks, s->chunk_num);
-        index_lookup_similarity_detection(s);
-        printf("index look up similarity detection!");
-    }else{
-        /* Base */
-        index_lookup_base(s);
-        printf("index look up fix!");
+
+    GSequenceIter *iter = g_sequence_get_begin_iter(s->chunks);
+    GSequenceIter *end = g_sequence_get_end_iter(s->chunks);
+    for (; iter != end; iter = g_sequence_iter_next(iter)) {
+        struct chunk* c = g_sequence_get(iter);
+
+        if (CHECK_CHUNK(c, CHUNK_FILE_START) || CHECK_CHUNK(c, CHUNK_FILE_END))
+            continue;
+        
+        if(g_hash_table_lookup(fp_tab, &(c->fp))){
+            SET_CHUNK(c, CHUNK_DUPLICATE);
+        }else{
+            g_hash_table_replace(fp_tab, &(c->fp), c);
+        }
     }
     TIMER_END(1, jcr.dedup_time);
 
     return 1;
 }
+
+/*
+ * return 1: indicates lookup is successful.
+ * return 0: indicates the index buffer is full.
+ */
+//int index_lookup(struct segment* s) {
+//
+//    /* Ensure the next phase not be blocked. */
+//    if (index_lock.wait_threshold > 0
+//            && index_buffer.chunk_num >= index_lock.wait_threshold) {
+//        DEBUG("The index buffer is full (%d chunks in buffer)",
+//                index_buffer.chunk_num);
+//        return 0;
+//    }
+//
+//    TIMER_DECLARE(1);
+//    TIMER_BEGIN(1);
+//    if(destor.index_category[1] == INDEX_CATEGORY_LOGICAL_LOCALITY
+//            && destor.index_segment_selection_method[0] != INDEX_SEGMENT_SELECT_BASE){
+//        /* Similarity-based */
+//        /*prefetch feature of chunk into LRU cache*/
+//        s->features = sampling(s->chunks, s->chunk_num);
+//        index_lookup_similarity_detection(s);
+//        printf("index look up similarity detection!");
+//    }else{
+//        /* Base */
+//        index_lookup_base(s);
+//        printf("index look up fix!");
+//    }
+//    TIMER_END(1, jcr.dedup_time);
+//
+//    return 1;
+//}
 
 /*
  * Input features with a container/segment ID.

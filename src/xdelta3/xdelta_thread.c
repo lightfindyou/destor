@@ -20,7 +20,7 @@ void *xdelta_thread(void *arg) {
 		}
 
 		if (CHECK_CHUNK(c, CHUNK_FILE_START) || CHECK_CHUNK(c, CHUNK_FILE_END)) {
-			sync_queue_push(xdelta_queue, c);
+//			sync_queue_push(xdelta_queue, c);
 			continue;
 		}
 

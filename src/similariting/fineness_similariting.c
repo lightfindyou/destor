@@ -8,17 +8,14 @@ static void fineness_similariting_init(){
 
 /*Insert super features into the hash table*/
 void fineness_insert_sufeature(struct chunk* c){
-	GSequence* targetSeq;
 	for (int i = 0; i < FINESSE_SF_NUM; i++) {
 		
-		GQueue *tq = g_hash_table_lookup(fineness_sufeature_tab, &(c->fea[i]));
-		if (tq) {
-			targetSeq = g_queue_peek_head(tq);
-		}else{
-			targetSeq = g_sequence_new(NULL);
-			g_hash_table_replace(fineness_sufeature_tab, &(c->fea[i]), targetSeq);
+		GSequence *tq = g_hash_table_lookup(fineness_sufeature_tab, &(c->fea[i]));
+		if(!tq) {
+			tq = g_sequence_new(NULL);
+			g_hash_table_replace(fineness_sufeature_tab, &(c->fea[i]), tq);
 		}
-		g_sequence_prepend(targetSeq, c);
+		g_sequence_prepend(tq, c);
 	}
 }
 
@@ -26,13 +23,11 @@ void fineness_insert_sufeature(struct chunk* c){
  *  else return 0
 */
 static unsigned char* fineness_similariting(struct chunk* c){
-	GSequence* simSeq;
 	chunkid baseID = 0;
 	for (int i = 0; i < FINESSE_SF_NUM; i++) {
-		GSequence *tq = g_hash_table_lookup(fineness_sufeature_tab, &(c->fea[i]));
+		GSequence *tq = (GSequence*)g_hash_table_lookup(fineness_sufeature_tab, &(c->fea[i]));
 		if (tq) {
-			simSeq = g_queue_peek_head(tq);
-			struct chunk* c = (struct chunk*)g_sequence_get(g_sequence_get_begin_iter(simSeq));
+			struct chunk* c = (struct chunk*)g_sequence_get(g_sequence_get_begin_iter(tq));
 			unsigned char* basefp = c->fp;
 			return basefp;
 		}

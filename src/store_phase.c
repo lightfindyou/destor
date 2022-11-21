@@ -2,7 +2,7 @@
 #include "jcr.h"
 #include "backup.h"
 
-static pthread_t xdelta_t;
+static pthread_t simi_t;
 static int64_t chunk_num;
 
 
@@ -24,8 +24,8 @@ void *store_thread(void *arg) {
 		TIMER_BEGIN(1);
 
 		if(CHECK_CHUNK(c, CHUNK_UNIQUE) || CHECK_CHUNK(c, CHUNK_SIMILAR)){
+			/** done in dedup phase to enable dedup with most recent chunk*/
 			g_hash_table_replace(fp_tab, &(c->fp), c);
-			//TODO add total size
 		}
 
 		TIMER_END(1, jcr.store_time);
@@ -39,10 +39,10 @@ void *store_thread(void *arg) {
 
 void start_store_phase() {
 	store_phase_init();
-	pthread_create(&xdelta_t, NULL, store_thread, NULL);
+	pthread_create(&simi_t, NULL, store_thread, NULL);
 }
 
 void stop_store_phase() {
-	pthread_join(xdelta_t, NULL);
+	pthread_join(simi_t, NULL);
 	NOTICE("store phase stops successfully: %d chunks", chunk_num);
 }
