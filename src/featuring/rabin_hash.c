@@ -53,7 +53,7 @@ const int maMatrix[12][2]={
 	{73, 17443},
 };
 
-const char bytemsb[0x100] = { 0, 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 5,
+const char rabin_hash_bytemsb[0x100] = { 0, 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 5,
 		5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6,
 		6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 7,
 		7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
@@ -66,30 +66,30 @@ const char bytemsb[0x100] = { 0, 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 5,
 		8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, };
 
 /***********************************************the rabin**********************************************/
-static uint32_t fls32(UINT32 v) {
+static uint32_t rabinhash_fls32(UINT32 v) {
 	if (v & 0xffff0000) {
 		if (v & 0xff000000)
-			return 24 + bytemsb[v >> 24];
+			return 24 + rabin_hash_bytemsb[v >> 24];
 		else
-			return 16 + bytemsb[v >> 16];
+			return 16 + rabin_hash_bytemsb[v >> 16];
 	}
 	if (v & 0x0000ff00)
-		return 8 + bytemsb[v >> 8];
+		return 8 + rabin_hash_bytemsb[v >> 8];
 	else
-		return bytemsb[v];
+		return rabin_hash_bytemsb[v];
 }
 
-static uint32_t fls64(UINT64 v) {
+static uint32_t rabinhash_fls64(UINT64 v) {
 	UINT32 h;
 	if ((h = v >> 32))
-		return 32 + fls32(h);
+		return 32 + rabinhash_fls32(h);
 	else
-		return fls32((UINT32) v);
+		return rabinhash_fls32((UINT32) v);
 }
 
-UINT64 polymod(UINT64 nh, UINT64 nl, UINT64 d) {
+UINT64 rabinhash_polymod(UINT64 nh, UINT64 nl, UINT64 d) {
 
-	int k = fls64(d) - 1;
+	int k = rabinhash_fls64(d) - 1;
 	int i;
 
 	//printf ("polymod : k = %d\n", k);
@@ -131,7 +131,7 @@ UINT64 polymod(UINT64 nh, UINT64 nl, UINT64 d) {
 	return nl;
 }
 
-void polymult(UINT64 *php, UINT64 *plp, UINT64 x, UINT64 y) {
+void rabinhash_polymult(UINT64 *php, UINT64 *plp, UINT64 x, UINT64 y) {
 
 	int i;
 
@@ -165,41 +165,41 @@ void polymult(UINT64 *php, UINT64 *plp, UINT64 x, UINT64 y) {
 
 }
 
-UINT64 append8(UINT64 p, unsigned char m) {
+UINT64 rabinhash_append8(UINT64 p, unsigned char m) {
 	return ((p << 8) | m) ^ T[p >> shift];
 }
 
-UINT64 slide8(unsigned char m) {
+UINT64 rabinhash_slide8(unsigned char m) {
 	unsigned char om;
 	//printf("this char is %c\n",m);
 	if (++bufpos >= size)
 		bufpos = 0;
 	om = buf[bufpos];
 	buf[bufpos] = m;
-	return fp = append8(fp ^ U[om], m);
+	return fp = rabinhash_append8(fp ^ U[om], m);
 }
 
-UINT64 polymmult(UINT64 x, UINT64 y, UINT64 d) {
+UINT64 rabinhash_polymmult(UINT64 x, UINT64 y, UINT64 d) {
 
 	//printf ("polymmult (x %llu y %llu d %llu)\n", x, y, d);
 
 	UINT64 h, l;
-	polymult(&h, &l, x, y);
-	return polymod(h, l, d);
+	rabinhash_polymult(&h, &l, x, y);
+	return rabinhash_polymod(h, l, d);
 }
 
-void calcT(UINT64 poly) {
+void rabinhash_calcT(UINT64 poly) {
 
 	int j;
 	UINT64 T1;
 
 	//printf ("rabinpoly::calcT ()\n");
 
-	int xshift = fls64(poly) - 1;
+	int xshift = rabinhash_fls64(poly) - 1;
 	shift = xshift - 8;
-	T1 = polymod(0, (long long int) (1) << xshift, poly);
+	T1 = rabinhash_polymod(0, (long long int) (1) << xshift, poly);
 	for (j = 0; j < 256; j++) {
-		T[j] = polymmult(j, T1, poly) | ((UINT64) j << xshift);
+		T[j] = rabinhash_polymmult(j, T1, poly) | ((UINT64) j << xshift);
 
 		//printf ("rabinpoly::calcT tmp = %llu\n", polymmult (j, T1, poly));
 		//printf ("rabinpoly::calcT shift = %llu\n", ((UINT64) j << xshift));
@@ -217,28 +217,28 @@ void calcT(UINT64 poly) {
 
 }
 
-void rabinpoly_init(UINT64 p) {
+void rabinhash_rabinpoly_init(UINT64 p) {
 	poly = p;
-	calcT(poly);
+	rabinhash_calcT(poly);
 }
 
-void window_init(UINT64 poly) {
+void rabinhash_window_init(UINT64 poly) {
 
 	int i;
 	UINT64 sizeshift;
 
-	rabinpoly_init(poly);
+	rabinhash_rabinpoly_init(poly);
 	fp = 0;
 	bufpos = -1;
 	sizeshift = 1;
 	for (i = 1; i < size; i++)
-		sizeshift = append8(sizeshift, 0);
+		sizeshift = rabinhash_append8(sizeshift, 0);
 	for (i = 0; i < 256; i++)
-		U[i] = polymmult(i, sizeshift, poly);
+		U[i] = rabinhash_polymmult(i, sizeshift, poly);
 	memset((char*) buf, 0, sizeof(buf));
 }
 
-void windows_reset() {
+void rabinhash_windows_reset() {
 	fp = 0;
 	//memset((char*) buf,0,sizeof (buf));
 	//memset((char*) chunk,0,sizeof (chunk));
@@ -246,11 +246,11 @@ void windows_reset() {
 
 static int rabin_mask = 0;
 
-void rabin_init() {
-	window_init(FINGERPRINT_PT);
+void rabinhash_rabin_init() {
+	rabinhash_window_init(FINGERPRINT_PT);
 	_last_pos = 0;
 	_cur_pos = 0;
-	windows_reset();
+	rabinhash_windows_reset();
 	_num_chunks = 0;
 	rabin_mask = destor.chunk_avg_size - 1;
 }

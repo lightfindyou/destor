@@ -1,11 +1,11 @@
-#include "destor.h"
-#include "jcr.h"
-#include "index/index.h"
-#include "backup.h"
-#include "storage/containerstore.h"
-#include "similariting/similariting.h"
-#include "xdelta3/xdelta3.h"
-#include "xdelta3/xdelta_thread.h"
+#include "../destor.h"
+#include "../jcr.h"
+#include "../index/index.h"
+#include "../backup.h"
+#include "../storage/containerstore.h"
+#include "../similariting/similariting.h"
+#include "../xdelta3/xdelta3.h"
+#include "../xdelta3/xdelta_thread.h"
 
 static int64_t chunk_num;
 

@@ -3,7 +3,8 @@
 
 AC_PREREQ([2.67])
 AC_INIT([destor], [2.0], [fumin@hust.edu.cn])
-AM_INIT_AUTOMAKE([destor], [2.0])
+AM_INIT_AUTOMAKE
+#AM_INIT_AUTOMAKE([destor], [2.0])
 
 # Checks for programs.
 AC_PROG_CC
@@ -65,4 +66,7 @@ AC_OUTPUT(Makefile
         src/recipe/Makefile
         src/storage/Makefile
         src/chunking/Makefile
+        src/featuring/Makefile
+        src/similariting/Makefile
+        src/xdelta3/Makefile
         src/fsl/Makefile)

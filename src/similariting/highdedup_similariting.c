@@ -2,7 +2,7 @@
 #include "../destor.h"
 #include "similariting.h"
 
-static void highdedup_similariting_init(){
+void highdedup_similariting_init(){
 	highdedup_sufeature_tab = g_hash_table_new(g_int64_hash, g_fingerprint_equal);
 }
 
@@ -38,7 +38,7 @@ fpp highdedupSearchMostSimiChunk(GHashTable* cand_tab, fpp fp, int* curMaxHit, f
 /** return base chunk fingerprint if similary chunk is found
  *  else return 0
 */
-static fpp highdedup_similariting(struct chunk* c){
+fpp highdedup_similariting(struct chunk* c){
 
 	fpp ret = NULL;
 	GHashTable* cand_tab = g_hash_table_new_full(g_int64_hash,

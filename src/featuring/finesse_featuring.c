@@ -1,6 +1,6 @@
 #include <xxhash.h>
 #include "featuring.h"
-#include "similariting.h"
+#include "../similariting/similariting.h"
 #include "../destor.h"
 
 int compar(const void * a, const void * b){
@@ -16,7 +16,7 @@ int compar(const void * a, const void * b){
 	return 0;
 }
 
-static void finesse_featuring(unsigned char* buf, int size, struct chunk* c){
+void finesse_featuring(unsigned char* buf, int size, struct chunk* c){
 	feature curFea[FINESSE_FEATURE_NUM];
 	sufeature* superfeature = c->fea;
 

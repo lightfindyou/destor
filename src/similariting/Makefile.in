@@ -86,7 +86,7 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
-subdir = src
+subdir = src/similariting
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
@@ -102,20 +102,13 @@ AM_V_AR = $(am__v_AR_@AM_V@)
 am__v_AR_ = $(am__v_AR_@AM_DEFAULT_V@)
 am__v_AR_0 = @echo "  AR      " $@;
 am__v_AR_1 = 
-libdestor_a_AR = $(AR) $(ARFLAGS)
-libdestor_a_LIBADD =
-am_libdestor_a_OBJECTS = destor.$(OBJEXT) jcr.$(OBJEXT) \
-	config.$(OBJEXT) do_backup.$(OBJEXT) read_phase.$(OBJEXT) \
-	chunk_phase.$(OBJEXT) hash_phase.$(OBJEXT) \
-	trace_phase.$(OBJEXT) dedup_phase.$(OBJEXT) \
-	rewrite_phase.$(OBJEXT) filter_phase.$(OBJEXT) \
-	cfl_rewrite.$(OBJEXT) cap_rewrite.$(OBJEXT) \
-	cbr_rewrite.$(OBJEXT) har_rewrite.$(OBJEXT) \
-	restore_aware.$(OBJEXT) do_restore.$(OBJEXT) \
-	optimal_restore.$(OBJEXT) assembly_restore.$(OBJEXT) \
-	cma.$(OBJEXT) do_delete.$(OBJEXT) feature_phase.$(OBJEXT) \
-	simi_phase.$(OBJEXT) xdelta_phase.$(OBJEXT)
-libdestor_a_OBJECTS = $(am_libdestor_a_OBJECTS)
+libsimilar_a_AR = $(AR) $(ARFLAGS)
+libsimilar_a_LIBADD =
+am_libsimilar_a_OBJECTS = deepsketch_similariting.$(OBJEXT) \
+	finesse_similariting.$(OBJEXT) \
+	highdedup_similariting.$(OBJEXT) \
+	ntransform_similariting.$(OBJEXT)
+libsimilar_a_OBJECTS = $(am_libsimilar_a_OBJECTS)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -131,19 +124,10 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/assembly_restore.Po \
-	./$(DEPDIR)/cap_rewrite.Po ./$(DEPDIR)/cbr_rewrite.Po \
-	./$(DEPDIR)/cfl_rewrite.Po ./$(DEPDIR)/chunk_phase.Po \
-	./$(DEPDIR)/cma.Po ./$(DEPDIR)/config.Po \
-	./$(DEPDIR)/dedup_phase.Po ./$(DEPDIR)/destor.Po \
-	./$(DEPDIR)/do_backup.Po ./$(DEPDIR)/do_delete.Po \
-	./$(DEPDIR)/do_restore.Po ./$(DEPDIR)/feature_phase.Po \
-	./$(DEPDIR)/filter_phase.Po ./$(DEPDIR)/har_rewrite.Po \
-	./$(DEPDIR)/hash_phase.Po ./$(DEPDIR)/jcr.Po \
-	./$(DEPDIR)/optimal_restore.Po ./$(DEPDIR)/read_phase.Po \
-	./$(DEPDIR)/restore_aware.Po ./$(DEPDIR)/rewrite_phase.Po \
-	./$(DEPDIR)/simi_phase.Po ./$(DEPDIR)/trace_phase.Po \
-	./$(DEPDIR)/xdelta_phase.Po
+am__depfiles_remade = ./$(DEPDIR)/deepsketch_similariting.Po \
+	./$(DEPDIR)/finesse_similariting.Po \
+	./$(DEPDIR)/highdedup_similariting.Po \
+	./$(DEPDIR)/ntransform_similariting.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -157,8 +141,8 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(libdestor_a_SOURCES)
-DIST_SOURCES = $(libdestor_a_SOURCES)
+SOURCES = $(libsimilar_a_SOURCES)
+DIST_SOURCES = $(libsimilar_a_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -213,7 +197,7 @@ INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 LDFLAGS = @LDFLAGS@
 LIBOBJS = @LIBOBJS@
-LIBS = -lglib
+LIBS = -lm -lcrypto -lssl
 LTLIBOBJS = @LTLIBOBJS@
 MAKEINFO = @MAKEINFO@
 MKDIR_P = @MKDIR_P@
@@ -274,8 +258,8 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-noinst_LIBRARIES = libdestor.a
-libdestor_a_SOURCES = destor.c jcr.c config.c do_backup.c read_phase.c chunk_phase.c hash_phase.c trace_phase.c dedup_phase.c rewrite_phase.c filter_phase.c cfl_rewrite.c cap_rewrite.c cbr_rewrite.c har_rewrite.c restore_aware.c do_restore.c optimal_restore.c assembly_restore.c cma.c do_delete.c feature_phase.c simi_phase.c xdelta_phase.c
+noinst_LIBRARIES = libsimilar.a
+libsimilar_a_SOURCES = deepsketch_similariting.c finesse_similariting.c highdedup_similariting.c ntransform_similariting.c
 all: all-am
 
 .SUFFIXES:
@@ -289,9 +273,9 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu src/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu src/similariting/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --gnu src/Makefile
+	  $(AUTOMAKE) --gnu src/similariting/Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
 	  *config.status*) \
@@ -313,10 +297,10 @@ $(am__aclocal_m4_deps):
 clean-noinstLIBRARIES:
 	-test -z "$(noinst_LIBRARIES)" || rm -f $(noinst_LIBRARIES)
 
-libdestor.a: $(libdestor_a_OBJECTS) $(libdestor_a_DEPENDENCIES) $(EXTRA_libdestor_a_DEPENDENCIES) 
-	$(AM_V_at)-rm -f libdestor.a
-	$(AM_V_AR)$(libdestor_a_AR) libdestor.a $(libdestor_a_OBJECTS) $(libdestor_a_LIBADD)
-	$(AM_V_at)$(RANLIB) libdestor.a
+libsimilar.a: $(libsimilar_a_OBJECTS) $(libsimilar_a_DEPENDENCIES) $(EXTRA_libsimilar_a_DEPENDENCIES) 
+	$(AM_V_at)-rm -f libsimilar.a
+	$(AM_V_AR)$(libsimilar_a_AR) libsimilar.a $(libsimilar_a_OBJECTS) $(libsimilar_a_LIBADD)
+	$(AM_V_at)$(RANLIB) libsimilar.a
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -324,30 +308,10 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/assembly_restore.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cap_rewrite.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cbr_rewrite.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cfl_rewrite.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/chunk_phase.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cma.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/config.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dedup_phase.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/destor.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/do_backup.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/do_delete.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/do_restore.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/feature_phase.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/filter_phase.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/har_rewrite.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hash_phase.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jcr.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/optimal_restore.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/read_phase.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/restore_aware.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rewrite_phase.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/simi_phase.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/trace_phase.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xdelta_phase.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/deepsketch_similariting.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/finesse_similariting.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/highdedup_similariting.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ntransform_similariting.Po@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -493,30 +457,10 @@ clean: clean-am
 clean-am: clean-generic clean-noinstLIBRARIES mostlyclean-am
 
 distclean: distclean-am
-		-rm -f ./$(DEPDIR)/assembly_restore.Po
-	-rm -f ./$(DEPDIR)/cap_rewrite.Po
-	-rm -f ./$(DEPDIR)/cbr_rewrite.Po
-	-rm -f ./$(DEPDIR)/cfl_rewrite.Po
-	-rm -f ./$(DEPDIR)/chunk_phase.Po
-	-rm -f ./$(DEPDIR)/cma.Po
-	-rm -f ./$(DEPDIR)/config.Po
-	-rm -f ./$(DEPDIR)/dedup_phase.Po
-	-rm -f ./$(DEPDIR)/destor.Po
-	-rm -f ./$(DEPDIR)/do_backup.Po
-	-rm -f ./$(DEPDIR)/do_delete.Po
-	-rm -f ./$(DEPDIR)/do_restore.Po
-	-rm -f ./$(DEPDIR)/feature_phase.Po
-	-rm -f ./$(DEPDIR)/filter_phase.Po
-	-rm -f ./$(DEPDIR)/har_rewrite.Po
-	-rm -f ./$(DEPDIR)/hash_phase.Po
-	-rm -f ./$(DEPDIR)/jcr.Po
-	-rm -f ./$(DEPDIR)/optimal_restore.Po
-	-rm -f ./$(DEPDIR)/read_phase.Po
-	-rm -f ./$(DEPDIR)/restore_aware.Po
-	-rm -f ./$(DEPDIR)/rewrite_phase.Po
-	-rm -f ./$(DEPDIR)/simi_phase.Po
-	-rm -f ./$(DEPDIR)/trace_phase.Po
-	-rm -f ./$(DEPDIR)/xdelta_phase.Po
+		-rm -f ./$(DEPDIR)/deepsketch_similariting.Po
+	-rm -f ./$(DEPDIR)/finesse_similariting.Po
+	-rm -f ./$(DEPDIR)/highdedup_similariting.Po
+	-rm -f ./$(DEPDIR)/ntransform_similariting.Po
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -562,30 +506,10 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-		-rm -f ./$(DEPDIR)/assembly_restore.Po
-	-rm -f ./$(DEPDIR)/cap_rewrite.Po
-	-rm -f ./$(DEPDIR)/cbr_rewrite.Po
-	-rm -f ./$(DEPDIR)/cfl_rewrite.Po
-	-rm -f ./$(DEPDIR)/chunk_phase.Po
-	-rm -f ./$(DEPDIR)/cma.Po
-	-rm -f ./$(DEPDIR)/config.Po
-	-rm -f ./$(DEPDIR)/dedup_phase.Po
-	-rm -f ./$(DEPDIR)/destor.Po
-	-rm -f ./$(DEPDIR)/do_backup.Po
-	-rm -f ./$(DEPDIR)/do_delete.Po
-	-rm -f ./$(DEPDIR)/do_restore.Po
-	-rm -f ./$(DEPDIR)/feature_phase.Po
-	-rm -f ./$(DEPDIR)/filter_phase.Po
-	-rm -f ./$(DEPDIR)/har_rewrite.Po
-	-rm -f ./$(DEPDIR)/hash_phase.Po
-	-rm -f ./$(DEPDIR)/jcr.Po
-	-rm -f ./$(DEPDIR)/optimal_restore.Po
-	-rm -f ./$(DEPDIR)/read_phase.Po
-	-rm -f ./$(DEPDIR)/restore_aware.Po
-	-rm -f ./$(DEPDIR)/rewrite_phase.Po
-	-rm -f ./$(DEPDIR)/simi_phase.Po
-	-rm -f ./$(DEPDIR)/trace_phase.Po
-	-rm -f ./$(DEPDIR)/xdelta_phase.Po
+		-rm -f ./$(DEPDIR)/deepsketch_similariting.Po
+	-rm -f ./$(DEPDIR)/finesse_similariting.Po
+	-rm -f ./$(DEPDIR)/highdedup_similariting.Po
+	-rm -f ./$(DEPDIR)/ntransform_similariting.Po
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

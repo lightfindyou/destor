@@ -40,7 +40,7 @@ enum{
     Mask_128KB
 };
 
-uint64_t g_condition_mask[] = {
+uint64_t gearhash_g_condition_mask[] = {
     //Do not use 1-32B, for aligent usage
         0x0000000000000000,// 1B
         0x0000000001000000,// 2B
@@ -65,7 +65,7 @@ uint64_t g_condition_mask[] = {
 
 uint64_t Mask;
 uint64_t back_mask_TTTD;
-void gear_init(int featureNumber){
+void gearhash_gear_init(int featureNumber){
     char seed[SeedLength];
     for(int i=0; i<SymbolCount; i++){
         for(int j=0; j<SeedLength; j++){
@@ -87,8 +87,8 @@ void gear_init(int featureNumber){
     int cOnes = index;
     assert(index>6);
     assert(index<17);
-    Mask = g_condition_mask[cOnes];
-    back_mask_TTTD = g_condition_mask[cOnes - 1];
+    Mask = gearhash_g_condition_mask[cOnes];
+    back_mask_TTTD = gearhash_g_condition_mask[cOnes - 1];
 }
 
 /** return the number of features*/

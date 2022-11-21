@@ -2783,9 +2783,8 @@ fi
 
 
 # Define the identity of the package.
-
- PACKAGE=destor
- VERSION=2.0
+ PACKAGE='destor'
+ VERSION='2.0'
 
 
 cat >>confdefs.h <<_ACEOF
@@ -2878,6 +2877,7 @@ END
   fi
 fi
 
+#AM_INIT_AUTOMAKE([destor], [2.0])
 
 # Checks for programs.
 ac_ext=c
@@ -4850,7 +4850,7 @@ fi
 
 #AC_CHECK_FUNCS([gettimeofday memmove memset socket strerror])
 
-ac_config_files="$ac_config_files Makefile src/Makefile src/utils/Makefile src/index/Makefile src/recipe/Makefile src/storage/Makefile src/chunking/Makefile src/fsl/Makefile"
+ac_config_files="$ac_config_files Makefile src/Makefile src/utils/Makefile src/index/Makefile src/recipe/Makefile src/storage/Makefile src/chunking/Makefile src/featuring/Makefile src/similariting/Makefile src/xdelta3/Makefile src/fsl/Makefile"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -5601,6 +5601,9 @@ do
     "src/recipe/Makefile") CONFIG_FILES="$CONFIG_FILES src/recipe/Makefile" ;;
     "src/storage/Makefile") CONFIG_FILES="$CONFIG_FILES src/storage/Makefile" ;;
     "src/chunking/Makefile") CONFIG_FILES="$CONFIG_FILES src/chunking/Makefile" ;;
+    "src/featuring/Makefile") CONFIG_FILES="$CONFIG_FILES src/featuring/Makefile" ;;
+    "src/similariting/Makefile") CONFIG_FILES="$CONFIG_FILES src/similariting/Makefile" ;;
+    "src/xdelta3/Makefile") CONFIG_FILES="$CONFIG_FILES src/xdelta3/Makefile" ;;
     "src/fsl/Makefile") CONFIG_FILES="$CONFIG_FILES src/fsl/Makefile" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;

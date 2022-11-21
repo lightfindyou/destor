@@ -2,5 +2,6 @@
 #include "../destor.h"
 #include "featuring.h"
 
-static void* deepsketch_featuring(unsigned char* buf, int size, unsigned char* fea){
+static void* deepsketch_featuring(unsigned char* buf, int size, struct chunk* c){
+
 }

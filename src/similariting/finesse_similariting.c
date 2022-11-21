@@ -2,7 +2,7 @@
 #include "../destor.h"
 #include "similariting.h"
 
-static void fineness_similariting_init(){
+void fineness_similariting_init(){
 	fineness_sufeature_tab = g_hash_table_new(g_int64_hash, g_fingerprint_equal);
 }
 
@@ -22,7 +22,7 @@ void fineness_insert_sufeature(struct chunk* c){
 /** return base chunk fingerprint if similary chunk is found
  *  else return 0
 */
-static unsigned char* fineness_similariting(struct chunk* c){
+unsigned char* fineness_similariting(struct chunk* c){
 	chunkid baseID = 0;
 	for (int i = 0; i < FINESSE_SF_NUM; i++) {
 		GSequence *tq = (GSequence*)g_hash_table_lookup(fineness_sufeature_tab, &(c->fea[i]));

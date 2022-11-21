@@ -1,11 +1,10 @@
 #include <xxhash.h>
 #include "../destor.h"
 #include "featuring.h"
-#define SF_NUM 4
 
-static void ntransfrom_featuring(unsigned char* buf, int size, unsigned char* sufea){
+void ntransform_featuring(unsigned char* buf, int size, struct chunk* c){
 	feature fea[NTRANSFORM_FEATURE_NUM];
-	sufeature* superfeature = (sufeature)sufea;
+	sufeature* superfeature = c->fea;
 	for (int i = 0; i < NTRANSFORM_SF_NUM; ++i) fea[i] = 0;
 
 	rabin_ntransform(buf, size, fea, NTRANSFORM_SF_NUM);

@@ -5,21 +5,21 @@
 #ifndef SIMILARITY_H_
 #define SIMILARITY_H_
 
-#include "destor.h"
-#include "featuring/featuring.h"
+#include "../destor.h"
+#include "../featuring/featuring.h"
 
 GHashTable* fineness_sufeature_tab;
-static void fineness_similariting_init();
-static fpp fineness_similariting(struct chunk* c);
+void fineness_similariting_init();
+fpp fineness_similariting(struct chunk* c);
 
 GHashTable* ntransform_sufeature_tab;
-static void ntransform_similariting_init();
-static fpp ntransform_similariting(struct chunk* c);
+void ntransform_similariting_init();
+fpp ntransform_similariting(struct chunk* c);
 
 chunkid deepsketch_similariting(feature fea);
 
 GHashTable* highdedup_sufeature_tab;
-static void highdedup_similariting_init();
-static fpp highdedup_similariting(struct chunk* c);
+void highdedup_similariting_init();
+fpp highdedup_similariting(struct chunk* c);
 
 #endif

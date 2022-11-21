@@ -50,12 +50,12 @@ void *feature_thread(void *arg) {
 void start_feature_phase() {
 
 	if (destor.feature_algorithm == FEAUTRE_NTRANSFORM){
-		rabin_init();
+		rabinhash_rabin_init();
 		featuring = ntransform_featuring;
 	}else if(destor.feature_algorithm == FEAUTRE_DEEPSKETCH){
 		featuring = deepsketch_featuring;
 	}else if(destor.feature_algorithm == FEAUTRE_FINENESS){
-		rabin_init();
+		rabinhash_rabin_init();
 		featuring = finesse_featuring;
 	}else if(destor.feature_algorithm == FEAUTRE_HIGHDEDUP){
 		gear_init(HIGHDEDUP_FEATURE_NUM);

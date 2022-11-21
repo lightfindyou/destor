@@ -1,11 +1,11 @@
 #include "index.h"
 #include "kvstore.h"
-#include "backup.h"
 #include "fingerprint_cache.h"
 #include "index_buffer.h"
 #include "../storage/containerstore.h"
 #include "../recipe/recipestore.h"
 #include "../jcr.h"
+#include "../backup.h"
 
 struct index_overhead index_overhead;
 

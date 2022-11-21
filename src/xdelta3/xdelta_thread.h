@@ -1,10 +1,10 @@
-#include "destor.h"
-#include "jcr.h"
-#include "index/index.h"
-#include "backup.h"
-#include "storage/containerstore.h"
-#include "similariting/similariting.h"
-#include "xdelta3/xdelta3.h"
+#include "../destor.h"
+#include "../jcr.h"
+#include "../index/index.h"
+#include "../backup.h"
+#include "../storage/containerstore.h"
+#include "../similariting/similariting.h"
+#include "xdelta3.h"
 
 #define XDELTA_THREAD_NUM 12
 pthread_t xdelta_tid[XDELTA_THREAD_NUM];

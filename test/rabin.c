@@ -79,7 +79,7 @@ static unsigned int fls64(UINT64 v) {
 		return fls32((UINT32) v);
 }
 
-UINT64 polymod(UINT64 nh, UINT64 nl, UINT64 d) {
+UINT64 rabinhash_polymod(UINT64 nh, UINT64 nl, UINT64 d) {
 
 	int k = fls64(d) - 1;
 	int i;
@@ -157,7 +157,7 @@ void polymult(UINT64 *php, UINT64 *plp, UINT64 x, UINT64 y) {
 
 }
 
-UINT64 append8(UINT64 p, unsigned char m) {
+UINT64 rabinhash_append8(UINT64 p, unsigned char m) {
 	return ((p << 8) | m) ^ T[p >> shift];
 }
 
@@ -168,7 +168,7 @@ UINT64 slide8(unsigned char m) {
 		bufpos = 0;
 	om = buf[bufpos];
 	buf[bufpos] = m;
-	return fp = append8(fp ^ U[om], m);
+	return fp = rabinhash_append8(fp ^ U[om], m);
 }
 
 UINT64 polymmult(UINT64 x, UINT64 y, UINT64 d) {
@@ -177,7 +177,7 @@ UINT64 polymmult(UINT64 x, UINT64 y, UINT64 d) {
 
 	UINT64 h, l;
 	polymult(&h, &l, x, y);
-	return polymod(h, l, d);
+	return rabinhash_polymod(h, l, d);
 }
 
 void calcT(UINT64 poly) {
@@ -189,7 +189,7 @@ void calcT(UINT64 poly) {
 
 	int xshift = fls64(poly) - 1;
 	shift = xshift - 8;
-	T1 = polymod(0, (long long int) (1) << xshift, poly);
+	T1 = rabinhash_polymod(0, (long long int) (1) << xshift, poly);
 	for (j = 0; j < 256; j++) {
 		T[j] = polymmult(j, T1, poly) | ((UINT64) j << xshift);
 
@@ -209,22 +209,22 @@ void calcT(UINT64 poly) {
 
 }
 
-void rabinpoly_init(UINT64 p) {
+void rabinhash_rabinpoly_init(UINT64 p) {
 	poly = p;
 	calcT(poly);
 }
 
-void window_init(UINT64 poly) {
+void rabinhash_window_init(UINT64 poly) {
 
 	int i;
 	UINT64 sizeshift;
 
-	rabinpoly_init(poly);
+	rabinhash_rabinpoly_init(poly);
 	fp = 0;
 	bufpos = -1;
 	sizeshift = 1;
 	for (i = 1; i < size; i++)
-		sizeshift = append8(sizeshift, 0);
+		sizeshift = rabinhash_append8(sizeshift, 0);
 	for (i = 0; i < 256; i++)
 		U[i] = polymmult(i, sizeshift, poly);
 	memset((char*) buf, 0, sizeof(buf));
@@ -244,7 +244,7 @@ extern unsigned long Mask, jumpMask;
 extern int jumpLen;
 
 void chunkAlg_init(int chunkSize) {
-	window_init(FINGERPRINT_PT);
+	rabinhash_window_init(FINGERPRINT_PT);
 	_last_pos = 0;
 	_cur_pos = 0;
 	windows_reset();
@@ -263,7 +263,7 @@ void chunkAlg_init(int chunkSize) {
 }
 
 void rabinJump_init(int chunkSize) {
-	window_init(FINGERPRINT_PT);
+	rabinhash_window_init(FINGERPRINT_PT);
 	_last_pos = 0;
 	_cur_pos = 0;
 	windows_reset();
