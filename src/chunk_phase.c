@@ -101,6 +101,9 @@ static void* chunk_thread(void *arg) {
 
 //			printf("new chunk->data: %lx, chunk->size: %d\n", nc->data, nc->size);
 			sync_queue_push(chunk_queue, nc);
+
+			jcr.chunk_num++;
+			jcr.data_size += nc->size;
 #endif	//NODEDUP
 		}
 		//xzjin add file tail chunck at last

@@ -62,8 +62,6 @@ void *xdelta_thread(void *arg) {
 
 		//TODO store chunk
 //		sync_queue_push(xdelta_queue, c);
-		jcr.chunk_num++;
-		jcr.data_size += c->size;
 	}
 
 	jcr.status = JCR_STATUS_DONE;

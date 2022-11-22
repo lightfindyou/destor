@@ -5014,6 +5014,8 @@ loopnomore:
 
 #ifndef XDELTA3_COMPRESS
 #define XDELTA3_COMPRESS
+
+/*what is the return value? is it the delta size?*/
 int xdelta3_compress(char *InFile, int InSize, char *SrcFile, int SrcSize,
                      char *OutFile, int encode) {
     int BufSize = 0x1000;
