@@ -27,7 +27,8 @@ void *feature_thread(void *arg) {
 			break;
 		}
 
-		if (CHECK_CHUNK(c, CHUNK_FILE_START) || CHECK_CHUNK(c, CHUNK_FILE_END)) {
+		if (CHECK_CHUNK(c, CHUNK_FILE_START) || CHECK_CHUNK(c, CHUNK_FILE_END) || 
+			CHECK_CHUNK(c, CHUNK_SEGMENT_START) || CHECK_CHUNK(c, CHUNK_SEGMENT_END)) {
 			sync_queue_push(feature_queue, c);
 			continue;
 		}
@@ -35,7 +36,7 @@ void *feature_thread(void *arg) {
 		TIMER_DECLARE(1);
 		TIMER_BEGIN(1);
 		/*calculate features*/
-		featuring(c->data, c->size, &c->fea);
+		featuring(c->data, c->size, c);
 		TIMER_END(1, jcr.hash_time);
 
 		//TODO xzjin out of boundary fix

@@ -1,5 +1,6 @@
-#include "../destor.h"
+#include "../../src/destor.h"
 
+typedef uint64_t feature;
 #define MSB64 0x8000000000000000LL
 
 #define FINGERPRINT_PT  0xbfe6b8a5bf378d83LL
@@ -7,7 +8,7 @@
 #define SLIDE(m,fp,bufPos,buf) do{	\
 	    unsigned char om;   \
 	    u_int64_t x;	 \
-		if (++bufPos >= size)  \
+		if (++bufPos >= slideWinSize)  \
         bufPos = 0;				\
         om = buf[bufPos];		\
         buf[bufPos] = m;		 \
@@ -23,12 +24,12 @@ typedef unsigned long long int UINT64;
 //time_t backup_now;
 
 enum {
-	size = 48
+	slideWinSize = 48
 };
 UINT64 fp;
 int bufpos;
 UINT64 U[256];
-unsigned char buf[size];
+unsigned char buf[slideWinSize];
 int shift;
 UINT64 T[256];
 UINT64 poly;
@@ -172,7 +173,7 @@ UINT64 rabinhash_append8(UINT64 p, unsigned char m) {
 UINT64 rabinhash_slide8(unsigned char m) {
 	unsigned char om;
 	//printf("this char is %c\n",m);
-	if (++bufpos >= size)
+	if (++bufpos >= slideWinSize)
 		bufpos = 0;
 	om = buf[bufpos];
 	buf[bufpos] = m;
@@ -231,7 +232,7 @@ void rabinhash_window_init(UINT64 poly) {
 	fp = 0;
 	bufpos = -1;
 	sizeshift = 1;
-	for (i = 1; i < size; i++)
+	for (i = 1; i < slideWinSize; i++)
 		sizeshift = rabinhash_append8(sizeshift, 0);
 	for (i = 0; i < 256; i++)
 		U[i] = rabinhash_polymmult(i, sizeshift, poly);
@@ -265,7 +266,25 @@ void rabin_finesse(unsigned char *p, int n, feature* fea) {
 	memset((char*) buf, 0, 128);
 
 	while (i < n) {
-		SLIDE(p[i - 1], fp, bufPos, buf);
+//		SLIDE(p[i - 1], fp, bufPos, buf);
+
+		printf("i = %d\n", i);
+		do{
+			unsigned char om;
+			u_int64_t x;
+			printf("bufPos = %d\n", bufPos);
+			if (++bufPos >= slideWinSize){
+				bufPos = 0;
+			}
+			om = buf[bufPos];
+			buf[bufPos] = p[i - 1];
+			fp ^= U[om];
+			x = fp >> shift;
+			fp <<= 8;
+			fp |= p[i - 1];
+			fp ^= T[x];
+		}while(0);
+
 		if (fp > curfp){ curfp = fp; }
 		i++;
 	}
@@ -285,14 +304,30 @@ void rabin_ntransform(unsigned char *p, int n, feature* fea, int featureNum) {
 
 	while (i < n) {
 
-		SLIDE(p[i - 1], fp, bufPos, buf);
+//		SLIDE(p[i - 1], fp, bufPos, buf);
+		do{
+			unsigned char om;
+			u_int64_t x;
+			printf("bufPos = %d\n", bufPos);
+			if (++bufPos >= slideWinSize){
+				bufPos = 0;
+			}
+			om = buf[bufPos];
+			buf[bufPos] = p[i - 1];
+			fp ^= U[om];
+			x = fp >> shift;
+			fp <<= 8;
+			fp |= p[i - 1];
+			fp ^= T[x];
+		}while(0);
+
 		for(int j = 0; j< featureNum; j++){
 			s = (fp*maMatrix[j][0] + maMatrix[j][1]);
 			if(s>fea[j]){
 				fea[j] = s;
 			}
 		}
-//		printf("current i:%d\n", i);
+		printf("current i:%d\n", i);
 		i++;
 	}
 	return;

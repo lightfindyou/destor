@@ -32,7 +32,7 @@ void finesse_featuring(unsigned char* buf, int size, struct chunk* c){
 			len = size - (subchs * i);
 		}
 
-		curFea[i] = rabin_finesse(buf[subchs*i], len);
+		rabin_finesse(&buf[subchs*i], len, &curFea[i]);
 	}
 
 	for (int i = 0; i < FINESSE_FEATURE_NUM / FINESSE_SF_NUM; ++i) {

@@ -43,12 +43,13 @@ void do_backup(char *path) {
     start_feature_phase();
     start_simi_phase();
     start_xdelta_phase();
+
 //    start_store_phase();
 //  start_rewrite_phase();
 //  start_filter_phase();
 
     do {
-//        sleep(2);
+        sleep(1);
         /*time_t now = time(NULL);*/
         fprintf(stderr,
                 "job %" PRId32 ", %" PRId64 " bytes, %" PRId32
@@ -72,9 +73,9 @@ void do_backup(char *path) {
         TIMER_END(2, dedup_time);
         printf("\x1B[32mDedup time(s)\e: %.3f\n\x1B[37m", dedup_time / 1000000);
     }
-    start_feature_phase();
-    start_simi_phase();
-    start_xdelta_phase();
+    stop_feature_phase();
+    stop_simi_phase();
+    stop_xdelta_phase();
 
     TIMER_END(1, jcr.total_time);
 

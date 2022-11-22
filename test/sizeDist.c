@@ -19,9 +19,9 @@
 double jumpPro = 0, cutPro = 0, normalPro = 0;
 double *sizeDist;
 int sizeNum;
-int chunkAlg;
+int featureAlg;
 
-enum chunkMethod { 	gear,
+enum featureMethod { 	gear,
 					rabin,
 					rabin_simple,
 					rabinJump,
@@ -60,14 +60,14 @@ void help(){
 int parsePar(int argc, char **argv){
 	int opt;
 	opt = getopt(argc, argv, "a:");
-	chunkAlg = algNum;
+	featureAlg = algNum;
 	do{
 		switch (opt) {
 
 		case 'a':
 			for(int i=0; i< algNum; i++){
 				if(!strcmp(optarg, chunkString[i])){
-					chunkAlg = i;
+					featureAlg = i;
 					break;
 				}
 			}
@@ -78,7 +78,7 @@ int parsePar(int argc, char **argv){
 		}
 	}while((opt = getopt(argc, argv, "d:c:p:a:"))>0);
 
-	if(chunkAlg == algNum){
+	if(featureAlg == algNum){
 		printf("get chunk algorithm ERROR!\n");
 		help();
 		exit(-1);
@@ -91,7 +91,7 @@ void init(){
 	printf("maxChunkSize:%8d\n", maxChunkSize);
 	printf("avgChunkSize:%8d\n", avgChunkSize);
 	printf("minChunkSize:%8d\n", minChunkSize);
-	switch (chunkAlg) {
+	switch (featureAlg) {
 		case rabin:
 			cutPro = 1.0/(avgChunkSize);
 			normalPro = 1 - cutPro;
@@ -106,7 +106,7 @@ void init(){
 			break;
 
 		default:
-			printf("Chunk alg: %s not supported!\n", chunkString[chunkAlg]);
+			printf("Chunk alg: %s not supported!\n", chunkString[featureAlg]);
 			exit(-1);
 
 			break;
@@ -229,7 +229,7 @@ int main(int argc, char **argv){
 	parsePar(argc, argv);
 	init();
 	double realAvgChunkSize = 0;
-	switch (chunkAlg) {
+	switch (featureAlg) {
 		case rabin:
 			for(int i = 0; i<maxChunkSize-1; i++){
 				double pro = getProOfSize_Rabin(i);

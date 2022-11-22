@@ -31,6 +31,7 @@ void *xdelta_thread(void *arg) {
 			struct chunk* basec;
 
 			//TOTO fix, here may the base chunk may have not been add into fp_tab
+			printf("\n\n\nc->basefp:%x\n\n\n", c->basefp);
 			GQueue *tq = g_hash_table_lookup(fp_tab, c->basefp);
 			if (tq) {
 				basec = g_queue_peek_head(tq);
@@ -59,7 +60,11 @@ void *xdelta_thread(void *arg) {
 
 		//TODO store chunk
 //		sync_queue_push(xdelta_queue, c);
+		jcr.chunk_num++;
+		jcr.data_size += c->size;
 	}
+
+	jcr.status = JCR_STATUS_DONE;
 	return NULL;
 
 }

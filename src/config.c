@@ -118,6 +118,30 @@ void load_config_from_string(sds config) {
 				err = "Invalid chunk algorithm";
 				goto loaderr;
 			}
+		} else if (strcasecmp(argv[0], "feature-algorithm") == 0 && argc == 2) {
+			if (strcasecmp(argv[1], "ntransform") == 0) {
+				destor.feature_algorithm = FEAUTRE_NTRANSFORM;
+				destor.similarity_algorithm = SIMILARITY_NTRANSFORM;
+			} else if (strcasecmp(argv[1], "deepsketch") == 0) {
+				destor.feature_algorithm = FEAUTRE_DEEPSKETCH;
+				destor.similarity_algorithm = SIMILARITY_DEEPSKETCH;
+			} else if (strcasecmp(argv[1], "finesse") == 0) {
+				destor.feature_algorithm = FEAUTRE_FINENESS;
+				destor.similarity_algorithm = SIMILARITY_FINENESS;
+			} else if (strcasecmp(argv[1], "odess") == 0) {
+				destor.feature_algorithm = FEAUTRE_ODESS;
+				destor.similarity_algorithm = SIMILARITY_ODESS;
+				printf("compared data: %s\n", argv[1]);
+				err = "odess current unavliable";
+				goto loaderr;
+			} else if (strcasecmp(argv[1], "highdedup") == 0) {
+				destor.feature_algorithm = FEAUTRE_HIGHDEDUP;
+				destor.similarity_algorithm = SIMILARITY_HIGHDEDUP;
+			} else if (strcasecmp(argv[1], "fixed") == 0) {
+				printf("compared data: %s\n", argv[1]);
+				err = "Invalid chunk algorithm";
+				goto loaderr;
+			}
 		} else if (strcasecmp(argv[0], "jumpOnes") == 0 && argc == 2) {
 			destor.jumpOnes = atoi(argv[1]);
 		} else if (strcasecmp(argv[0], "chunk-avg-size") == 0 && argc == 2) {

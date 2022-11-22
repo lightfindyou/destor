@@ -17,7 +17,7 @@ extern int optind, opterr, optopt;
 
 pid_t chunkingTid;
 int chunkSize = 4096;
-int chunkAlg;
+int featureAlg;
 int mto = 1;
 char* dedupDir = "/home/xzjin/gcc_part1/";
 pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
@@ -27,7 +27,7 @@ int sizeCate;
 int* sizeDist;
 int (*chunking)(unsigned char *p, int n);
 
-enum chunkMethod { 	gear,
+enum featureMethod { 	gear,
 					rabin,
 					rabin_simple,
 					rabinJump,
@@ -83,7 +83,7 @@ void* getChunkData(){
 }
 
 void chunkData(void* data, unsigned long dataSize, unsigned long* chunksNum,
-							 enum chunkMethod cM, int leapParIdx){
+							 enum featureMethod cM, int leapParIdx){
 	unsigned long start, end;
 	void *head = data;
 	void *tail = data + dataSize;
@@ -238,13 +238,13 @@ int main(int argc, char **argv){
 	double procTime;
 	double processedLen_MB = 0;
 	unsigned long processedLen_B = 0;
-	chunkAlg = algNum;
+	featureAlg = algNum;
 
 	if(parsePar(argc, argv)) {return 0;}
 	printf("Chunking alg:%s\n \
 			\rDeduplication dir:%s\n \
 			\rChunk size: %d\n",
-			chunkString[chunkAlg], dedupDir, chunkSize);
+			chunkString[featureAlg], dedupDir, chunkSize);
 
 	sizeCate = (chunkSize*2.5)/1024;
 	sizeDist = calloc(sizeCate, sizeof(int));
@@ -263,7 +263,7 @@ int main(int argc, char **argv){
 		processedLen_MB += ((double)dupDataSize/1024/1024);
 		processedLen_B += dupDataSize;
 		if(readOver){ dupDataSize = curReadDataLen;}
-		chunkData(duplicateData, dupDataSize, &chunksNum[chunkAlg], chunkAlg, 0);
+		chunkData(duplicateData, dupDataSize, &chunksNum[featureAlg], featureAlg, 0);
 
 		if(readOver){
 			stop_read_phase();
@@ -376,7 +376,7 @@ int parsePar(int argc, char **argv){
 		case 'a':
 			for(int i=0; i< algNum; i++){
 				if(!strcmp(optarg, chunkString[i])){
-					chunkAlg = i;
+					featureAlg = i;
 					break;
 				}
 			}
@@ -404,7 +404,7 @@ printHelp:
 		}
 	}while((opt = getopt(argc, argv, "d:c:p:a:m:"))>0);
 
-	if(chunkAlg == algNum){
+	if(featureAlg == algNum){
 		printf("get chunk algorithm ERROR!\n");
 		help();
 		return -1;

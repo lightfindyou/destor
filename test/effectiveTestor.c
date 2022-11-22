@@ -16,7 +16,7 @@ int insRangeL = 1, insRangeH = 20;
 //#define CHUNKSIZE (4096)
 #define CHUNKSIZE (8192)
 
-enum chunkMethod { 	gear,
+enum featureMethod { 	gear,
 					rabin,
 					rabin_simple,
 					rabinJump,
@@ -76,7 +76,7 @@ void* getChunkData(){
 	return p;
 }
 
-void chunkData(void* data, int* chunksNum, void** edge, enum chunkMethod cM, int mto){
+void chunkData(void* data, int* chunksNum, void** edge, enum featureMethod cM, int mto){
 	unsigned long start, end;
 	void *head = data;
 	void *tail = data + SIZE;
@@ -248,7 +248,7 @@ void help(){
 /**
  * mto means "Mask Ones Less Than Chunk Ones"
 */
-int chunkAlg, mto = 1;
+int featureAlg, mto = 1;
 int main(int argc, char **argv){
 	void *p = getChunkData();
 	int chunksNum;
@@ -260,7 +260,7 @@ int main(int argc, char **argv){
 		printf("ERROR parse para!\n");
 		return -1;
 	}
-	chunkData(p, &chunksNum, edge, chunkAlg, mto);
+	chunkData(p, &chunksNum, edge, featureAlg, mto);
 	int unchanged = 0, change1 = 0, change2 = 0, change3 = 0, change4 = 0;
 	testData(p, edge, chunksNum,
 		 &unchanged, &change1, &change2, &change3, &change4);
@@ -290,7 +290,7 @@ int main(int argc, char **argv){
 
 int parsePar(int argc, char **argv){
 	int opt;
-	chunkAlg = algNum;
+	featureAlg = algNum;
 
 	opt = getopt(argc, argv, "a:l:m:");
 	do{
@@ -298,7 +298,7 @@ int parsePar(int argc, char **argv){
 		case 'a':
 			for(int i=0; i< algNum; i++){
 				if(!strcasecmp(optarg, chunkString[i])){
-					chunkAlg = i;
+					featureAlg = i;
 					break;
 				}
 			}
@@ -319,7 +319,7 @@ int parsePar(int argc, char **argv){
 		}
 	}while((opt = getopt(argc, argv, "a:l:m:"))>0);
 
-	if(chunkAlg == algNum){
+	if(featureAlg == algNum){
 		printf("get chunk algorithm ERROR!\n");
 		help();
 		return -1;

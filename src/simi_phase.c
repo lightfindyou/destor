@@ -71,7 +71,7 @@ void start_simi_phase() {
 		similariting = highdedup_similariting;
 	}
 
-	feature_queue = sync_queue_new(1000);
+	simi_queue = sync_queue_new(1000);
 	pthread_create(&simi_t, NULL, store_thread, NULL);
 }
 
