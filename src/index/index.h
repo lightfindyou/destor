@@ -41,4 +41,9 @@ extern struct segment* (*segmenting)(struct chunk *c);
 gboolean g_feature_equal(char* a, char* b);
 guint g_feature_hash(char *feature);
 
+gpointer g_hash_table_lookup_threadsafe(GHashTable *hash_table,
+             gconstpointer key, pthread_mutex_t mutex);
+
+gpointer g_hash_table_replace_threadsafe(GHashTable *hash_table, gpointer key,
+             gpointer value, pthread_mutex_t mutex);
 #endif

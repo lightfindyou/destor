@@ -363,6 +363,7 @@ int main(int argc, char **argv) {
 
 struct chunk* new_chunk(int32_t size) {
 	struct chunk* ck = (struct chunk*) malloc(sizeof(struct chunk));
+	memset(ck, 0x0, sizeof(struct chunk));
 
 	ck->flag = CHUNK_UNIQUE;
 	ck->id = TEMPORARY_ID;

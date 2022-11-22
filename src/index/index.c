@@ -26,9 +26,41 @@ guint g_feature_hash(char *feature){
 extern void init_segmenting_method();
 extern void init_sampling_method();
 
+gpointer g_hash_table_lookup_threadsafe(GHashTable *hash_table,
+             gconstpointer key, pthread_mutex_t mutex){
+	if (pthread_mutex_lock(&mutex) != 0) {
+		puts("failed to lock!");
+		return;
+	}
+    gpointer ret = g_hash_table_lookup(hash_table, key);
+
+	if (pthread_mutex_unlock(&mutex)) {
+		puts("failed to unlock!");
+		return;
+	}
+    return ret;
+}
+
+gpointer g_hash_table_replace_threadsafe(GHashTable *hash_table, gpointer key,
+             gpointer value, pthread_mutex_t mutex){
+	if (pthread_mutex_lock(&mutex) != 0) {
+		puts("failed to lock!");
+		return;
+	}
+    gpointer ret = g_hash_table_replace(hash_table, key, value);
+
+	if (pthread_mutex_unlock(&mutex)) {
+		puts("failed to unlock!");
+		return;
+	}
+    return ret;
+}
+
 void init_index() {
 
 	fp_tab = g_hash_table_new(g_int64_hash, g_fingerprint_equal);
+	pthread_mutex_init(&fp_tab_mutex, 0);
+
     /* Do NOT assign a free function for value. */
     index_buffer.buffered_fingerprints = g_hash_table_new_full(g_int64_hash,
             g_fingerprint_equal, NULL, NULL);
@@ -246,10 +278,10 @@ int index_lookup(struct segment* s) {
         if (CHECK_CHUNK(c, CHUNK_FILE_START) || CHECK_CHUNK(c, CHUNK_FILE_END))
             continue;
         
-        if(g_hash_table_lookup(fp_tab, &(c->fp))){
+        if(g_hash_table_lookup_threadsafe(fp_tab, &(c->fp), fp_tab_mutex)){
             SET_CHUNK(c, CHUNK_DUPLICATE);
         }else{
-            g_hash_table_replace(fp_tab, &(c->fp), c);
+            g_hash_table_replace_threadsafe(fp_tab, &(c->fp), c, fp_tab_mutex);
         }
     }
     TIMER_END(1, jcr.dedup_time);

@@ -76,5 +76,6 @@ SyncQueue* xdelta_queue;
 SyncQueue* rewrite_queue;
 
 GHashTable* fp_tab;
+pthread_mutex_t fp_tab_mutex;
 
 #endif /* BACKUP_H_ */

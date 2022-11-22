@@ -32,13 +32,15 @@ void *xdelta_thread(void *arg) {
 
 			//TOTO fix, here may the base chunk may have not been add into fp_tab
 			printf("\n\n\nc->basefp:%x\n\n\n", c->basefp);
-			GQueue *tq = g_hash_table_lookup(fp_tab, c->basefp);
+			GQueue *tq = g_hash_table_lookup_threadsafe(fp_tab, c->basefp, fp_tab_mutex);
 			if (tq) {
 				basec = g_queue_peek_head(tq);
 			}else{
 				DEBUG("find chunk wrong.\n");
 			}
 			VERBOSE("Similariting phase: %ldth chunk similar with %d", chunk_num++, basec->basefp);
+//			printf("xdelta c->data:%lx, c->size:%ld, basec->data:%lx, basec->size:%d\n", 
+//					c->data, c->size, basec->data, basec->size);
 			int deltaSize = xdelta3_compress(c->data, c->size, basec->data, basec->size, deltaOut, 1);
 			if(deltaSize< c->size){
 				memcpy(c->data, deltaOut, deltaSize);

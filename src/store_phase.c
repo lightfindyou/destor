@@ -1,6 +1,7 @@
 #include "destor.h"
 #include "jcr.h"
 #include "backup.h"
+#include "index/index.h"
 
 static pthread_t simi_t;
 static int64_t chunk_num;
@@ -25,7 +26,7 @@ void *store_thread(void *arg) {
 
 		if(CHECK_CHUNK(c, CHUNK_UNIQUE) || CHECK_CHUNK(c, CHUNK_SIMILAR)){
 			/** done in dedup phase to enable dedup with most recent chunk*/
-			g_hash_table_replace(fp_tab, &(c->fp), c);
+			g_hash_table_replace_threadsafe(fp_tab, &(c->fp), c, fp_tab_mutex);
 		}
 
 		TIMER_END(1, jcr.store_time);

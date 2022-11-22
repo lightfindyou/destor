@@ -99,6 +99,7 @@ static void* chunk_thread(void *arg) {
 				VERBOSE("Chunk phase: %ldth chunk of %d bytes", chunk_num++,
 						chunk_size);
 
+//			printf("new chunk->data: %lx, chunk->size: %d\n", nc->data, nc->size);
 			sync_queue_push(chunk_queue, nc);
 #endif	//NODEDUP
 		}
