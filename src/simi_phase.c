@@ -38,11 +38,12 @@ void *store_thread(void *arg) {
 		TIMER_BEGIN(1);
 		//here cannot use CHECK_CHUNK(c, CHUNK_UNIQUE), because CHUNK_UNIQUE is 0x0
 		if(!CHECK_CHUNK(c, CHUNK_DUPLICATE)){
-			/*calculate features*/
-			c->basefp = similariting(c->fea);
+			/*find similar chunks*/
+			//TODO change other similariting algorithms
+			c->basechunk = similariting(c);
 			jcr.tmp1++;
 
-			if(c->basefp){
+			if(c->basechunk){
 				jcr.tmp2++;
 				UNSET_CHUNK(c, CHUNK_UNIQUE);
 				SET_CHUNK(c, CHUNK_SIMILAR);
@@ -50,7 +51,7 @@ void *store_thread(void *arg) {
 		}
 		TIMER_END(1, jcr.simi_time);
 
-		VERBOSE("Similariting phase: %ldth chunk similar with %ld", chunk_num++, c->basefp);
+		VERBOSE("Similariting phase: %ldth chunk similar with %ld", chunk_num++, c->basechunk);
 
 		//TODO store chunk
 		sync_queue_push(simi_queue, c);

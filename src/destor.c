@@ -420,6 +420,10 @@ gboolean g_fingerprint_equal(fingerprint* fp1, fingerprint* fp2) {
 	return !memcmp(fp1, fp2, sizeof(fingerprint));
 }
 
+gboolean g_chunk_feature_equal(feature* fp1, feature* fp2) {
+	return !memcmp(fp1, fp2, sizeof(feature));
+}
+
 gint g_fingerprint_cmp(fingerprint* fp1, fingerprint* fp2, gpointer user_data) {
 	return memcmp(fp1, fp2, sizeof(fingerprint));
 }

@@ -321,7 +321,7 @@ struct chunk {
 	int32_t size;
 	int flag;
 	containerid id;
-	unsigned char* basefp;	//chunk fingerprint of basechunk
+	struct chunk* basechunk;	//chunk fingerprint of basechunk
 	fingerprint fp;
 	short feaNum;			//	number of feature
 	feature fea[12];
@@ -347,6 +347,7 @@ void free_segment(struct segment* s);
 gboolean g_fingerprint_equal(fingerprint* fp1, fingerprint* fp2);
 gint g_fingerprint_cmp(fingerprint* fp1, fingerprint* fp2, gpointer user_data);
 gint g_chunk_cmp(struct chunk* a, struct chunk* b, gpointer user_data);
+gboolean g_chunk_feature_equal(feature* fp1, feature* fp2);
 
 void hash2code(unsigned char hash[20], char code[40]);
 

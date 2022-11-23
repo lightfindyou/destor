@@ -24,23 +24,17 @@ void *xdelta_thread(void *arg) {
 			continue;
 		}
 
-		if(c->basefp){
+		if(c->basechunk){
 //			TIMER_DECLARE(1);
 //			TIMER_BEGIN(1);
-			//TODO get chunk by id
-			struct chunk* basec;
-
-			//TOTO fix, here may the base chunk may have not been add into fp_tab
-			printf("c->basefp:%x\n", c->basefp);
-			GQueue *tq = g_hash_table_lookup_threadsafe(fp_tab, c->basefp, fp_tab_mutex);
-			if (tq) {
-				basec = g_queue_peek_head(tq);
-			}else{
-				DEBUG("find chunk wrong.\n");
-			}
-			VERBOSE("Similariting phase: %ldth chunk similar with %d", chunk_num++, basec->basefp);
-			printf("xdelta c->data:%lx, c->size:%ld, basec->data:%lx, basec->size:%d\n", 
-					c->data, c->size, basec->data, basec->size);
+			struct chunk* basec = c->basechunk;
+//			struct chunk* basec = g_hash_table_lookup_threadsafe(fp_tab, c->basechunk, fp_tab_mutex);
+//			if (! basec) {
+//				printf("find chunk wrong.\n");
+//			}
+			VERBOSE("Similariting phase: %ldth chunk similar with %d", chunk_num++, basec->basechunk);
+			printf("xdelta c:%lx, c->data:%lx, c->size:%ld,   basec:%lx, basec->data:%lx, basec->size:%ld\n", 
+					c, c->data, c->size, basec, basec->data, basec->size);
 			int deltaSize = xdelta3_compress(c->data, c->size, basec->data, basec->size, deltaOut, 1);
 			if(deltaSize< c->size){
 				jcr.total_xdelta_compressed_chunk++;
