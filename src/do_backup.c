@@ -49,7 +49,7 @@ void do_backup(char *path) {
 //  start_filter_phase();
 
     do {
-        sleep(1);
+        usleep(2000);
         /*time_t now = time(NULL);*/
         fprintf(stderr,
                 "job %" PRId32 ", %" PRId64 " bytes, %" PRId32

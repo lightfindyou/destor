@@ -296,7 +296,8 @@ int main(int argc, char **argv) {
 		}
 	}
 
-	printf("chunck algorithm:%d.\n", destor.chunk_algorithm);
+	printf("  chunk algorithm: %s.\n", chunkAlg[destor.chunk_algorithm]);
+	printf("finesse algorithm: %s.\n", featureAlg[destor.feature_algorithm]);
 	sds path = NULL;
 
 	switch (job) {

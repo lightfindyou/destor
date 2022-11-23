@@ -80,12 +80,40 @@
 #define CHUNK_TTTDGEAR 13
 #define CHUNK_JCTTTD 14
 
+char* chunkAlg[] = {
+	"FIXED",
+	"RABIN",
+	"NORMALIZED_RABIN",
+	"FILE",
+	"AE",
+	"TTTD",
+	"FASTCDC",
+	"SC",
+	"GEARJUMP",
+	"LEAP",
+	"RABIN_JUMP",
+	"GEAR",
+	"NORMALIZED_GEARJUMP",
+	"TTTDGEAR",
+	"JCTTTD",
+	"algNum"
+};
+
 #define FEAUTRE_NO 0
 #define FEAUTRE_NTRANSFORM 1
 #define FEAUTRE_FINENESS 2
 #define FEAUTRE_DEEPSKETCH 3
 #define FEAUTRE_HIGHDEDUP 4
 #define FEAUTRE_ODESS 5
+
+char* featureAlg[] = {
+	"ntransform",
+	"finess",
+	"deepsketch",
+	"highdedup",
+	"odess",
+	"algNum"
+};
 
 #define SIMILARITY_NO 0
 #define SIMILARITY_NTRANSFORM 1

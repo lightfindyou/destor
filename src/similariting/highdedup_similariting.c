@@ -42,17 +42,19 @@ struct chunk* highdedup_similariting(struct chunk* c){
 
 	struct chunk* ret = NULL;
 	GHashTable* cand_tab = g_hash_table_new_full(g_int64_hash,
-			 g_fingerprint_equal, NULL, free);
+			 g_int64_equal, NULL, free);
 	int r = rand();
 	int curMaxHitTime = 0;
 
 	for (int i = 0; i < c->feaNum; i++) {
 		GSequence *tq = (GSequence*)g_hash_table_lookup(highdedup_sufeature_tab, &(c->fea[i]));
-		GSequenceIter *end = g_sequence_get_end_iter(tq);
-		GSequenceIter *iter = g_sequence_get_begin_iter(tq);
-		for (; iter != end; iter = g_sequence_iter_next(iter)) {
-			struct chunk* candChunk = (struct chunk*)g_sequence_get(iter);
-			ret = highdedupSearchMostSimiChunk(cand_tab, candChunk, &curMaxHitTime, ret);
+		if(tq){
+			GSequenceIter *end = g_sequence_get_end_iter(tq);
+			GSequenceIter *iter = g_sequence_get_begin_iter(tq);
+			for (; iter != end; iter = g_sequence_iter_next(iter)) {
+				struct chunk* candChunk = (struct chunk*)g_sequence_get(iter);
+				ret = highdedupSearchMostSimiChunk(cand_tab, candChunk, &curMaxHitTime, ret);
+			}
 		}
 	}
 

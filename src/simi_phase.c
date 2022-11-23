@@ -71,7 +71,7 @@ void start_simi_phase() {
 		fineness_similariting_init();
 		similariting = fineness_similariting;
 	}else if(destor.similarity_algorithm == SIMILARITY_HIGHDEDUP){
-
+		highdedup_similariting_init();
 		similariting = highdedup_similariting;
 	}
 
