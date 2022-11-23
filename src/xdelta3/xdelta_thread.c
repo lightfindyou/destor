@@ -10,7 +10,7 @@
 static int64_t chunk_num;
 
 void *xdelta_thread(void *arg) {
-	char deltaOut[2*destor.chunk_avg_size];
+	char deltaOut[2*destor.chunk_max_size];
 	while (1) {
 		struct chunk* c = sync_queue_pop(simi_queue);
 
@@ -33,10 +33,10 @@ void *xdelta_thread(void *arg) {
 //				printf("find chunk wrong.\n");
 //			}
 			VERBOSE("Similariting phase: %ldth chunk similar with %d", chunk_num++, basec->basechunk);
-			printf("xdelta c:%lx, c->data:%lx, c->size:%ld,   basec:%lx, basec->data:%lx, basec->size:%ld\n", 
-					c, c->data, c->size, basec, basec->data, basec->size);
+//			printf("xdelta c:%lx, c->data:%lx, c->size:%ld,   basec:%lx, basec->data:%lx, basec->size:%ld\n", 
+//					c, c->data, c->size, basec, basec->data, basec->size);
 			int deltaSize = xdelta3_compress(c->data, c->size, basec->data, basec->size, deltaOut, 1);
-			if(deltaSize< c->size){
+			if(deltaSize < c->size){
 				jcr.total_xdelta_compressed_chunk++;
 				memcpy(c->data, deltaOut, deltaSize);
 				int32_t ori_size = c->size;

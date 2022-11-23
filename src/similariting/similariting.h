@@ -10,16 +10,16 @@
 
 GHashTable* fineness_sufeature_tab;
 void fineness_similariting_init();
-fpp fineness_similariting(struct chunk* c);
+struct chunk* fineness_similariting(struct chunk* c);
 
 GHashTable* ntransform_sufeature_tab;
 void ntransform_similariting_init();
-fpp ntransform_similariting(struct chunk* c);
+struct chunk* ntransform_similariting(struct chunk* c);
 
-fpp deepsketch_similariting(feature fea);
+struct chunk* deepsketch_similariting(feature fea);
 
 GHashTable* highdedup_sufeature_tab;
 void highdedup_similariting_init();
-fpp highdedup_similariting(struct chunk* c);
+struct chunk* highdedup_similariting(struct chunk* c);
 
 #endif

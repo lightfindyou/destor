@@ -8,7 +8,7 @@ AM_INIT_AUTOMAKE
 
 # Checks for programs.
 AC_PROG_CC
-CFLAGS="-g -O2 -Wall"
+CFLAGS="-g -O2 -Wall -ggdb"
 
 # Checks for libraries.
 AC_CHECK_LIB([pthread], [pthread_create])

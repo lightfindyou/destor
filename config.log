@@ -136,16 +136,16 @@ configure:3738: result: yes (GNU style)
 configure:3763: checking dependency style of gcc
 configure:3874: result: gcc3
 configure:3893: checking for pthread_create in -lpthread
-configure:3918: gcc -o conftest -g -O2 -Wall   conftest.c -lpthread   >&5
+configure:3918: gcc -o conftest -g -O2 -Wall -ggdb   conftest.c -lpthread   >&5
 configure:3918: $? = 0
 configure:3927: result: yes
 configure:3938: checking for g_hash_table_new in -lglib
-configure:3963: gcc -o conftest -g -O2 -Wall   conftest.c -lglib  -lpthread  >&5
+configure:3963: gcc -o conftest -g -O2 -Wall -ggdb   conftest.c -lglib  -lpthread  >&5
 configure:3963: $? = 0
 configure:3972: result: yes
 configure:3983: checking for g_thread_init in -lglib
-configure:4008: gcc -o conftest -g -O2 -Wall   conftest.c -lglib  -lpthread  >&5
-/usr/bin/ld: /tmp/cc7fywxV.o: in function `main':
+configure:4008: gcc -o conftest -g -O2 -Wall -ggdb   conftest.c -lglib  -lpthread  >&5
+/usr/bin/ld: /tmp/ccBEOlun.o: in function `main':
 /home/xzjin/src/destor/conftest.c:23: undefined reference to `g_thread_init'
 collect2: error: ld returned 1 exit status
 configure:4008: $? = 1
@@ -178,7 +178,7 @@ configure: failed program was:
 | }
 configure:4017: result: no
 configure:4028: checking for SHA1_Update in -lcrypto
-configure:4053: gcc -o conftest -g -O2 -Wall   conftest.c -lcrypto  -lpthread  >&5
+configure:4053: gcc -o conftest -g -O2 -Wall -ggdb   conftest.c -lcrypto  -lpthread  >&5
 configure:4053: $? = 0
 configure:4062: result: yes
 configure:4120: checking for ranlib
@@ -233,51 +233,51 @@ configure:4367: result: /usr/bin/grep
 configure:4372: checking for egrep
 configure:4434: result: /usr/bin/grep -E
 configure:4439: checking for ANSI C header files
-configure:4459: gcc -c -g -O2 -Wall  conftest.c >&5
+configure:4459: gcc -c -g -O2 -Wall -ggdb  conftest.c >&5
 configure:4459: $? = 0
-configure:4532: gcc -o conftest -g -O2 -Wall   conftest.c -lpthread  >&5
+configure:4532: gcc -o conftest -g -O2 -Wall -ggdb   conftest.c -lpthread  >&5
 configure:4532: $? = 0
 configure:4532: ./conftest
 configure:4532: $? = 0
 configure:4543: result: yes
 configure:4556: checking for sys/types.h
-configure:4556: gcc -c -g -O2 -Wall  conftest.c >&5
+configure:4556: gcc -c -g -O2 -Wall -ggdb  conftest.c >&5
 configure:4556: $? = 0
 configure:4556: result: yes
 configure:4556: checking for sys/stat.h
-configure:4556: gcc -c -g -O2 -Wall  conftest.c >&5
+configure:4556: gcc -c -g -O2 -Wall -ggdb  conftest.c >&5
 configure:4556: $? = 0
 configure:4556: result: yes
 configure:4556: checking for stdlib.h
-configure:4556: gcc -c -g -O2 -Wall  conftest.c >&5
+configure:4556: gcc -c -g -O2 -Wall -ggdb  conftest.c >&5
 configure:4556: $? = 0
 configure:4556: result: yes
 configure:4556: checking for string.h
-configure:4556: gcc -c -g -O2 -Wall  conftest.c >&5
+configure:4556: gcc -c -g -O2 -Wall -ggdb  conftest.c >&5
 configure:4556: $? = 0
 configure:4556: result: yes
 configure:4556: checking for memory.h
-configure:4556: gcc -c -g -O2 -Wall  conftest.c >&5
+configure:4556: gcc -c -g -O2 -Wall -ggdb  conftest.c >&5
 configure:4556: $? = 0
 configure:4556: result: yes
 configure:4556: checking for strings.h
-configure:4556: gcc -c -g -O2 -Wall  conftest.c >&5
+configure:4556: gcc -c -g -O2 -Wall -ggdb  conftest.c >&5
 configure:4556: $? = 0
 configure:4556: result: yes
 configure:4556: checking for inttypes.h
-configure:4556: gcc -c -g -O2 -Wall  conftest.c >&5
+configure:4556: gcc -c -g -O2 -Wall -ggdb  conftest.c >&5
 configure:4556: $? = 0
 configure:4556: result: yes
 configure:4556: checking for stdint.h
-configure:4556: gcc -c -g -O2 -Wall  conftest.c >&5
+configure:4556: gcc -c -g -O2 -Wall -ggdb  conftest.c >&5
 configure:4556: $? = 0
 configure:4556: result: yes
 configure:4556: checking for unistd.h
-configure:4556: gcc -c -g -O2 -Wall  conftest.c >&5
+configure:4556: gcc -c -g -O2 -Wall -ggdb  conftest.c >&5
 configure:4556: $? = 0
 configure:4556: result: yes
 configure:4571: checking arpa/inet.h usability
-configure:4571: gcc -c -g -O2 -Wall  conftest.c >&5
+configure:4571: gcc -c -g -O2 -Wall -ggdb  conftest.c >&5
 configure:4571: $? = 0
 configure:4571: result: yes
 configure:4571: checking arpa/inet.h presence
@@ -287,7 +287,7 @@ configure:4571: result: yes
 configure:4571: checking for arpa/inet.h
 configure:4571: result: yes
 configure:4571: checking fcntl.h usability
-configure:4571: gcc -c -g -O2 -Wall  conftest.c >&5
+configure:4571: gcc -c -g -O2 -Wall -ggdb  conftest.c >&5
 configure:4571: $? = 0
 configure:4571: result: yes
 configure:4571: checking fcntl.h presence
@@ -303,7 +303,7 @@ configure:4571: result: yes
 configure:4571: checking for string.h
 configure:4571: result: yes
 configure:4571: checking sys/socket.h usability
-configure:4571: gcc -c -g -O2 -Wall  conftest.c >&5
+configure:4571: gcc -c -g -O2 -Wall -ggdb  conftest.c >&5
 configure:4571: $? = 0
 configure:4571: result: yes
 configure:4571: checking sys/socket.h presence
@@ -313,7 +313,7 @@ configure:4571: result: yes
 configure:4571: checking for sys/socket.h
 configure:4571: result: yes
 configure:4571: checking sys/time.h usability
-configure:4571: gcc -c -g -O2 -Wall  conftest.c >&5
+configure:4571: gcc -c -g -O2 -Wall -ggdb  conftest.c >&5
 configure:4571: $? = 0
 configure:4571: result: yes
 configure:4571: checking sys/time.h presence
@@ -325,7 +325,7 @@ configure:4571: result: yes
 configure:4571: checking for unistd.h
 configure:4571: result: yes
 configure:4583: checking glib.h usability
-configure:4583: gcc -c -g -O2 -Wall  conftest.c >&5
+configure:4583: gcc -c -g -O2 -Wall -ggdb  conftest.c >&5
 configure:4583: $? = 0
 configure:4583: result: yes
 configure:4583: checking glib.h presence
@@ -335,7 +335,7 @@ configure:4583: result: yes
 configure:4583: checking for glib.h
 configure:4583: result: yes
 configure:4600: checking openssl/sha.h usability
-configure:4600: gcc -c -g -O2 -Wall  conftest.c >&5
+configure:4600: gcc -c -g -O2 -Wall -ggdb  conftest.c >&5
 configure:4600: $? = 0
 configure:4600: result: yes
 configure:4600: checking openssl/sha.h presence
@@ -345,13 +345,13 @@ configure:4600: result: yes
 configure:4600: checking for openssl/sha.h
 configure:4600: result: yes
 configure:4621: checking for inline
-configure:4637: gcc -c -g -O2 -Wall  conftest.c >&5
+configure:4637: gcc -c -g -O2 -Wall -ggdb  conftest.c >&5
 configure:4637: $? = 0
 configure:4645: result: inline
 configure:4663: checking for int32_t
-configure:4663: gcc -c -g -O2 -Wall  conftest.c >&5
+configure:4663: gcc -c -g -O2 -Wall -ggdb  conftest.c >&5
 configure:4663: $? = 0
-configure:4663: gcc -c -g -O2 -Wall  conftest.c >&5
+configure:4663: gcc -c -g -O2 -Wall -ggdb  conftest.c >&5
 conftest.c: In function 'main':
 conftest.c:70:53: warning: integer overflow in expression of type 'int' results in '-2147483648' [-Woverflow]
    70 |    < (int32_t) (((((int32_t) 1 << N) << N) - 1) * 2 + 2))];
@@ -440,9 +440,9 @@ configure: failed program was:
 | }
 configure:4663: result: yes
 configure:4674: checking for int64_t
-configure:4674: gcc -c -g -O2 -Wall  conftest.c >&5
+configure:4674: gcc -c -g -O2 -Wall -ggdb  conftest.c >&5
 configure:4674: $? = 0
-configure:4674: gcc -c -g -O2 -Wall  conftest.c >&5
+configure:4674: gcc -c -g -O2 -Wall -ggdb  conftest.c >&5
 conftest.c: In function 'main':
 conftest.c:70:53: warning: integer overflow in expression of type 'long int' results in '-9223372036854775808' [-Woverflow]
    70 |    < (int64_t) (((((int64_t) 1 << N) << N) - 1) * 2 + 2))];
@@ -531,9 +531,9 @@ configure: failed program was:
 | }
 configure:4674: result: yes
 configure:4685: checking for off_t
-configure:4685: gcc -c -g -O2 -Wall  conftest.c >&5
+configure:4685: gcc -c -g -O2 -Wall -ggdb  conftest.c >&5
 configure:4685: $? = 0
-configure:4685: gcc -c -g -O2 -Wall  conftest.c >&5
+configure:4685: gcc -c -g -O2 -Wall -ggdb  conftest.c >&5
 conftest.c: In function 'main':
 conftest.c:68:20: error: expected expression before ')' token
    68 | if (sizeof ((off_t)))
@@ -614,9 +614,9 @@ configure: failed program was:
 | }
 configure:4685: result: yes
 configure:4696: checking for size_t
-configure:4696: gcc -c -g -O2 -Wall  conftest.c >&5
+configure:4696: gcc -c -g -O2 -Wall -ggdb  conftest.c >&5
 configure:4696: $? = 0
-configure:4696: gcc -c -g -O2 -Wall  conftest.c >&5
+configure:4696: gcc -c -g -O2 -Wall -ggdb  conftest.c >&5
 conftest.c: In function 'main':
 conftest.c:68:21: error: expected expression before ')' token
    68 | if (sizeof ((size_t)))
@@ -697,21 +697,21 @@ configure: failed program was:
 | }
 configure:4696: result: yes
 configure:4707: checking for uint32_t
-configure:4707: gcc -c -g -O2 -Wall  conftest.c >&5
+configure:4707: gcc -c -g -O2 -Wall -ggdb  conftest.c >&5
 configure:4707: $? = 0
 configure:4707: result: yes
 configure:4721: checking for uint64_t
-configure:4721: gcc -c -g -O2 -Wall  conftest.c >&5
+configure:4721: gcc -c -g -O2 -Wall -ggdb  conftest.c >&5
 configure:4721: $? = 0
 configure:4721: result: yes
 configure:4735: checking for uint8_t
-configure:4735: gcc -c -g -O2 -Wall  conftest.c >&5
+configure:4735: gcc -c -g -O2 -Wall -ggdb  conftest.c >&5
 configure:4735: $? = 0
 configure:4735: result: yes
 configure:4753: checking for stdlib.h
 configure:4753: result: yes
 configure:4763: checking for GNU libc compatible malloc
-configure:4787: gcc -o conftest -g -O2 -Wall   conftest.c -lpthread  >&5
+configure:4787: gcc -o conftest -g -O2 -Wall -ggdb   conftest.c -lpthread  >&5
 configure:4787: $? = 0
 configure:4787: ./conftest
 configure:4787: $? = 0
@@ -865,7 +865,7 @@ AUTOMAKE='${SHELL} /home/xzjin/src/destor/missing automake-1.16'
 AWK='mawk'
 CC='gcc'
 CCDEPMODE='depmode=gcc3'
-CFLAGS='-g -O2 -Wall'
+CFLAGS='-g -O2 -Wall -ggdb'
 CPP='gcc -E'
 CPPFLAGS=''
 CYGPATH_W='echo'
@@ -980,20 +980,3 @@ target_alias=''
 #define HAVE_MALLOC 1
 
 configure: exit 0
-
-## ---------------------- ##
-## Running config.status. ##
-## ---------------------- ##
-
-This file was extended by destor config.status 2.0, which was
-generated by GNU Autoconf 2.69.  Invocation command line was
-
-  CONFIG_FILES    = 
-  CONFIG_HEADERS  = 
-  CONFIG_LINKS    = 
-  CONFIG_COMMANDS = 
-  $ ./config.status Makefile
-
-on node27
-
-config.status:786: creating Makefile

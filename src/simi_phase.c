@@ -17,7 +17,7 @@
 static pthread_t simi_t;
 static int64_t chunk_num;
 
-static chunkid (*similariting)(feature fea);
+static struct chunk* (*similariting)(struct chunk* c);
 
 void *store_thread(void *arg) {
 	char deltaOut[2*destor.chunk_avg_size];

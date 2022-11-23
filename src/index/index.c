@@ -275,13 +275,17 @@ int index_lookup(struct segment* s) {
     for (; iter != end; iter = g_sequence_iter_next(iter)) {
         struct chunk* c = g_sequence_get(iter);
 
-        if (CHECK_CHUNK(c, CHUNK_FILE_START) || CHECK_CHUNK(c, CHUNK_FILE_END))
+        if (CHECK_CHUNK(c, CHUNK_FILE_START) || CHECK_CHUNK(c, CHUNK_FILE_END)||
+            CHECK_CHUNK(c, CHUNK_SEGMENT_START) || CHECK_CHUNK(c, CHUNK_SEGMENT_END))
             continue;
         
         if(g_hash_table_lookup_threadsafe(fp_tab, &(c->fp), fp_tab_mutex)){
             SET_CHUNK(c, CHUNK_DUPLICATE);
         }else{
             g_hash_table_replace_threadsafe(fp_tab, &(c->fp), c, fp_tab_mutex);
+
+//            printf("new chunk: %lx, chunk->data: %lx, fp addr: %lx, chunk->size: %d\n",
+//                c, c->data, c->fp, c->size);
         }
     }
     TIMER_END(1, jcr.dedup_time);
