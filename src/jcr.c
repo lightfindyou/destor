@@ -10,6 +10,7 @@
 struct jcr jcr;
 
 void init_jcr(char *path) {
+	memset(&jcr, 0, sizeof(struct jcr));
 	jcr.path = sdsnew(path);
 
 	struct stat s;

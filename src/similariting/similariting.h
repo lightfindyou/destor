@@ -16,7 +16,7 @@ GHashTable* ntransform_sufeature_tab;
 void ntransform_similariting_init();
 fpp ntransform_similariting(struct chunk* c);
 
-chunkid deepsketch_similariting(feature fea);
+fpp deepsketch_similariting(feature fea);
 
 GHashTable* highdedup_sufeature_tab;
 void highdedup_similariting_init();

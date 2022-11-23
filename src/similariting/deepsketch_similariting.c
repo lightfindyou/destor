@@ -1,6 +1,7 @@
 #include <xxhash.h>
 #include "../destor.h"
+#include "similariting.h"
 
-static chunkid deepsketch_similariting(feature fea){
+fpp deepsketch_similariting(feature fea){
 
 }

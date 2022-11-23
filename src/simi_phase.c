@@ -36,11 +36,14 @@ void *store_thread(void *arg) {
 
 		TIMER_DECLARE(1);
 		TIMER_BEGIN(1);
-		if(CHECK_CHUNK(c, CHUNK_UNIQUE)){
+		//here cannot use CHECK_CHUNK(c, CHUNK_UNIQUE), because CHUNK_UNIQUE is 0x0
+		if(!CHECK_CHUNK(c, CHUNK_DUPLICATE)){
 			/*calculate features*/
 			c->basefp = similariting(c->fea);
+			jcr.tmp1++;
 
 			if(c->basefp){
+				jcr.tmp2++;
 				UNSET_CHUNK(c, CHUNK_UNIQUE);
 				SET_CHUNK(c, CHUNK_SIMILAR);
 			}

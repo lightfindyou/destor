@@ -34,12 +34,16 @@ struct jcr{
 	int64_t zero_chunk_size;
 	int32_t rewritten_chunk_num;
 	int64_t rewritten_chunk_size;
+	int64_t tmp1;
+	int64_t tmp2;
 
 	int32_t sparse_container_num;
 	int32_t inherited_sparse_num;
 	int32_t total_container_num;
 	int64_t total_unique_size;
 	int64_t total_identical_size;
+	int64_t total_xdelta_chunk;
+	int64_t total_xdelta_compressed_chunk;
 	int64_t total_xdelta_size;
 	int64_t total_xdelta_saved_size;
 	int64_t total_dedup_size;
