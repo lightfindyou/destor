@@ -25,7 +25,7 @@ void *store_thread(void *arg) {
 		TIMER_BEGIN(1);
 
 		if(CHECK_CHUNK(c, CHUNK_UNIQUE) || CHECK_CHUNK(c, CHUNK_SIMILAR)){
-			/** done in dedup phase to enable dedup with most recent chunk*/
+			/** done in index phase to enable dedup with most recent chunk*/
 			g_hash_table_replace_threadsafe(fp_tab, &(c->fp), c, fp_tab_mutex);
 		}
 

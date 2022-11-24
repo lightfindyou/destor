@@ -124,7 +124,7 @@ void gear_odess(unsigned char *p, int n, feature* fea, int featureNum) {
         if(!(fingerprint & odessMask)){
 	    	for(int j = 0; j< featureNum; j++){
 	    		s = (fingerprint*maMatrix[j][0] + maMatrix[j][1]);
-	    		if(s>fea[j]){
+	    		if(s > fea[j]){
 	    			fea[j] = s;
 	    		}
 	    	}

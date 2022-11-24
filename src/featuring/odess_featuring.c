@@ -15,6 +15,6 @@ void odess_featuring(unsigned char* buf, int size, struct chunk* c){
 		for (int j = 0; j < ODESS_FEATURE_NUM / ODESS_SF_NUM; j++) {
 			temp[j] = fea[start + j];
 		}
-		superfeature[i] = XXH64(temp, sizeof(feature) * FINESSE_FEATURE_NUM / FINESSE_SF_NUM, 0);
+		superfeature[i] = XXH64(temp, sizeof(feature) * ODESS_FEATURE_NUM / ODESS_SF_NUM, 0);
 	}
 }

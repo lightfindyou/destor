@@ -100,8 +100,9 @@ void *dedup_thread(void *arg) {
 		free_segment(s);
 		s = NULL;
 
-		if (c == NULL)
+		if (c == NULL){
 			break;
+		}
 	}
 
 	sync_queue_term(dedup_queue);

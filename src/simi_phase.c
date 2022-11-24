@@ -19,7 +19,7 @@ static int64_t chunk_num;
 
 static struct chunk* (*similariting)(struct chunk* c);
 
-void *store_thread(void *arg) {
+void *simi_thread(void *arg) {
 	char deltaOut[2*destor.chunk_avg_size];
 	while (1) {
 		struct chunk* c = sync_queue_pop(feature_queue);
@@ -79,7 +79,7 @@ void start_simi_phase() {
 	}
 
 	simi_queue = sync_queue_new(1000);
-	pthread_create(&simi_t, NULL, store_thread, NULL);
+	pthread_create(&simi_t, NULL, simi_thread, NULL);
 }
 
 void stop_simi_phase() {
