@@ -46,7 +46,7 @@ struct jcr{
 	int64_t total_xdelta_compressed_chunk;
 	int64_t total_xdelta_size;
 	int64_t total_xdelta_saved_size;
-	int64_t total_dedup_size;
+	int64_t total_size_after_dedup;
 
 	struct backupVersion* bv;
 
@@ -73,6 +73,7 @@ struct jcr{
 };
 
 extern struct jcr jcr;
+extern pthread_mutex_t jcrMutex;
 
 void init_jcr(char *path);
 void init_backup_jcr(char *path);

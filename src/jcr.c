@@ -8,10 +8,12 @@
 #include "jcr.h"
 
 struct jcr jcr;
+pthread_mutex_t jcrMutex;
 
 void init_jcr(char *path) {
 	memset(&jcr, 0, sizeof(struct jcr));
 	jcr.path = sdsnew(path);
+	pthread_mutex_init(&jcrMutex, 0);
 
 	struct stat s;
 	if (stat(path, &s) != 0) {

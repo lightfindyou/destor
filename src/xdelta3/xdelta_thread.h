@@ -8,4 +8,5 @@
 
 #define XDELTA_THREAD_NUM 12
 pthread_t xdelta_tid[XDELTA_THREAD_NUM];
+void init_xdelta_thread();
 void start_xdelta_thread();

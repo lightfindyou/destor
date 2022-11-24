@@ -19,6 +19,7 @@ void start_xdelta_phase() {
 }
 
 void stop_xdelta_phase() {
+	init_xdelta_thread();
 	for (int i = 0; i < XDELTA_THREAD_NUM; i++){
 		pthread_join(xdelta_tid[i], NULL);
 	}

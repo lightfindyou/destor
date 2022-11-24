@@ -108,20 +108,20 @@ void do_backup(char *path) {
            jcr.data_size != 0 ? (jcr.total_xdelta_saved_size)*100 /
                                     (double)(jcr.data_size):0);
     printf("deduplication ratio: \x1B[32m%.4f\x1B[37m, %.4f\n",
-           jcr.data_size != 0 ? (jcr.total_dedup_size)*100 /
+           jcr.data_size != 0 ? (jcr.total_size_after_dedup)*100 /
                                     (double)(jcr.data_size)
                               : 0,
-           jcr.data_size*100 /(double)(jcr.total_dedup_size));
+           jcr.data_size*100 /(double)(jcr.total_size_after_dedup));
     printf("\x1B[32mTotal time(s): %.3f\x1B[37m\n", jcr.total_time / 1000000);
     printf("throughput(MB/s): %.2f\n",
            (double)jcr.data_size * 1000000 / (1024 * 1024 * jcr.total_time));
-    printf("number of zero chunks: %" PRId32 "\n", jcr.zero_chunk_num);
-    printf("size of zero chunks: %" PRId64 "\n", jcr.zero_chunk_size);
-    printf("number of rewritten chunks: %" PRId32 "\n",
-           jcr.rewritten_chunk_num);
-    printf("size of rewritten chunks: %" PRId64 "\n", jcr.rewritten_chunk_size);
-    printf("rewritten rate in size: %.3f\n",
-           jcr.rewritten_chunk_size / (double)jcr.data_size);
+//    printf("number of zero chunks: %" PRId32 "\n", jcr.zero_chunk_num);
+//    printf("size of zero chunks: %" PRId64 "\n", jcr.zero_chunk_size);
+//    printf("number of rewritten chunks: %" PRId32 "\n",
+//           jcr.rewritten_chunk_num);
+//    printf("size of rewritten chunks: %" PRId64 "\n", jcr.rewritten_chunk_size);
+//    printf("rewritten rate in size: %.3f\n",
+//           jcr.rewritten_chunk_size / (double)jcr.data_size);
 
     destor.data_size += jcr.data_size;
     destor.stored_data_size += jcr.unique_data_size + jcr.rewritten_chunk_size;
@@ -143,14 +143,14 @@ void do_backup(char *path) {
     printf("dedup_time : %.3fs, %.2fMB/s\n", jcr.dedup_time / 1000000,
            jcr.data_size * 1000000 / jcr.dedup_time / 1024 / 1024);
 
-    printf("rewrite_time : %.3fs, %.2fMB/s\n", jcr.rewrite_time / 1000000,
-           jcr.data_size * 1000000 / jcr.rewrite_time / 1024 / 1024);
-
-    printf("filter_time : %.3fs, %.2fMB/s\n", jcr.filter_time / 1000000,
-           jcr.data_size * 1000000 / jcr.filter_time / 1024 / 1024);
-
-    printf("write_time : %.3fs, %.2fMB/s\n", jcr.write_time / 1000000,
-           jcr.data_size * 1000000 / jcr.write_time / 1024 / 1024);
+//    printf("rewrite_time : %.3fs, %.2fMB/s\n", jcr.rewrite_time / 1000000,
+//           jcr.data_size * 1000000 / jcr.rewrite_time / 1024 / 1024);
+//
+//    printf("filter_time : %.3fs, %.2fMB/s\n", jcr.filter_time / 1000000,
+//           jcr.data_size * 1000000 / jcr.filter_time / 1024 / 1024);
+//
+//    printf("write_time : %.3fs, %.2fMB/s\n", jcr.write_time / 1000000,
+//           jcr.data_size * 1000000 / jcr.write_time / 1024 / 1024);
 
     // double seek_time = 0.005; //5ms
     // double bandwidth = 120 * 1024 * 1024; //120MB/s
