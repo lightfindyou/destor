@@ -26,57 +26,49 @@ void *xdelta_thread(void *arg) {
 			continue;
 		}
 
-		if(c->basechunk){
-//			TIMER_DECLARE(1);
-//			TIMER_BEGIN(1);
-			struct chunk* basec = c->basechunk;
-//			struct chunk* basec = g_hash_table_lookup_threadsafe(fp_tab, c->basechunk, fp_tab_mutex);
-//			if (! basec) {
-//				printf("find chunk wrong.\n");
-//			}
-			VERBOSE("Similariting phase: %ldth chunk similar with %d", chunk_num++, basec->basechunk);
-//			printf("xdelta c:%lx, c->data:%lx, c->size:%ld,   basec:%lx, basec->data:%lx, basec->size:%ld\n", 
-//					c, c->data, c->size, basec, basec->data, basec->size);
-			int deltaSize = xdelta3_compress(c->data, c->size, basec->data, basec->size, deltaOut, 1);
-			if(deltaSize < c->size){
-				memcpy(c->data, deltaOut, deltaSize);
-				int32_t ori_size = c->size;
-				c->size = deltaSize;
+		if(!CHECK_CHUNK(c, CHUNK_DUPLICATE)){	//the unique chunks
+			if(c->basechunk){	//chunk may be xdeltaed
+				struct chunk* basec = c->basechunk;
+				VERBOSE("Similariting phase: %ldth chunk similar with %d", chunk_num++, basec->basechunk);
+//				printf("xdelta c:%lx, c->data:%lx, c->size:%ld,   basec:%lx, basec->data:%lx, basec->size:%ld\n", 
+//						c, c->data, c->size, basec, basec->data, basec->size);
+				int deltaSize = xdelta3_compress(c->data, c->size, basec->data, basec->size, deltaOut, 1);
+				if(deltaSize < c->size){
+					memcpy(c->data, deltaOut, deltaSize);
+					int32_t ori_size = c->size;
+					c->size = deltaSize;
 
+					if (pthread_mutex_lock(&jcrMutex) != 0) {
+						puts("failed to lock jcrMutex!");
+						return;
+					}
+					jcr.total_xdelta_compressed_chunk++;
+					jcr.total_xdelta_size += c->size;
+					jcr.total_xdelta_saved_size += ori_size - c->size;
+				}else{
+					if (pthread_mutex_lock(&jcrMutex) != 0) {
+						puts("failed to lock jcrMutex!");
+						return;
+					}
+				}
+				jcr.total_xdelta_chunk++;
+				jcr.total_size_after_dedup += c->size;		//the size of chunk after xdelta
+			}else{				//chunk unable to be xdeltaed
 				if (pthread_mutex_lock(&jcrMutex) != 0) {
 					puts("failed to lock jcrMutex!");
 					return;
 				}
-				jcr.total_xdelta_compressed_chunk++;
-				jcr.total_xdelta_size += c->size;
-				jcr.total_xdelta_saved_size += ori_size - c->size;
-			}else{
-				if (pthread_mutex_lock(&jcrMutex) != 0) {
-					puts("failed to lock jcrMutex!");
-					return;
+				if(!CHECK_CHUNK(c, CHUNK_DUPLICATE)){
+					jcr.total_size_after_dedup += c->size;	//the size unique chunks stored in storage
 				}
+				jcr.total_unique_size += c->size;
 			}
-			jcr.total_xdelta_chunk++;
-			jcr.total_size_after_dedup += c->size;
 
-//			//TODO if calculate size, here should use mutex
-//			TIMER_END(1, jcr.xdelta_time);
-		}else{
-			if (pthread_mutex_lock(&jcrMutex) != 0) {
-				puts("failed to lock jcrMutex!");
+			if (pthread_mutex_unlock(&jcrMutex) != 0) {
+				puts("failed to unlock jcrMutex!");
 				return;
 			}
-
-			jcr.total_unique_size += c->size;
-		}
-		//TODO calcualte output size/
-		if (pthread_mutex_unlock(&jcrMutex) != 0) {
-			puts("failed to unlock jcrMutex!");
-			return;
-		}
-
-		//TODO store chunk
-//		sync_queue_push(xdelta_queue, c);
+		}else{	/*duplicate chunk*/ }
 	}
 
 	jcr.status = JCR_STATUS_DONE;

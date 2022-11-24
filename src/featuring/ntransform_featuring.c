@@ -5,7 +5,7 @@
 void ntransform_featuring(unsigned char* buf, int size, struct chunk* c){
 	feature fea[NTRANSFORM_FEATURE_NUM];
 	sufeature* superfeature = c->fea;
-	for (int i = 0; i < NTRANSFORM_SF_NUM; ++i) fea[i] = 0;
+	memset(fea, 0, sizeof(feature)*NTRANSFORM_FEATURE_NUM);
 
 //	printf("buf:%x, size:%d, fea:%x\n", buf, size, fea);
 	rabin_ntransform(buf, size, fea, NTRANSFORM_FEATURE_NUM);

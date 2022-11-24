@@ -281,9 +281,10 @@ int index_lookup(struct segment* s) {
         
         if(g_hash_table_lookup_threadsafe(fp_tab, &(c->fp), fp_tab_mutex)){
             SET_CHUNK(c, CHUNK_DUPLICATE);
-        }else{
+        }else{  /**only if the chunk is unique, add it
+                 into the fp_tab not matter whether it
+                 will be xdeltaed */
             g_hash_table_replace_threadsafe(fp_tab, &(c->fp), c, fp_tab_mutex);
-
 //            printf("new chunk: %lx, chunk->data: %lx, fp addr: %lx, chunk->size: %d\n",
 //                c, c->data, c->fp, c->size);
         }

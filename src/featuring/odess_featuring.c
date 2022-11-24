@@ -5,9 +5,9 @@
 void odess_featuring(unsigned char* buf, int size, struct chunk* c){
 	feature fea[ODESS_FEATURE_NUM];
 	sufeature* superfeature = c->fea;
-	for (int i = 0; i < ODESS_SF_NUM; ++i) fea[i] = 0;
+	memset(fea, 0, sizeof(feature)*ODESS_FEATURE_NUM);
 
-	rabin_ntransform(buf, size, fea, ODESS_FEATURE_NUM);
+	gear_odess(buf, size, fea, ODESS_FEATURE_NUM);
 
 	for (int i = 0; i < ODESS_SF_NUM; ++i) {
 		feature temp[ODESS_FEATURE_NUM / ODESS_SF_NUM];

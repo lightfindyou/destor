@@ -41,6 +41,7 @@ struct jcr{
 	int32_t inherited_sparse_num;
 	int32_t total_container_num;
 	int64_t total_unique_size;
+	int64_t identical_chunk_num;
 	int64_t total_identical_size;
 	int64_t total_xdelta_chunk;
 	int64_t total_xdelta_compressed_chunk;

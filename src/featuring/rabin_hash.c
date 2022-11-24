@@ -292,7 +292,6 @@ void rabin_ntransform(unsigned char *p, int n, feature* fea, int featureNum) {
 				fea[j] = s;
 			}
 		}
-//		printf("current i:%d\n", i);
 		i++;
 	}
 	return;

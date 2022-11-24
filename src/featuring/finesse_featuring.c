@@ -19,11 +19,9 @@ int compar(const void * a, const void * b){
 void finesse_featuring(unsigned char* buf, int size, struct chunk* c){
 	feature curFea[FINESSE_FEATURE_NUM];
 	sufeature* superfeature = c->fea;
+	memset(curFea, 0, sizeof(feature)*FINESSE_FEATURE_NUM);
 
 	int subchs = size/FINESSE_FEATURE_NUM;
-
-	for (int i = 0; i < FINESSE_FEATURE_NUM; ++i) curFea[i] = 0;
-	for (int i = 0; i < FINESSE_SF_NUM; ++i) superfeature[i] = 0;
 
 	for (int i = 0; i < FINESSE_FEATURE_NUM; ++i) {
 		int64_t fp = 0;

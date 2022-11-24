@@ -48,6 +48,7 @@ void send_segment(struct segment* s) {
 							chunk_num++, c->id);
 				}
 				jcr.total_identical_size += c->size;
+				jcr.identical_chunk_num++;
 			} else {
 				DEBUG("Dedup phase: %ldth chunk is unique", chunk_num++);
 			}
