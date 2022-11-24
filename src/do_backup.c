@@ -99,7 +99,8 @@ void do_backup(char *path) {
                jcr.data_size, jcr.total_identical_size);
     printf("stored data size(B): %" PRId64 "\n",
            jcr.unique_data_size + jcr.rewritten_chunk_size);
-    printf("featured chunks: %d, similarity chunks: %d\n", jcr.tmp1, jcr.tmp2);
+    printf("featured chunks: %d, similarity chunks: %d\n",
+         jcr.featuredChunks, jcr.similarChunks);
     printf("indentical compress ratio: %.4f, indentical chunk number: %" PRId64 "\n",
            jcr.data_size != 0 ? 
               (jcr.total_identical_size)*100 / (double)(jcr.data_size):0,

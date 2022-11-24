@@ -40,10 +40,10 @@ void *simi_thread(void *arg) {
 		if(!CHECK_CHUNK(c, CHUNK_DUPLICATE)){
 			/*find similar chunks*/
 			c->basechunk = similariting(c);
-			jcr.tmp1++;
+			jcr.featuredChunks++;
 
 			if(c->basechunk){
-				jcr.tmp2++;
+				jcr.similarChunks++;
 				UNSET_CHUNK(c, CHUNK_UNIQUE);
 				SET_CHUNK(c, CHUNK_SIMILAR);
 			}
