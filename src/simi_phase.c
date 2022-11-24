@@ -73,6 +73,9 @@ void start_simi_phase() {
 	}else if(destor.similarity_algorithm == SIMILARITY_HIGHDEDUP){
 		highdedup_similariting_init();
 		similariting = highdedup_similariting;
+	}else if(destor.similarity_algorithm == SIMILARITY_ODESS){
+		odess_similariting_init();
+		similariting = odess_similariting;
 	}
 
 	simi_queue = sync_queue_new(1000);

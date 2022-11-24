@@ -8,7 +8,7 @@ void ntransform_featuring(unsigned char* buf, int size, struct chunk* c){
 	for (int i = 0; i < NTRANSFORM_SF_NUM; ++i) fea[i] = 0;
 
 //	printf("buf:%x, size:%d, fea:%x\n", buf, size, fea);
-	rabin_ntransform(buf, size, fea, NTRANSFORM_SF_NUM);
+	rabin_ntransform(buf, size, fea, NTRANSFORM_FEATURE_NUM);
 
 	for (int i = 0; i < FINESSE_SF_NUM; ++i) {
 		feature temp[FINESSE_FEATURE_NUM / FINESSE_SF_NUM];

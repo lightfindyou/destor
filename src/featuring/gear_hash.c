@@ -1,7 +1,3 @@
-//
-// Created by borelset on 2019/3/20.
-//
-
 #include <assert.h>
 #include <math.h>
 #include <memory.h>
@@ -64,7 +60,7 @@ uint64_t gearhash_g_condition_mask[] = {
 };
 
 uint64_t Mask;
-uint64_t back_mask_TTTD;
+uint64_t odessMask;
 void gearhash_gear_init(int featureNumber){
     char seed[SeedLength];
     for(int i=0; i<SymbolCount; i++){
@@ -88,7 +84,7 @@ void gearhash_gear_init(int featureNumber){
     assert(index>6);
     assert(index<17);
     Mask = gearhash_g_condition_mask[cOnes];
-    back_mask_TTTD = gearhash_g_condition_mask[cOnes - 1];
+    odessMask = gearhash_g_condition_mask[7];
 }
 
 /** return the number of features*/
@@ -114,4 +110,25 @@ int gear_max_highdedup(unsigned char *p, int n, feature* fea, int maxFeaNum){
         feaNum++;
     }
     return feaNum;
+}
+
+void gear_odess(unsigned char *p, int n, feature* fea, int featureNum) {
+
+    feature fingerprint=0, s=0;
+    int i=0;
+
+    while(i < n){
+        fingerprint = (fingerprint<<1) + (g_gear_matrix[p[i]]);
+        i++;
+
+        if(!(fingerprint & odessMask)){
+	    	for(int j = 0; j< featureNum; j++){
+	    		s = (fingerprint*maMatrix[j][0] + maMatrix[j][1]);
+	    		if(s>fea[j]){
+	    			fea[j] = s;
+	    		}
+	    	}
+        }
+    }
+	return;
 }

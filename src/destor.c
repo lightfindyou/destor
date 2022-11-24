@@ -30,6 +30,35 @@ struct option long_options[] = {
 		{ NULL, 0, NULL, 0 }
 };
 
+char* chunkAlgStr[] = {
+	"FIXED",
+	"RABIN",
+	"NORMALIZED_RABIN",
+	"FILE",
+	"AE",
+	"TTTD",
+	"FASTCDC",
+	"SC",
+	"GEARJUMP",
+	"LEAP",
+	"RABIN_JUMP",
+	"GEAR",
+	"NORMALIZED_GEARJUMP",
+	"TTTDGEAR",
+	"JCTTTD",
+	"algNum"
+};
+
+char* featureAlgStr[] = {
+	"no-feature",
+	"ntransform",
+	"finesse",
+	"deepsketch",
+	"highdedup",
+	"odess",
+	"algNum"
+};
+
 void usage() {
 	puts("GENERAL USAGE");
 	puts("\tstart a backup job");
@@ -296,8 +325,8 @@ int main(int argc, char **argv) {
 		}
 	}
 
-	printf("  chunk algorithm: %s.\n", chunkAlg[destor.chunk_algorithm]);
-	printf("finesse algorithm: %s.\n", featureAlg[destor.feature_algorithm]);
+	printf("  chunk algorithm: %s.\n", chunkAlgStr[destor.chunk_algorithm]);
+	printf("feature algorithm: %s.\n", featureAlgStr[destor.feature_algorithm]);
 	sds path = NULL;
 
 	switch (job) {

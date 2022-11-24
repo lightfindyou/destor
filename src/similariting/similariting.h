@@ -22,4 +22,7 @@ GHashTable* highdedup_sufeature_tab;
 void highdedup_similariting_init();
 struct chunk* highdedup_similariting(struct chunk* c);
 
+void odess_similariting_init();
+struct chunk* odess_similariting(struct chunk* c);
+
 #endif

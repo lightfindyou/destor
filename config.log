@@ -145,7 +145,7 @@ configure:3963: $? = 0
 configure:3972: result: yes
 configure:3983: checking for g_thread_init in -lglib
 configure:4008: gcc -o conftest -g -O2 -Wall -ggdb   conftest.c -lglib  -lpthread  >&5
-/usr/bin/ld: /tmp/ccBEOlun.o: in function `main':
+/usr/bin/ld: /tmp/cc8INkCN.o: in function `main':
 /home/xzjin/src/destor/conftest.c:23: undefined reference to `g_thread_init'
 collect2: error: ld returned 1 exit status
 configure:4008: $? = 1
@@ -766,10 +766,8 @@ config.status:1035: cd src/chunking       && sed -e '/# am--include-marker/d' Ma
 make: Nothing to be done for 'am--depfiles'.
 config.status:1040: $? = 0
 config.status:1035: cd src/featuring       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:1040: $? = 0
 config.status:1035: cd src/similariting       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
-make: Nothing to be done for 'am--depfiles'.
 config.status:1040: $? = 0
 config.status:1035: cd src/xdelta3       && sed -e '/# am--include-marker/d' Makefile         | make -f - am--depfiles
 make: Nothing to be done for 'am--depfiles'.

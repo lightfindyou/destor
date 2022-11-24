@@ -131,9 +131,6 @@ void load_config_from_string(sds config) {
 			} else if (strcasecmp(argv[1], "odess") == 0) {
 				destor.feature_algorithm = FEAUTRE_ODESS;
 				destor.similarity_algorithm = SIMILARITY_ODESS;
-				printf("compared data: %s\n", argv[1]);
-				err = "odess current unavliable";
-				goto loaderr;
 			} else if (strcasecmp(argv[1], "highdedup") == 0) {
 				destor.feature_algorithm = FEAUTRE_HIGHDEDUP;
 				destor.similarity_algorithm = SIMILARITY_HIGHDEDUP;
