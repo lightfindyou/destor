@@ -1,11 +1,3 @@
-/*
- * In the phase,
- * we aggregate chunks into segments,
- * and deduplicate each segment with its similar segments.
- * Duplicate chunks are identified and marked.
- * For fingerprint indexes exploiting physical locality (e.g., DDFS, Sampled Index),
- * segments are only for batch process.
- * */
 #include "destor.h"
 #include "jcr.h"
 #include "index/index.h"
