@@ -328,8 +328,8 @@ struct chunk {
 	struct chunk* basechunk;	//chunk fingerprint of basechunk
 	fingerprint fp;
 	short feaNum;			//	number of feature
-	feature fea[12];
 	unsigned char *data;
+	feature fea[12];
 };
 
 /* struct segment only makes sense for index. */

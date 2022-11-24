@@ -24,6 +24,7 @@ void *feature_thread(void *arg) {
 
 		if (c == NULL) {
 			sync_queue_term(feature_queue);
+//			jcr.status = JCR_STATUS_DONE;
 			break;
 		}
 

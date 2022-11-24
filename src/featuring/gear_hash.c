@@ -13,13 +13,7 @@
 #define MaxChunkSizeOffset 3
 #define MinChunkSizeOffset 2
 
-uint64_t g_gear_matrix[SymbolCount];
-uint32_t g_min_fastcdc_chunk_size;
-uint32_t g_max_fastcdc_chunk_size;
-uint32_t g_expect_fastcdc_chunk_size;
-
-uint64_t MaskS;
-uint64_t MaskL;
+uint64_t gearhash_matrix[SymbolCount];
 
 enum{
     Mask_64B,
@@ -59,7 +53,7 @@ uint64_t gearhash_g_condition_mask[] = {
         0x0000d90703537000// 128KB
 };
 
-uint64_t Mask;
+uint64_t gearHighdedupMask;
 uint64_t odessMask;
 void gearhash_gear_init(int featureNumber){
     char seed[SeedLength];
@@ -68,7 +62,7 @@ void gearhash_gear_init(int featureNumber){
             seed[j] = i;
         }
 
-        g_gear_matrix[i] = 0;
+        gearhash_matrix[i] = 0;
         unsigned char md5_result[DigistLength];
 
         MD5_CTX md5_ctx;
@@ -76,14 +70,11 @@ void gearhash_gear_init(int featureNumber){
         MD5_Update(&md5_ctx, seed, SeedLength);
         MD5_Final(md5_result, &md5_ctx);
 
-        memcpy(&g_gear_matrix[i], md5_result, sizeof(uint64_t));
+        memcpy(&gearhash_matrix[i], md5_result, sizeof(uint64_t));
     }
 
     int index = log2(destor.chunk_avg_size/featureNumber);
-    int cOnes = index;
-    assert(index>6);
-    assert(index<17);
-    Mask = gearhash_g_condition_mask[cOnes];
+    gearHighdedupMask = gearhash_g_condition_mask[index];
     odessMask = gearhash_g_condition_mask[7];
 }
 
@@ -94,14 +85,14 @@ int gear_max_highdedup(unsigned char *p, int n, feature* fea, int maxFeaNum){
     int i=0, feaNum = 0;
 
     while(i < n && feaNum < maxFeaNum){     //if loop stop because feaNum, then feaNum = maxFeaNum;
-        fingerprint = (fingerprint<<1) + (g_gear_matrix[p[i]]);
+        fingerprint = (fingerprint<<1) + (gearhash_matrix[p[i]]);
         i++;
 
         if(fingerprint > fea[feaNum]){
             fea[feaNum] = fingerprint;
         }
 
-        if(!(fingerprint & Mask)){
+        if(!(fingerprint & gearHighdedupMask)){
             feaNum++;
         }
     }
@@ -118,7 +109,7 @@ void gear_odess(unsigned char *p, int n, feature* fea, int featureNum) {
     int i=0;
 
     while(i < n){
-        fingerprint = (fingerprint<<1) + (g_gear_matrix[p[i]]);
+        fingerprint = (fingerprint<<1) + (gearhash_matrix[p[i]]);
         i++;
 
         if(!(fingerprint & odessMask)){
