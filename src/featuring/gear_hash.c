@@ -4,6 +4,7 @@
 #include <openssl/md5.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <xxhash.h>
 #include "../destor.h"
 #include "featuring.h"
 
@@ -55,6 +56,8 @@ uint64_t gearhash_g_condition_mask[] = {
 
 uint64_t gearHighdedupMask;
 uint64_t odessMask;
+MD5_CTX gearhash_md5_ctx;
+
 void gearhash_gear_init(int featureNumber){
     char seed[SeedLength];
     for(int i=0; i<SymbolCount; i++){
@@ -65,10 +68,9 @@ void gearhash_gear_init(int featureNumber){
         gearhash_matrix[i] = 0;
         unsigned char md5_result[DigistLength];
 
-        MD5_CTX md5_ctx;
-        MD5_Init(&md5_ctx);
-        MD5_Update(&md5_ctx, seed, SeedLength);
-        MD5_Final(md5_result, &md5_ctx);
+        MD5_Init(&gearhash_md5_ctx);
+        MD5_Update(&gearhash_md5_ctx, seed, SeedLength);
+        MD5_Final(md5_result, &gearhash_md5_ctx);
 
         memcpy(&gearhash_matrix[i], md5_result, sizeof(uint64_t));
     }
@@ -76,10 +78,13 @@ void gearhash_gear_init(int featureNumber){
     int index = log2(destor.chunk_avg_size/featureNumber);
     gearHighdedupMask = gearhash_g_condition_mask[index];
     odessMask = gearhash_g_condition_mask[7];
+    printf("gearHighdedupMask: %lx\n", gearHighdedupMask);
+    printf("        odessMask: %lx\n", odessMask);
 }
 
 /** return the number of features*/
-int gear_max_highdedup(unsigned char *p, int n, feature* fea, int maxFeaNum){
+int gear_max_highdedup_12fea_64B_max(unsigned char *p, int n, feature* fea,
+                 int maxFeaNum, unsigned long feaMask){
 
     feature fingerprint=0;
     int i=0, feaNum = 0;
@@ -88,7 +93,7 @@ int gear_max_highdedup(unsigned char *p, int n, feature* fea, int maxFeaNum){
         fingerprint = (fingerprint<<1) + (gearhash_matrix[p[i]]);
         i++;
 
-        if(fingerprint > fea[feaNum]){
+        if( fingerprint > fea[feaNum]){
             fea[feaNum] = fingerprint;
         }
 
@@ -98,6 +103,60 @@ int gear_max_highdedup(unsigned char *p, int n, feature* fea, int maxFeaNum){
     }
 
     if(feaNum != maxFeaNum){
+        feaNum++;
+    }
+    return feaNum;
+}
+
+int gear_max_highdedup_32fea_16B_max(unsigned char *p, int n, feature* fea,
+                 int maxFeaNum, unsigned long feaMask){
+
+    feature fingerprint=0;
+    int i=0, feaNum = 0;
+
+    while(i < n && feaNum < maxFeaNum){     //if loop stop because feaNum, then feaNum = maxFeaNum;
+        fingerprint = (fingerprint<<1) + (gearhash_matrix[p[i]]);
+        i++;
+
+        feature tmp = fingerprint & feaMask;
+        if( tmp > fea[feaNum]){
+            fea[feaNum] = tmp;
+        }
+
+        if(!(fingerprint & gearHighdedupMask)){
+            feaNum++;
+        }
+    }
+
+    if(feaNum != maxFeaNum){
+        feaNum++;
+    }
+    return feaNum;
+}
+
+int gear_max_highdedup_32fea_16B_xxhash(unsigned char *p, int n, feature* fea,
+                 int maxFeaNum, unsigned long feaMask){
+
+    feature fingerprint=0;
+    unsigned char md5Ret[16];
+    int i=0, feaNum = 0, startOffset = 0;
+
+    while(i < n && feaNum < maxFeaNum){     //if loop stop because feaNum, then feaNum = maxFeaNum;
+        fingerprint = (fingerprint<<1) + (gearhash_matrix[p[i]]);
+
+        if(!(fingerprint & gearHighdedupMask)){
+            int len = i - startOffset;
+            fea[feaNum] = XXH64(&p[startOffset], len, 0) & feaMask;
+            startOffset = i;
+            feaNum++;
+        }
+
+        i++;
+    }
+
+    if(feaNum != maxFeaNum){
+        int len = i - startOffset;
+        fea[feaNum] = XXH64(&p[startOffset], len, 0) & feaMask;
         feaNum++;
     }
     return feaNum;

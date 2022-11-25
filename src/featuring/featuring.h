@@ -21,9 +21,15 @@ void finesse_featuring(unsigned char* buf, int size, struct chunk* c);
 void rabin_ntransform(unsigned char *p, int size, sufeature* sf, int sfnum);
 void ntransform_featuring(unsigned char* buf, int size, struct chunk* c);
 
-#define HIGHDEDUP_FEATURE_NUM 12
+//#define HIGHDEDUP_FEATURE_NUM 12
+//#define HIGHDEDUP_FEATURE_MASK (0xffffffffffffffff)
+#define HIGHDEDUP_FEATURE_NUM 32
+//#define HIGHDEDUP_FEATURE_MASK (0xffff)
+#define HIGHDEDUP_FEATURE_MASK (0xffffffffffffffff)
 void gearhash_gear_init(int featureNumber);
-int gear_max_highdedup(unsigned char *p, int n, feature* fea, int maxFeaNum);
+int gear_max_highdedup_12fea_64B_max(unsigned char *p, int n, feature* fea, int maxFeaNum, unsigned long feaMask);
+int gear_max_highdedup_32fea_16B_max(unsigned char *p, int n, feature* fea, int maxFeaNum, unsigned long feaMask);
+int gear_max_highdedup_32fea_16B_xxhash(unsigned char *p, int n, feature* fea, int maxFeaNum, unsigned long feaMask);
 void highdedup_featuring(unsigned char* buf, int size, struct chunk* c);
 
 

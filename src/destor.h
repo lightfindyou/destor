@@ -327,9 +327,9 @@ struct chunk {
 	containerid id;
 	struct chunk* basechunk;	//chunk fingerprint of basechunk
 	fingerprint fp;
-	short feaNum;			//	number of feature
+	short feaNum;				//	number of feature
 	unsigned char *data;
-	feature fea[12];
+	feature fea[32];
 };
 
 /* struct segment only makes sense for index. */
