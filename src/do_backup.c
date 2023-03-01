@@ -107,7 +107,7 @@ void do_backup(char *path) {
            jcr.identical_chunk_num);
     printf("xdelta chunks: %" PRId64 " xdelta compressed chunks: %" PRId64 "\n",
            jcr.total_xdelta_chunk, jcr.total_xdelta_compressed_chunk);
-    printf("xdelta compress ratio: %.4f\n",
+    printf("xdelta compress ratio (space avoided to be used): %.4f\n",
            jcr.data_size != 0 ? (jcr.total_xdelta_saved_size)*100 /
                                     (double)(jcr.data_size):0);
     printf("deduplication ratio: \x1B[32m%.4f\x1B[37m, %.4f\n",

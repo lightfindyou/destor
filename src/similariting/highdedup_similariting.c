@@ -19,7 +19,7 @@ void highdedup_insert_sufeature(struct chunk* c){
 	}
 }
 
-struct chunk* highdedupSearchMostSimiChunk(GHashTable* cand_tab, struct chunk* c, int* curMaxHit, fpp curCandC){
+struct chunk* searchMostSimiChunk(GHashTable* cand_tab, struct chunk* c, int* curMaxHit, fpp curCandC){
 
 	int* hitTime = g_hash_table_lookup(cand_tab, c);
 	if(hitTime){
@@ -30,7 +30,11 @@ struct chunk* highdedupSearchMostSimiChunk(GHashTable* cand_tab, struct chunk* c
 		*hitTime = 1;
 		g_hash_table_replace(cand_tab, c, hitTime);
 	}
-	if(*hitTime > *curMaxHit) return c;
+
+	if(*hitTime > *curMaxHit){
+		*curMaxHit = hitTime;
+		return c;
+	}
 
 	return curCandC;
 }
@@ -46,6 +50,7 @@ struct chunk* highdedup_similariting(struct chunk* c){
 	int r = rand();
 	int curMaxHitTime = 0;
 
+	//search each feature and get the chunk that have been hit most times
 	for (int i = 0; i < c->feaNum; i++) {
 		GSequence *tq = (GSequence*)g_hash_table_lookup(highdedup_sufeature_tab, &(c->fea[i]));
 		if(tq){
@@ -53,7 +58,7 @@ struct chunk* highdedup_similariting(struct chunk* c){
 			GSequenceIter *iter = g_sequence_get_begin_iter(tq);
 			for (; iter != end; iter = g_sequence_iter_next(iter)) {
 				struct chunk* candChunk = (struct chunk*)g_sequence_get(iter);
-				ret = highdedupSearchMostSimiChunk(cand_tab, candChunk, &curMaxHitTime, ret);
+				ret = searchMostSimiChunk(cand_tab, candChunk, &curMaxHitTime, ret);
 			}
 		}
 	}

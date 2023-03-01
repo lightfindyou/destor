@@ -21,7 +21,9 @@ void *simi_thread(void *arg) {
 			break;
 		}
 
-		if (CHECK_CHUNK(c, CHUNK_FILE_START) || CHECK_CHUNK(c, CHUNK_FILE_END)) {
+
+		if (CHECK_CHUNK(c, CHUNK_FILE_START) || CHECK_CHUNK(c, CHUNK_FILE_END) ||
+			CHECK_CHUNK(c, CHUNK_SEGMENT_START) || CHECK_CHUNK(c, CHUNK_SEGMENT_END)) {
 			sync_queue_push(simi_queue, c);
 			continue;
 		}
@@ -67,6 +69,9 @@ void start_simi_phase() {
 	}else if(destor.similarity_algorithm == SIMILARITY_ODESS){
 		odess_similariting_init();
 		similariting = odess_similariting;
+	}else if(destor.similarity_algorithm == SIMILARITY_FINENESS_FLATFEA){
+		fineness_similariting_init();
+		similariting = fineness_similariting_flatFea;
 	}
 
 	simi_queue = sync_queue_new(1000);

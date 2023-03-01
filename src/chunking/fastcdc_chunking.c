@@ -104,13 +104,15 @@ int fastcdc_chunk_data(unsigned char *p, int n){
     int Mid = g_expect_fastcdc_chunk_size;
     //return n;
 
-    if(n<=g_min_fastcdc_chunk_size) //the minimal  subChunk Size.
+    if(n<=g_min_fastcdc_chunk_size){ //the minimal  subChunk Size.
         return n;
-    //windows_reset();
-    if(n > g_max_fastcdc_chunk_size)
+    }
+
+    if(n > g_max_fastcdc_chunk_size){
         n = g_max_fastcdc_chunk_size;
-    else if(n<Mid)
+    } else if(n<Mid){
         Mid = n;
+    }
 
     while(i<Mid){
         fingerprint = (fingerprint<<1) + (g_gear_matrix[p[i]]);

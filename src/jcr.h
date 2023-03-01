@@ -46,6 +46,7 @@ struct jcr{
 	int64_t total_xdelta_chunk;
 	int64_t total_xdelta_compressed_chunk;
 	int64_t total_xdelta_size;
+	//the storage space that is avoided to be used by xdelta compress
 	int64_t total_xdelta_saved_size;
 	int64_t total_size_after_dedup;
 

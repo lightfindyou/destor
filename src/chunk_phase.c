@@ -99,13 +99,14 @@ static void* chunk_thread(void *arg) {
 				VERBOSE("Chunk phase: %ldth chunk of %d bytes", chunk_num++,
 						chunk_size);
 
+			assert(nc->size);
 			sync_queue_push(chunk_queue, nc);
 
 			jcr.chunk_num++;
 			jcr.data_size += nc->size;
 #endif	//NODEDUP
 		}
-		//xzjin add file tail chunck at last
+		//xzjin add file tail chunk at last
 #ifndef NODEDUP
 		sync_queue_push(chunk_queue, c);
 #endif	//NODEDUP

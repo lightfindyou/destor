@@ -162,6 +162,38 @@ int gear_max_highdedup_32fea_16B_xxhash(unsigned char *p, int n, feature* fea,
     return feaNum;
 }
 
+/**here fsc means the boundary of subchunk is decided by index,
+ * but the fingerprint it self is decided by CDC
+*/
+int highdedup_32fea_16B_FSC(unsigned char *p, int n, feature* fea,
+                 int maxFeaNum){
+
+    feature fingerprint=0;
+    int i=0, feaNum = 0, startOffset = 0;
+    int subChunkLen = n/maxFeaNum, curBoundary = subChunkLen;
+
+    while(i < n && feaNum < maxFeaNum){     //if loop stop because feaNum, then feaNum = maxFeaNum;
+        fingerprint = (fingerprint<<1) + (gearhash_matrix[p[i]]);
+
+        if(fingerprint > fea[feaNum]){
+            fea[feaNum] = fingerprint;
+        }
+
+        if( i >= curBoundary){
+            feaNum++;
+
+            curBoundary += subChunkLen;
+            if(feaNum == (maxFeaNum - 1)){
+                curBoundary = n;
+            }
+        }
+
+        i++;
+    }
+
+    return maxFeaNum;
+}
+
 void gear_odess(unsigned char *p, int n, feature* fea, int featureNum) {
 
     feature fingerprint=0, s=0;

@@ -51,12 +51,17 @@ void start_feature_phase() {
 	}else if(destor.feature_algorithm == FEAUTRE_FINENESS){
 		rabinhash_rabin_init();
 		featuring = finesse_featuring;
+	}else if(destor.feature_algorithm == FEAUTRE_FINESS_FLATFEA){
+		rabinhash_rabin_init();
+		featuring = finesse_featuring_flatFea;
 	}else if(destor.feature_algorithm == FEAUTRE_ODESS){
 		gearhash_gear_init(ODESS_FEATURE_NUM);
 		featuring = odess_featuring;
 	}else if(destor.feature_algorithm == FEAUTRE_HIGHDEDUP){
 		gearhash_gear_init(HIGHDEDUP_FEATURE_NUM);
 		featuring = highdedup_featuring;
+	}else if(destor.feature_algorithm == FEAUTRE_HIGHDEDUP_FSC){
+		featuring = highdedup_featuring_fsc;
 	}
 
 	feature_queue = sync_queue_new(1000);

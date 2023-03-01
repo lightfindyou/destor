@@ -11,38 +11,23 @@ void odess_similariting_init(){
 }
 
 /*Insert super features into the hash table*/
-void ntransform_insert_sufeature(struct chunk* c, int suFeaNum){
+void insert_sufeature(struct chunk* c, int suFeaNum, GHashTable* sufea_tab){
 
+//	printf("insert candidate chunk: %lx\n", c);
 	for (int i = 0; i < suFeaNum; i++) {
-		GSequence *tq = g_hash_table_lookup(ntransform_sufeature_tab, &(c->fea[i]));
+		GSequence *tq = g_hash_table_lookup(sufea_tab, &(c->fea[i]));
 		if (!tq) {
 			tq = g_sequence_new(NULL);
-			g_hash_table_replace(ntransform_sufeature_tab, &(c->fea[i]), tq);
+			g_hash_table_replace(sufea_tab, &(c->fea[i]), tq);
 		}
 		g_sequence_prepend(tq, c);
 	}
 }
 
-struct chunk* searchMostSimiChunk(GHashTable* cand_tab, struct chunk* c, int* curMaxHit, fpp curCandFp){
-
-	int* hitTime = g_hash_table_lookup(cand_tab, c);
-	if(hitTime){
-		*hitTime = *hitTime + 1;
-	}else{
-		hitTime = malloc(sizeof(int));
-		assert(hitTime);
-		*hitTime = 1;
-		g_hash_table_replace(cand_tab, c, hitTime);
-	}
-	if(*hitTime > *curMaxHit) return c;
-
-	return curCandFp;
-}
-
 /** return base chunk fingerprint if similary chunk is found
  *  else return 0
 */
-struct chunk* most_match_similariting(struct chunk* c, int suFeaNum){
+struct chunk* most_match_similariting(struct chunk* c, int suFeaNum, GHashTable* sufea_tab){
 
 	struct chunk* ret = NULL;
 	GHashTable* cand_tab = g_hash_table_new_full(g_int64_hash,
@@ -51,7 +36,7 @@ struct chunk* most_match_similariting(struct chunk* c, int suFeaNum){
 	int curMaxHitTime = 0;
 
 	for (int i = 0; i < suFeaNum; i++) {
-		GSequence *tq = g_hash_table_lookup(ntransform_sufeature_tab, &(c->fea[i]));
+		GSequence *tq = g_hash_table_lookup(sufea_tab, &(c->fea[i]));
 		if(tq){
 //			printf("tq:%lx\n", tq);
 //			printf("sequence length: %d\n", g_sequence_get_length(tq));
@@ -69,14 +54,14 @@ struct chunk* most_match_similariting(struct chunk* c, int suFeaNum){
 	if(ret){ return ret; }
 
 	/*Only if the chunk is unique, add the chunk into sufeature table*/
-	ntransform_insert_sufeature(c,suFeaNum);
+	insert_sufeature(c, suFeaNum, sufea_tab);
 	return NULL;
 }
 
 struct chunk* ntransform_similariting(struct chunk* c){
-	return most_match_similariting(c, NTRANSFORM_SF_NUM);
+	return most_match_similariting(c, NTRANSFORM_SF_NUM, ntransform_sufeature_tab);
 }
 
 struct chunk* odess_similariting(struct chunk* c){
-	return most_match_similariting(c, ODESS_SF_NUM);
+	return most_match_similariting(c, ODESS_SF_NUM, ntransform_sufeature_tab);
 }

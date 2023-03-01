@@ -5018,6 +5018,8 @@ loopnomore:
 /*what is the return value? is it the delta size?*/
 int xdelta3_compress(char *InFile, int InSize, char *SrcFile, int SrcSize,
                      char *OutFile, int encode) {
+//	printf("xdelta3_compress inFile:%lx, in size:%ld, srcFile:%lx, srcSize:%ld\n", 
+//        InFile, InSize, SrcFile, SrcSize);
     int BufSize = 0x1000;
     int OutSize = 0;
 

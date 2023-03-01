@@ -50,3 +50,21 @@ void finesse_featuring(unsigned char* buf, int size, struct chunk* c){
 //			 c, c->data, c->fp, c->size,
 //			 c->fea[0] & 0x3f, c->fea[1] & 0x3f, c->fea[2] & 0x3f, c->fea[3] & 0x3f);
 }
+
+
+void finesse_featuring_flatFea(unsigned char* buf, int size, struct chunk* c){
+	sufeature* curFea = c->fea;
+	memset(curFea, 0, sizeof(feature)*FINESSE_FEATURE_NUM);
+
+	int subchs = size/FINESSE_FEATURE_NUM;
+
+	for (int i = 0; i < FINESSE_FEATURE_NUM; ++i) {
+		int64_t fp = 0;
+		int len = subchs;
+		if(i== (FINESSE_FEATURE_NUM - 1)){
+			len = size - (subchs * i);
+		}
+
+		rabin_finesse(&buf[subchs*i], len, &curFea[i]);
+	}
+}

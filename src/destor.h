@@ -88,6 +88,8 @@ extern char* chunkAlgStr[];
 #define FEAUTRE_DEEPSKETCH 3
 #define FEAUTRE_HIGHDEDUP 4
 #define FEAUTRE_ODESS 5
+#define FEAUTRE_HIGHDEDUP_FSC 6
+#define FEAUTRE_FINESS_FLATFEA 7
 
 extern char* featureAlgStr[];
 
@@ -97,6 +99,7 @@ extern char* featureAlgStr[];
 #define SIMILARITY_FINENESS 3
 #define SIMILARITY_HIGHDEDUP 4
 #define SIMILARITY_ODESS 5
+#define SIMILARITY_FINENESS_FLATFEA 6
 /*
  * A global fingerprint index is required.
  * A successful query returns a container id or a segment id for prefetching.
@@ -322,7 +325,9 @@ typedef int64_t chunkid; //chunk id
 typedef int64_t segmentid;
 
 struct chunk {
-	int32_t size;
+//	const int32_t size;
+//	int32_t size;
+	int size;
 	int flag;
 	containerid id;
 	struct chunk* basechunk;	//chunk fingerprint of basechunk

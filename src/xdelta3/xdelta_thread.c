@@ -11,8 +11,12 @@ static int64_t chunk_num;
 
 void init_xdelta_thread(){ }
 
+
+#pragma GCC push_options
+#pragma GCC optimize ("O0")
 void *xdelta_thread(void *arg) {
-	char deltaOut[2*destor.chunk_max_size];
+	char deltaOut[4*destor.chunk_max_size];
+//	printf("size of deltaOut: %lx\n", 2*destor.chunk_max_size);
 	while (1) {
 		struct chunk* c = sync_queue_pop(simi_queue);
 
@@ -21,7 +25,8 @@ void *xdelta_thread(void *arg) {
 			break;
 		}
 
-		if (CHECK_CHUNK(c, CHUNK_FILE_START) || CHECK_CHUNK(c, CHUNK_FILE_END)) {
+		if (CHECK_CHUNK(c, CHUNK_FILE_START) || CHECK_CHUNK(c, CHUNK_FILE_END) ||
+			CHECK_CHUNK(c, CHUNK_SEGMENT_START) || CHECK_CHUNK(c, CHUNK_SEGMENT_END)){
 //			sync_queue_push(xdelta_queue, c);
 			continue;
 		}
@@ -30,13 +35,16 @@ void *xdelta_thread(void *arg) {
 			if(c->basechunk){	//chunk may be xdeltaed
 				struct chunk* basec = c->basechunk;
 				VERBOSE("Similariting phase: %ldth chunk similar with %d", chunk_num++, basec->basechunk);
-//				printf("xdelta c:%lx, c->data:%lx, c->size:%ld,   basec:%lx, basec->data:%lx, basec->size:%ld\n", 
-//						c, c->data, c->size, basec, basec->data, basec->size);
+//				printf("xdelta c:%lx, c->flags:%x c->data:%lx, c->size:%ld, basec:%lx, basec->flag:%x, basec->data:%lx, basec->size:%ld\n", 
+//							c, c->flag, c->data, c->size, basec, basec->flag, basec->data, basec->size);
+
 				int deltaSize = xdelta3_compress(c->data, c->size, basec->data, basec->size, deltaOut, 1);
 				if(deltaSize < c->size){
 					memcpy(c->data, deltaOut, deltaSize);
 					int32_t ori_size = c->size;
 					c->size = deltaSize;
+//					printf("c->size: %d, delta size: %d\n", c->size, deltaSize);
+					assert(c->size);
 
 					if (pthread_mutex_lock(&jcrMutex) != 0) {
 						puts("failed to lock jcrMutex!");
@@ -75,6 +83,7 @@ void *xdelta_thread(void *arg) {
 	return NULL;
 
 }
+#pragma GCC pop_options
 
 void start_xdelta_thread() {
 	for (int i = 0; i < XDELTA_THREAD_NUM; i++){

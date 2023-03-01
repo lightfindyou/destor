@@ -15,3 +15,12 @@ void highdedup_featuring(unsigned char* buf, int size, struct chunk* c){
 	c->feaNum = gear_max_highdedup_32fea_16B_xxhash(buf, size, superfeature,
 				 HIGHDEDUP_FEATURE_NUM, HIGHDEDUP_FEATURE_MASK);
 }
+
+void highdedup_featuring_fsc(unsigned char* buf, int size, struct chunk* c){
+
+	sufeature* superfeature = c->fea;
+	memset(superfeature, 0x0, sizeof(sufeature)*HIGHDEDUP_FEATURE_NUM);
+
+	c->feaNum = highdedup_32fea_16B_FSC(buf, size, superfeature,
+				 HIGHDEDUP_FEATURE_NUM);
+}

@@ -269,7 +269,8 @@ void rabin_finesse(unsigned char *p, int n, feature* fea) {
 		if (fp > curfp){ curfp = fp; }
 		i++;
 	}
-	memcpy(fea, &curfp, sizeof(feature));
+	*fea = curfp;
+//	memcpy(fea, &curfp, sizeof(feature));
 	return;
 }
 

@@ -134,6 +134,12 @@ void load_config_from_string(sds config) {
 			} else if (strcasecmp(argv[1], "highdedup") == 0) {
 				destor.feature_algorithm = FEAUTRE_HIGHDEDUP;
 				destor.similarity_algorithm = SIMILARITY_HIGHDEDUP;
+			} else if (strcasecmp(argv[1], "highdedup_fsc") == 0) {
+				destor.feature_algorithm = FEAUTRE_HIGHDEDUP_FSC;
+				destor.similarity_algorithm = SIMILARITY_HIGHDEDUP;
+			} else if (strcasecmp(argv[1], "finesse_flatFea") == 0) {
+				destor.feature_algorithm = FEAUTRE_FINESS_FLATFEA;
+				destor.similarity_algorithm = SIMILARITY_FINENESS_FLATFEA;
 			} else if (strcasecmp(argv[1], "fixed") == 0) {
 				printf("compared data: %s\n", argv[1]);
 				err = "Invalid chunk algorithm";

@@ -15,6 +15,7 @@ extern const int maMatrix[12][2];
 void rabinhash_rabin_init();
 void rabin_finesse(unsigned char *p, int n, feature* fea);
 void finesse_featuring(unsigned char* buf, int size, struct chunk* c);
+void finesse_featuring_flatFea(unsigned char* buf, int size, struct chunk* c);
 
 #define NTRANSFORM_FEATURE_NUM 12
 #define NTRANSFORM_SF_NUM 4
@@ -30,7 +31,9 @@ void gearhash_gear_init(int featureNumber);
 int gear_max_highdedup_12fea_64B_max(unsigned char *p, int n, feature* fea, int maxFeaNum, unsigned long feaMask);
 int gear_max_highdedup_32fea_16B_max(unsigned char *p, int n, feature* fea, int maxFeaNum, unsigned long feaMask);
 int gear_max_highdedup_32fea_16B_xxhash(unsigned char *p, int n, feature* fea, int maxFeaNum, unsigned long feaMask);
+int highdedup_32fea_16B_FSC(unsigned char *p, int n, feature* fea, int maxFeaNum);
 void highdedup_featuring(unsigned char* buf, int size, struct chunk* c);
+void highdedup_featuring_fsc(unsigned char* buf, int size, struct chunk* c);
 
 
 #define ODESS_FEATURE_NUM 12
