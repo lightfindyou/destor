@@ -58,6 +58,7 @@ char* featureAlgStr[] = {
 	"odess",
 	"highdedup_fsc",
 	"finesse_flatFea",
+	"odess_flatFea",
 	"algNum"
 };
 

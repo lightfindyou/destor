@@ -40,4 +40,5 @@ void highdedup_featuring_fsc(unsigned char* buf, int size, struct chunk* c);
 #define ODESS_SF_NUM 4
 void gear_odess(unsigned char *p, int n, feature* fea, int fetureNum);
 void odess_featuring(unsigned char* buf, int size, struct chunk* c);
+void odess_featuring_flatFea(unsigned char* buf, int size, struct chunk* c);
 #endif

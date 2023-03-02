@@ -62,6 +62,9 @@ void start_feature_phase() {
 		featuring = highdedup_featuring;
 	}else if(destor.feature_algorithm == FEAUTRE_HIGHDEDUP_FSC){
 		featuring = highdedup_featuring_fsc;
+	}else if(destor.feature_algorithm == FEAUTRE_ODESS_FLATFEA){
+		gearhash_gear_init(ODESS_FEATURE_NUM);
+		featuring = odess_featuring_flatFea;
 	}
 
 	feature_queue = sync_queue_new(1000);

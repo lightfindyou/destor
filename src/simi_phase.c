@@ -72,7 +72,11 @@ void start_simi_phase() {
 	}else if(destor.similarity_algorithm == SIMILARITY_FINENESS_FLATFEA){
 		fineness_similariting_init();
 		similariting = fineness_similariting_flatFea;
+	}else if(destor.similarity_algorithm == SIMILARITY_ODESS_FLATFEA){
+		odess_similariting_init();
+		similariting = odess_similariting_flatFea;
 	}
+
 
 	simi_queue = sync_queue_new(1000);
 	pthread_create(&simi_t, NULL, simi_thread, NULL);

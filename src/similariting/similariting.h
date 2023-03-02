@@ -26,8 +26,10 @@ struct chunk* searchMostSimiChunk(GHashTable* cand_tab, struct chunk* c, int* cu
 void highdedup_similariting_init();
 struct chunk* highdedup_similariting(struct chunk* c);
 
+GHashTable* odess_sufeature_tab;
 void odess_similariting_init();
 struct chunk* odess_similariting(struct chunk* c);
+struct chunk* odess_similariting_flatFea(struct chunk* c);
 
 struct chunk* most_match_similariting(struct chunk* c, int suFeaNum, GHashTable* sufea_tab);
 

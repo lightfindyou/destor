@@ -18,3 +18,10 @@ void odess_featuring(unsigned char* buf, int size, struct chunk* c){
 		superfeature[i] = XXH64(temp, sizeof(feature) * ODESS_FEATURE_NUM / ODESS_SF_NUM, 0);
 	}
 }
+
+void odess_featuring_flatFea(unsigned char* buf, int size, struct chunk* c){
+	feature* fea = c->fea;
+	memset(fea, 0, sizeof(feature)*ODESS_FEATURE_NUM);
+
+	gear_odess(buf, size, fea, ODESS_FEATURE_NUM);
+}

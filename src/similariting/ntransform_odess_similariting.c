@@ -7,7 +7,7 @@ void ntransform_similariting_init(){
 }
 
 void odess_similariting_init(){
-	ntransform_sufeature_tab = g_hash_table_new(g_int64_hash, g_chunk_feature_equal);
+	odess_sufeature_tab = g_hash_table_new(g_int64_hash, g_chunk_feature_equal);
 }
 
 /*Insert super features into the hash table*/
@@ -63,5 +63,9 @@ struct chunk* ntransform_similariting(struct chunk* c){
 }
 
 struct chunk* odess_similariting(struct chunk* c){
-	return most_match_similariting(c, ODESS_SF_NUM, ntransform_sufeature_tab);
+	return most_match_similariting(c, ODESS_SF_NUM, odess_sufeature_tab);
+}
+
+struct chunk* odess_similariting_flatFea(struct chunk* c){
+	return most_match_similariting(c, ODESS_FEATURE_NUM, odess_sufeature_tab);
 }

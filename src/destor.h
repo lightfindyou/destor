@@ -90,6 +90,8 @@ extern char* chunkAlgStr[];
 #define FEAUTRE_ODESS 5
 #define FEAUTRE_HIGHDEDUP_FSC 6
 #define FEAUTRE_FINESS_FLATFEA 7
+#define FEAUTRE_ODESS_FLATFEA 8
+ 
 
 extern char* featureAlgStr[];
 
@@ -100,6 +102,7 @@ extern char* featureAlgStr[];
 #define SIMILARITY_HIGHDEDUP 4
 #define SIMILARITY_ODESS 5
 #define SIMILARITY_FINENESS_FLATFEA 6
+#define SIMILARITY_ODESS_FLATFEA 7
 /*
  * A global fingerprint index is required.
  * A successful query returns a container id or a segment id for prefetching.
