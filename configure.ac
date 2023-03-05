@@ -8,11 +8,11 @@ AM_INIT_AUTOMAKE
 
 # Checks for programs.
 AC_PROG_CC
-CFLAGS="-g -O2 -Wall"
+CFLAGS="-g -O2 -Wall -I/usr/include/glib-2.0/"
 
 # Checks for libraries.
 AC_CHECK_LIB([pthread], [pthread_create])
-AC_CHECK_LIB([glib], [g_hash_table_new],[found_glib=yes],[found_glib=no])
+AC_CHECK_LIB([glib-2.0], [g_hash_table_new],[found_glib=yes],[found_glib=no])
     if test "$found_glib" = "no"; then
     AC_MSG_ERROR([*** Working glib library not found ***])
     fi
