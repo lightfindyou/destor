@@ -59,6 +59,7 @@ void start_simi_phase() {
 		ntransform_similariting_init();
 		similariting = ntransform_similariting;
 	}else if(destor.similarity_algorithm == SIMILARITY_DEEPSKETCH){
+		deepsketch_similariting_init();
 		similariting = deepsketch_similariting;
 	}else if(destor.similarity_algorithm == SIMILARITY_FINENESS){
 		fineness_similariting_init();

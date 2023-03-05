@@ -33,6 +33,7 @@
 #include "utils/sds.h"
 
 #define SENTEST 1
+#define PATHLEN 256
 
 #define TIMER_DECLARE(n) struct timeval b##n,e##n
 #define TIMER_BEGIN(n) gettimeofday(&b##n, NULL)
@@ -315,6 +316,7 @@ struct destor {
 	int32_t live_container_num;
 
 	int backup_retention_time;
+	char modelPath[PATHLEN];
 
 } destor;
 

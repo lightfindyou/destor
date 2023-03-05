@@ -47,6 +47,7 @@ void start_feature_phase() {
 		rabinhash_rabin_init();
 		featuring = ntransform_featuring;
 	}else if(destor.feature_algorithm == FEAUTRE_DEEPSKETCH){
+		deepsketch_featuring_init(destor.modelPath);
 		featuring = deepsketch_featuring;
 	}else if(destor.feature_algorithm == FEAUTRE_FINENESS){
 		rabinhash_rabin_init();

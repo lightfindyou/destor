@@ -107,7 +107,10 @@ destor_DEPENDENCIES = src/libdestor.a src/index/libindex.a \
 	src/storage/libstorage.a src/utils/libutils.a \
 	src/recipe/librecipe.a src/chunking/libchunk.a \
 	src/fsl/libfsl.a src/featuring/libfeature.a \
-	src/similariting/libsimilar.a src/xdelta3/libxdelta.a
+	src/similariting/libsimilar.a src/xdelta3/libxdelta.a \
+	src/featuring/deepsketch/libdeepsketchModel.a \
+	src/similariting/deepsketch/libdeepsketchANN.a \
+	src/similariting/deepsketch/NGT/libngtstatic.a
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -233,6 +236,9 @@ CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
+CXX = @CXX@
+CXXDEPMODE = @CXXDEPMODE@
+CXXFLAGS = @CXXFLAGS@
 CYGPATH_W = @CYGPATH_W@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
@@ -272,6 +278,7 @@ abs_srcdir = @abs_srcdir@
 abs_top_builddir = @abs_top_builddir@
 abs_top_srcdir = @abs_top_srcdir@
 ac_ct_CC = @ac_ct_CC@
+ac_ct_CXX = @ac_ct_CXX@
 am__include = @am__include@
 am__leading_dot = @am__leading_dot@
 am__quote = @am__quote@
@@ -311,8 +318,8 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 destor_SOURCES = 
-destor_LDADD = src/libdestor.a src/index/libindex.a src/storage/libstorage.a src/utils/libutils.a src/recipe/librecipe.a src/chunking/libchunk.a src/fsl/libfsl.a src/featuring/libfeature.a src/similariting/libsimilar.a src/xdelta3/libxdelta.a
-SUBDIRS = src src/index src/recipe src/storage src/utils src/chunking src/fsl src/featuring src/similariting src/xdelta3
+destor_LDADD = src/libdestor.a src/index/libindex.a src/storage/libstorage.a src/utils/libutils.a src/recipe/librecipe.a src/chunking/libchunk.a src/fsl/libfsl.a src/featuring/libfeature.a src/similariting/libsimilar.a src/xdelta3/libxdelta.a src/featuring/deepsketch/libdeepsketchModel.a src/similariting/deepsketch/libdeepsketchANN.a src/similariting/deepsketch/NGT/libngtstatic.a
+SUBDIRS = src src/index src/recipe src/storage src/utils src/chunking src/fsl src/featuring src/similariting src/xdelta3 src/featuring/deepsketch/ src/similariting/deepsketch/ src/similariting/deepsketch/NGT/
 all: all-recursive
 
 .SUFFIXES:

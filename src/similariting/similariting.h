@@ -19,7 +19,7 @@ GHashTable* ntransform_sufeature_tab;
 void ntransform_similariting_init();
 struct chunk* ntransform_similariting(struct chunk* c);
 
-struct chunk* deepsketch_similariting(feature fea);
+struct chunk* deepsketch_similariting(struct chunk* c);
 
 GHashTable* highdedup_sufeature_tab;
 struct chunk* searchMostSimiChunk(GHashTable* cand_tab, struct chunk* c, int* curMaxHit, fpp curCandC);
@@ -32,5 +32,21 @@ struct chunk* odess_similariting(struct chunk* c);
 struct chunk* odess_similariting_flatFea(struct chunk* c);
 
 struct chunk* most_match_similariting(struct chunk* c, int suFeaNum, GHashTable* sufea_tab);
+
+
+void deepsketch_similariting_init();
+struct chunk* deepsketch_similariting(struct chunk* c);
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+extern void deepsketch_ANN_init();
+extern struct chunk* deepsketch_ANN_similariting(struct chunk* c);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

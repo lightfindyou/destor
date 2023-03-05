@@ -7,8 +7,6 @@
 
 #include "../destor.h"
 
-void deepsketch_featuring(unsigned char* buf, int size, struct chunk* c);
-
 extern const int maMatrix[12][2];
 #define FINESSE_FEATURE_NUM 12
 #define FINESSE_SF_NUM 4
@@ -41,4 +39,20 @@ void highdedup_featuring_fsc(unsigned char* buf, int size, struct chunk* c);
 void gear_odess(unsigned char *p, int n, feature* fea, int fetureNum);
 void odess_featuring(unsigned char* buf, int size, struct chunk* c);
 void odess_featuring_flatFea(unsigned char* buf, int size, struct chunk* c);
+
+
+void deepsketch_featuring_init(char* modelPath);
+void deepsketch_featuring(unsigned char* buf, int size, struct chunk* c);
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+extern void deepsketch_modelInit(char* modelPath);
+extern void deepsketch_getHash(struct chunk* c, int chunkLen, char* hash);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif

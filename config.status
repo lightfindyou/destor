@@ -393,7 +393,7 @@ on `(hostname || uname -n) 2>/dev/null | sed 1q`
 "
 
 # Files that config.status was made for.
-config_files=" Makefile src/Makefile src/utils/Makefile src/index/Makefile src/recipe/Makefile src/storage/Makefile src/chunking/Makefile src/featuring/Makefile src/similariting/Makefile src/xdelta3/Makefile src/fsl/Makefile"
+config_files=" Makefile src/Makefile src/utils/Makefile src/index/Makefile src/recipe/Makefile src/storage/Makefile src/chunking/Makefile src/featuring/Makefile src/featuring/deepsketch/Makefile src/similariting/Makefile src/similariting/deepsketch/Makefile src/similariting/deepsketch/NGT/Makefile src/xdelta3/Makefile src/fsl/Makefile"
 config_commands=" depfiles"
 
 ac_cs_usage="\
@@ -538,7 +538,10 @@ do
     "src/storage/Makefile") CONFIG_FILES="$CONFIG_FILES src/storage/Makefile" ;;
     "src/chunking/Makefile") CONFIG_FILES="$CONFIG_FILES src/chunking/Makefile" ;;
     "src/featuring/Makefile") CONFIG_FILES="$CONFIG_FILES src/featuring/Makefile" ;;
+    "src/featuring/deepsketch/Makefile") CONFIG_FILES="$CONFIG_FILES src/featuring/deepsketch/Makefile" ;;
     "src/similariting/Makefile") CONFIG_FILES="$CONFIG_FILES src/similariting/Makefile" ;;
+    "src/similariting/deepsketch/Makefile") CONFIG_FILES="$CONFIG_FILES src/similariting/deepsketch/Makefile" ;;
+    "src/similariting/deepsketch/NGT/Makefile") CONFIG_FILES="$CONFIG_FILES src/similariting/deepsketch/NGT/Makefile" ;;
     "src/xdelta3/Makefile") CONFIG_FILES="$CONFIG_FILES src/xdelta3/Makefile" ;;
     "src/fsl/Makefile") CONFIG_FILES="$CONFIG_FILES src/fsl/Makefile" ;;
 
@@ -616,6 +619,12 @@ S["RANLIB"]="ranlib"
 S["am__fastdepCC_FALSE"]="#"
 S["am__fastdepCC_TRUE"]=""
 S["CCDEPMODE"]="depmode=gcc3"
+S["ac_ct_CC"]="gcc"
+S["CFLAGS"]="-g -O2 -Wall -ggdb"
+S["CC"]="gcc"
+S["am__fastdepCXX_FALSE"]="#"
+S["am__fastdepCXX_TRUE"]=""
+S["CXXDEPMODE"]="depmode=gcc3"
 S["am__nodep"]="_no"
 S["AMDEPBACKSLASH"]="\\"
 S["AMDEP_FALSE"]="#"
@@ -624,11 +633,11 @@ S["am__include"]="include"
 S["DEPDIR"]=".deps"
 S["OBJEXT"]="o"
 S["EXEEXT"]=""
-S["ac_ct_CC"]="gcc"
+S["ac_ct_CXX"]="g++"
 S["CPPFLAGS"]=""
 S["LDFLAGS"]=""
-S["CFLAGS"]="-g -O2 -Wall -ggdb"
-S["CC"]="gcc"
+S["CXXFLAGS"]="-g -O2"
+S["CXX"]="g++"
 S["AM_BACKSLASH"]="\\"
 S["AM_DEFAULT_VERBOSITY"]="1"
 S["AM_DEFAULT_V"]="$(AM_DEFAULT_VERBOSITY)"

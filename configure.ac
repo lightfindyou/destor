@@ -7,6 +7,7 @@ AM_INIT_AUTOMAKE
 #AM_INIT_AUTOMAKE([destor], [2.0])
 
 # Checks for programs.
+AC_PROG_CXX
 AC_PROG_CC
 CFLAGS="-g -O2 -Wall -ggdb"
 
@@ -67,6 +68,9 @@ AC_OUTPUT(Makefile
         src/storage/Makefile
         src/chunking/Makefile
         src/featuring/Makefile
+        src/featuring/deepsketch/Makefile
         src/similariting/Makefile
+        src/similariting/deepsketch/Makefile
+        src/similariting/deepsketch/NGT/Makefile
         src/xdelta3/Makefile
         src/fsl/Makefile)
