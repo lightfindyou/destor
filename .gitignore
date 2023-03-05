@@ -6,3 +6,4 @@ Makefile
 .deps
 tags
 destor
+.vscode/**
