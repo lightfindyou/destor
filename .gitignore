@@ -7,3 +7,8 @@ Makefile
 tags
 destor
 test/testor
+autom4te.cache/*
+autom4te.cache/output.0
+config.log
+config.status
+Makefile.in
