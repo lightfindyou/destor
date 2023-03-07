@@ -13,8 +13,6 @@
 #include "./NGT/Index.h"
 #include "../../deepsketch.h"
 
-NetworkHash network;
-
 class NetworkHash {
    private:
     int BATCH_SIZE;
@@ -40,16 +38,16 @@ class NetworkHash {
         delete[] this->memout;
         delete[] this->index;
     }
-    bool push(char* ptr, int label);
+    bool push(unsigned char* ptr, DEEPSKETCHCHUNK id);
     std::vector<std::pair<DEEPSKETCHHASH, DEEPSKETCHCHUNK>> request();
 };
 
-bool NetworkHash::push(char* ptr, int chunkSize, DEEPSKETCHCHUNK chunkNum) {
+bool NetworkHash::push(unsigned char* ptr, DEEPSKETCHCHUNK id) {
     for (int i = 0; i < BLOCK_SIZE; ++i) {
         data[cnt * BLOCK_SIZE + i] =
             ((int)(unsigned char)(ptr[i]) - 128) / 128.0;
     }
-    index[cnt++] = chunkNum;
+    index[cnt++] = id;
 
     if (cnt == BATCH_SIZE)
         return true;
@@ -76,11 +74,11 @@ std::vector<std::pair<DEEPSKETCHHASH, DEEPSKETCHCHUNK>> NetworkHash::request() {
     torch::Tensor comp = output.ge(0.0);
     memcpy(memout, comp.cpu().data_ptr<bool>(), cnt * DEEPSKETCH_HASH_SIZE);
 
-    bool* ptr = this->memout;
+    char* ptr = (char*)(this->memout);
 
     for (int i = 0; i < cnt; ++i) {
         //copy hash result into ret, note the copy length is byte
-        memcpy(ret[i].first, ptr[DEEPSKETCH_HASH_SIZE/8*i], DEEPSKETCH_HASH_SIZE/8);
+        memcpy((ret[i].first.data()), &(ptr[DEEPSKETCH_HASH_SIZE/8*i]), DEEPSKETCH_HASH_SIZE/8);
 //        for (int j = 0; j < DEEPSKETCH_HASH_SIZE; ++j) {
 //            if (ptr[DEEPSKETCH_HASH_SIZE * i + j]) ret[i].first.flip(j);
 //        }

@@ -10,6 +10,8 @@
 
 using namespace std;
 
+ANN* ann;
+
 void deepsketch_ANN_init(){
 
 	string indexPath = "ngtindex";
@@ -19,16 +21,22 @@ void deepsketch_ANN_init(){
 	property.distanceType = NGT::Index::Property::DistanceType::DistanceTypeHamming;
 	NGT::Index::create(indexPath, property);
 	NGT::Index index(indexPath);
+	int threshold = 32;
+	int threadNum = 16;
+	int cacheSize = 128;
 
-	ann = ANN(20, 128, 16, threshold, &property, &index);
+	ann = new ANN(20, cacheSize, threadNum, threshold, &property, &index);
 }
 
 struct chunk* deepsketch_ANN_similariting(struct chunk* c){
 
-	struct chunk* ret = ann.request(c->fea);
+	DEEPSKETCHHASH fea;
+	memcpy(fea.data(), c->fea, DEEPSKETCH_HASH_SIZE/8);
+
+	struct chunk* ret = (struct chunk*)ann->request(fea);
 
 	if (!ret) {
-		ann.insert(c->fea, c);
+		ann->insert(fea, (DEEPSKETCHCHUNK)c);
 	}
 
 	return ret;

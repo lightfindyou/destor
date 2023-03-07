@@ -13,29 +13,28 @@
 #include "./NGT/Index.h"
 #include "../../deepsketch.h"
 
-ANN ann;
-
 class ANN {
    private:
     int ANN_SEARCH_CNT, LINEAR_SIZE, NUM_THREAD, THRESHOLD;
     std::vector<DEEPSKETCHHASH> linear;
-    std::unordered_map<DEEPSKETCHHASH, std::vector<DEEPSKETCHCHUNK>> hashtable;
+//    std::unordered_map<DEEPSKETCHHASH, std::vector<DEEPSKETCHCHUNK>> hashtable;
+    std::map<DEEPSKETCHHASH, std::vector<DEEPSKETCHCHUNK>> hashtable;
     NGT::Property* property;
     NGT::Index* index;
 
    public:
-    ANN(int ANN_SEARCH_CNT, int LINEAR_SIZE, int NUM_THREAD, int THRESHOLD,
+    ANN(int ANN_SEARCH_CNT, int LINEAR_SIZE, int NUM_THREAD, int SIMITHRESHOLD,
         NGT::Property* property, NGT::Index* index) {
         this->ANN_SEARCH_CNT =
             ANN_SEARCH_CNT;  // The number of candidates extract from ANN class
         this->LINEAR_SIZE = LINEAR_SIZE;  // Size of linear buffer
         this->NUM_THREAD = NUM_THREAD;
-        this->THRESHOLD = THRESHOLD;
+        this->THRESHOLD = SIMITHRESHOLD;
         this->property = property;
         this->index = index;
     }
-    int request(DEEPSKETCHHASH h);
-    void insert(DEEPSKETCHHASH h, int c);
+    DEEPSKETCHCHUNK request(DEEPSKETCHHASH h);
+    void insert(DEEPSKETCHHASH h, DEEPSKETCHCHUNK c);
 };
 
 // search the nearest point in ANN
@@ -45,7 +44,11 @@ DEEPSKETCHCHUNK ANN::request(DEEPSKETCHHASH h) {
 
     // scan list
     for (int i = linear.size() - 1; i >= 0; --i) {
-        int nowdist = (linear[i] ^ h).count();  // hammin distance
+        int nowdist = 0;
+        for(int j =0; j < this->property->dimension; j++){
+            std::bitset<32> xorHash(linear[i][j]^h[j]);
+            nowdist += xorHash.count();  // hammin distance
+        }
         if (dist > nowdist) {
             dist = nowdist;
             ret = hashtable[linear[i]].back();
@@ -55,9 +58,7 @@ DEEPSKETCHCHUNK ANN::request(DEEPSKETCHHASH h) {
     std::vector<uint8_t> query;
     // change the searched hash into uint array
     for (int i = 0; i < property->dimension; ++i) {
-        query.push_back(
-            (uint8_t)((h << (DEEPSKETCH_HASH_SIZE - 8 * i - 8)) >> (DEEPSKETCH_HASH_SIZE - 8))
-                .to_ulong());
+        query.push_back((uint8_t)h[i]);
     }
 
     NGT::SearchQuery sc(query);
@@ -72,38 +73,39 @@ DEEPSKETCHCHUNK ANN::request(DEEPSKETCHHASH h) {
         int nowdist = objects[i].distance;
 
         if (dist > nowdist) {  // find better result
-            DEEPSKETCHHASH now;
+            DEEPSKETCHHASH objHash;
 
             NGT::ObjectSpace& objectSpace = index->getObjectSpace();
             uint8_t* object =
                 static_cast<uint8_t*>(objectSpace.getObject(objects[i].id));
             for (int j = 0; j < objectSpace.getDimension(); ++j) {
-                memcpy(now, object, DEEPSKETCH_HASH_SIZE/8);
+                memcpy(objHash.data(), object, DEEPSKETCH_HASH_SIZE/8);
 //                for (int k = 0; k < 8; ++k) {
 //                    if (object[j] & (1 << k)) {
 //                        // copy the hash code into DEEPSKETCHHASH now
-//                        now.flip(8 * j + k);
+//                        objHash.flip(8 * j + k);
 //                    }
 //                }
             }
             dist = nowdist;
-            ret = hashtable[now].back();
+            ret = hashtable[objHash].back();
         } else if (dist == nowdist) { /** find same result,
                                         choose the one with bigger
                                         index, but why use bigger index? */
-            DEEPSKETCHHASH now;
+            DEEPSKETCHHASH objHash;
 
             NGT::ObjectSpace& objectSpace = index->getObjectSpace();
             uint8_t* object =
                 static_cast<uint8_t*>(objectSpace.getObject(objects[i].id));
             for (int j = 0; j < objectSpace.getDimension(); ++j) {
-                for (int k = 0; k < 8; ++k) {
-                    if (object[j] & (1 << k)) {
-                        now.flip(8 * j + k);
-                    }
-                }
+                memcpy(objHash.data(), object, DEEPSKETCH_HASH_SIZE/8);
+//                for (int k = 0; k < 8; ++k) {
+//                    if (object[j] & (1 << k)) {
+//                        objHash.flip(8 * j + k);
+//                    }
+//                }
             }
-            int nowindex = hashtable[now].back();
+            DEEPSKETCHCHUNK nowindex = hashtable[objHash].back();
 
             if (nowindex > ret) ret = nowindex;
         }
@@ -130,10 +132,12 @@ void ANN::insert(DEEPSKETCHHASH h, DEEPSKETCHCHUNK c) {
             std::vector<uint8_t> query;
             //transfer hash into multiple unsigned long and store in query
             for (int j = 0; j < property->dimension; ++j) {
-                query.push_back(
-                    (uint8_t)((linear[i] << (DEEPSKETCH_HASH_SIZE - 8 * j - 8)) >>
-                              (DEEPSKETCH_HASH_SIZE - 8))
-                        .to_ulong());
+                DEEPSKETCHHASH hash = linear[i];
+                query.push_back(hash[j]);
+//                query.push_back(
+//                    (uint8_t)((linear[i] << (DEEPSKETCH_HASH_SIZE - 8 * j - 8)) >>
+//                              (DEEPSKETCH_HASH_SIZE - 8))
+//                        .to_ulong());
             }
             index->append(query);
         }

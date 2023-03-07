@@ -10,10 +10,11 @@ AM_INIT_AUTOMAKE
 AC_PROG_CXX
 AC_PROG_CC
 CFLAGS="-g -O2 -Wall -ggdb"
+CXXFLAGS="-I/home/xzjin/.local/lib/python3.8/site-packages/torch/include/"
 
 # Checks for libraries.
 AC_CHECK_LIB([pthread], [pthread_create])
-AC_CHECK_LIB([glib], [g_hash_table_new],[found_glib=yes],[found_glib=no])
+AC_CHECK_LIB([glib-2.0], [g_hash_table_new],[found_glib=yes],[found_glib=no])
     if test "$found_glib" = "no"; then
     AC_MSG_ERROR([*** Working glib library not found ***])
     fi

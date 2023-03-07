@@ -4354,6 +4354,7 @@ fi
 
 
 CFLAGS="-g -O2 -Wall -ggdb"
+CXXFLAGS="-I/home/xzjin/.local/lib/python3.8/site-packages/torch/include/"
 
 # Checks for libraries.
 
@@ -4402,13 +4403,13 @@ _ACEOF
 
 fi
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for g_hash_table_new in -lglib" >&5
-$as_echo_n "checking for g_hash_table_new in -lglib... " >&6; }
-if ${ac_cv_lib_glib_g_hash_table_new+:} false; then :
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for g_hash_table_new in -lglib-2.0" >&5
+$as_echo_n "checking for g_hash_table_new in -lglib-2.0... " >&6; }
+if ${ac_cv_lib_glib_2_0_g_hash_table_new+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   ac_check_lib_save_LIBS=$LIBS
-LIBS="-lglib  $LIBS"
+LIBS="-lglib-2.0  $LIBS"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -4428,17 +4429,17 @@ return g_hash_table_new ();
 }
 _ACEOF
 if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_glib_g_hash_table_new=yes
+  ac_cv_lib_glib_2_0_g_hash_table_new=yes
 else
-  ac_cv_lib_glib_g_hash_table_new=no
+  ac_cv_lib_glib_2_0_g_hash_table_new=no
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
 LIBS=$ac_check_lib_save_LIBS
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_glib_g_hash_table_new" >&5
-$as_echo "$ac_cv_lib_glib_g_hash_table_new" >&6; }
-if test "x$ac_cv_lib_glib_g_hash_table_new" = xyes; then :
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_glib_2_0_g_hash_table_new" >&5
+$as_echo "$ac_cv_lib_glib_2_0_g_hash_table_new" >&6; }
+if test "x$ac_cv_lib_glib_2_0_g_hash_table_new" = xyes; then :
   found_glib=yes
 else
   found_glib=no
