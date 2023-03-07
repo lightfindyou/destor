@@ -12,3 +12,4 @@ autom4te.cache/output.0
 config.log
 config.status
 Makefile.in
+.vscode/*
