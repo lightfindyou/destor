@@ -238,6 +238,9 @@ struct destor {
 	int chunk_avg_size;
 	int jumpOnes;
 	int feature_algorithm;
+	int featureNum;
+	int featureLen;
+	unsigned long featureLenMask;
 	int similarity_algorithm;
 
 	/* the cache type and size */
@@ -341,7 +344,7 @@ struct chunk {
 	fingerprint fp;
 	short feaNum;				//	number of feature
 	unsigned char *data;
-	feature fea[32];
+	feature fea[96];
 };
 
 /* struct segment only makes sense for index. */

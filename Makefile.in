@@ -253,7 +253,7 @@ INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 LDFLAGS = @LDFLAGS@
 LIBOBJS = @LIBOBJS@
 # src/featuring/deepsketch/ src/similariting/deepsketch/ src/similariting/deepsketch/NGT/
-LIBS = -lpthread -lcrypto -lglib -lm -lxxhash
+LIBS = -lpthread -lcrypto -lglib -lxxhash -lm
 LTLIBOBJS = @LTLIBOBJS@
 MAKEINFO = @MAKEINFO@
 MKDIR_P = @MKDIR_P@

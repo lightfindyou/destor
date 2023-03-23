@@ -59,7 +59,7 @@ void start_feature_phase() {
 		gearhash_gear_init(ODESS_FEATURE_NUM);
 		featuring = odess_featuring;
 	}else if(destor.feature_algorithm == FEAUTRE_HIGHDEDUP){
-		gearhash_gear_init(HIGHDEDUP_FEATURE_NUM);
+		gearhash_gear_init(destor.featureNum);
 		featuring = highdedup_featuring;
 	}else if(destor.feature_algorithm == FEAUTRE_HIGHDEDUP_FSC){
 		featuring = highdedup_featuring_fsc;

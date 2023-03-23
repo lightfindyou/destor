@@ -5,6 +5,7 @@
  *      Author: fumin
  */
 
+#include <math.h>
 #include "destor.h"
 
 int yesnotoi(char *s) {
@@ -118,6 +119,16 @@ void load_config_from_string(sds config) {
 				err = "Invalid chunk algorithm";
 				goto loaderr;
 			}
+		} else if (strcasecmp(argv[0], "feature-num") == 0 && argc == 2) {
+			destor.featureNum = atoi(argv[1]);
+			printf("feature number: %d\n", destor.featureNum);
+		} else if (strcasecmp(argv[0], "feature-len") == 0 && argc == 2) {
+			destor.featureLen = atoi(argv[1]);
+			int shiftLen = sizeof(destor.featureLenMask)*8 - destor.featureLen;
+			destor.featureLenMask = (~0)<<shiftLen>>shiftLen;
+//			 (1UL<<destor.featureLen) - 1;
+			printf("feature length: %d, len mask: 0x%lx\n",
+					 destor.featureLen, destor.featureLenMask);
 		} else if (strcasecmp(argv[0], "feature-algorithm") == 0 && argc == 2) {
 			if (strcasecmp(argv[1], "ntransform") == 0) {
 				destor.feature_algorithm = FEAUTRE_NTRANSFORM;

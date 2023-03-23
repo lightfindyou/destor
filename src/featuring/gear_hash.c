@@ -84,7 +84,7 @@ void gearhash_gear_init(int featureNumber){
 
 /** return the number of features*/
 int gear_max_highdedup_12fea_64B_max(unsigned char *p, int n, feature* fea,
-                 int maxFeaNum, unsigned long feaMask){
+                 int maxFeaNum, unsigned long feaLenMask){
 
     feature fingerprint=0;
     int i=0, feaNum = 0;
@@ -109,7 +109,7 @@ int gear_max_highdedup_12fea_64B_max(unsigned char *p, int n, feature* fea,
 }
 
 int gear_max_highdedup_32fea_16B_max(unsigned char *p, int n, feature* fea,
-                 int maxFeaNum, unsigned long feaMask){
+                 int maxFeaNum, unsigned long feaLenMask){
 
     feature fingerprint=0;
     int i=0, feaNum = 0;
@@ -118,7 +118,33 @@ int gear_max_highdedup_32fea_16B_max(unsigned char *p, int n, feature* fea,
         fingerprint = (fingerprint<<1) + (gearhash_matrix[p[i]]);
         i++;
 
-        feature tmp = fingerprint & feaMask;
+        feature tmp = fingerprint & feaLenMask;
+        if( tmp > fea[feaNum]){
+            fea[feaNum] = tmp;
+        }
+
+        if(!(fingerprint & gearHighdedupMask)){
+            feaNum++;
+        }
+    }
+
+    if(feaNum != maxFeaNum){
+        feaNum++;
+    }
+    return feaNum;
+}
+
+int gear_highdedup_max(unsigned char *p, int n, feature* fea,
+                 int maxFeaNum, unsigned long feaLenMask){
+
+    feature fingerprint=0;
+    int i=0, feaNum = 0;
+
+    while(i < n && feaNum < maxFeaNum){     //if loop stop because feaNum, then feaNum = maxFeaNum;
+        fingerprint = (fingerprint<<1) + (gearhash_matrix[p[i]]);
+        i++;
+
+        feature tmp = fingerprint & feaLenMask;
         if( tmp > fea[feaNum]){
             fea[feaNum] = tmp;
         }
@@ -135,7 +161,7 @@ int gear_max_highdedup_32fea_16B_max(unsigned char *p, int n, feature* fea,
 }
 
 int gear_max_highdedup_32fea_16B_xxhash(unsigned char *p, int n, feature* fea,
-                 int maxFeaNum, unsigned long feaMask){
+                 int maxFeaNum, unsigned long feaLenMask){
 
     feature fingerprint=0;
     unsigned char md5Ret[16];
@@ -146,7 +172,7 @@ int gear_max_highdedup_32fea_16B_xxhash(unsigned char *p, int n, feature* fea,
 
         if(!(fingerprint & gearHighdedupMask)){
             int len = i - startOffset;
-            fea[feaNum] = XXH64(&p[startOffset], len, 0) & feaMask;
+            fea[feaNum] = XXH64(&p[startOffset], len, 0) & feaLenMask;
             startOffset = i;
             feaNum++;
         }
@@ -156,7 +182,7 @@ int gear_max_highdedup_32fea_16B_xxhash(unsigned char *p, int n, feature* fea,
 
     if(feaNum != maxFeaNum){
         int len = i - startOffset;
-        fea[feaNum] = XXH64(&p[startOffset], len, 0) & feaMask;
+        fea[feaNum] = XXH64(&p[startOffset], len, 0) & feaLenMask;
         feaNum++;
     }
     return feaNum;
