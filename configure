@@ -4354,7 +4354,8 @@ fi
 
 
 CFLAGS="-g -O2 -Wall -ggdb"
-CXXFLAGS="-I/home/xzjin/.local/lib/python3.8/site-packages/torch/include/"
+CXXFLAGS="-D_GLIBCXX_USE_CXX11_ABI=1 -I/home/xzjin/.local/lib/python3.8/site-packages/torch/include/"
+#-D_GLIBCXX_USE_CXX11_ABI=0
 
 # Checks for libraries.
 
@@ -5285,7 +5286,11 @@ fi
 
 #AC_CHECK_FUNCS([gettimeofday memmove memset socket strerror])
 
-ac_config_files="$ac_config_files Makefile src/Makefile src/utils/Makefile src/index/Makefile src/recipe/Makefile src/storage/Makefile src/chunking/Makefile src/featuring/Makefile src/featuring/deepsketch/Makefile src/similariting/Makefile src/similariting/deepsketch/Makefile src/similariting/deepsketch/NGT/Makefile src/xdelta3/Makefile src/fsl/Makefile"
+#        src/featuring/deepsketch/Makefile
+#        src/similariting/deepsketch/Makefile
+#        src/similariting/deepsketch/NGT/Makefile
+
+ac_config_files="$ac_config_files Makefile src/Makefile src/utils/Makefile src/index/Makefile src/recipe/Makefile src/storage/Makefile src/chunking/Makefile src/featuring/Makefile src/similariting/Makefile src/xdelta3/Makefile src/fsl/Makefile"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -6041,10 +6046,7 @@ do
     "src/storage/Makefile") CONFIG_FILES="$CONFIG_FILES src/storage/Makefile" ;;
     "src/chunking/Makefile") CONFIG_FILES="$CONFIG_FILES src/chunking/Makefile" ;;
     "src/featuring/Makefile") CONFIG_FILES="$CONFIG_FILES src/featuring/Makefile" ;;
-    "src/featuring/deepsketch/Makefile") CONFIG_FILES="$CONFIG_FILES src/featuring/deepsketch/Makefile" ;;
     "src/similariting/Makefile") CONFIG_FILES="$CONFIG_FILES src/similariting/Makefile" ;;
-    "src/similariting/deepsketch/Makefile") CONFIG_FILES="$CONFIG_FILES src/similariting/deepsketch/Makefile" ;;
-    "src/similariting/deepsketch/NGT/Makefile") CONFIG_FILES="$CONFIG_FILES src/similariting/deepsketch/NGT/Makefile" ;;
     "src/xdelta3/Makefile") CONFIG_FILES="$CONFIG_FILES src/xdelta3/Makefile" ;;
     "src/fsl/Makefile") CONFIG_FILES="$CONFIG_FILES src/fsl/Makefile" ;;
 
@@ -6607,4 +6609,3 @@ if test -n "$ac_unrecognized_opts" && test "$enable_option_checking" != no; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unrecognized options: $ac_unrecognized_opts" >&5
 $as_echo "$as_me: WARNING: unrecognized options: $ac_unrecognized_opts" >&2;}
 fi
-

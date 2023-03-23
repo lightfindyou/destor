@@ -30,6 +30,8 @@ struct option long_options[] = {
 		{ NULL, 0, NULL, 0 }
 };
 
+struct destor destor;
+
 char* chunkAlgStr[] = {
 	"FIXED",
 	"RABIN",

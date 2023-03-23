@@ -318,7 +318,9 @@ struct destor {
 	int backup_retention_time;
 	char modelPath[PATHLEN];
 
-} destor;
+};
+
+extern struct destor destor;
 
 typedef unsigned char fingerprint[20];
 typedef unsigned char* fpp;

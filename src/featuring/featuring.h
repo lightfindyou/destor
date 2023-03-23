@@ -48,8 +48,8 @@ extern "C"
 {
 #endif
 
-extern void deepsketch_modelInit(char* modelPath);
-extern void deepsketch_getHash(struct chunk* c, int chunkLen, char* hash);
+void deepsketch_modelInit(char* modelPath);
+void deepsketch_getHash(struct chunk* c, int chunkLen, char* hash);
 
 #ifdef __cplusplus
 }

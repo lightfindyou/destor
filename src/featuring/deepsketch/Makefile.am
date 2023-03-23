@@ -1,2 +1,0 @@
-noinst_LIBRARIES=libdeepsketchModel.a
-libdeepsketchModel_a_SOURCES=deepsketch_model.cpp

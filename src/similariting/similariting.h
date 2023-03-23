@@ -42,8 +42,8 @@ extern "C"
 {
 #endif
 
-extern void deepsketch_ANN_init();
-extern struct chunk* deepsketch_ANN_similariting(struct chunk* c);
+void deepsketch_ANN_init();
+struct chunk* deepsketch_ANN_similariting(struct chunk* c);
 
 #ifdef __cplusplus
 }
