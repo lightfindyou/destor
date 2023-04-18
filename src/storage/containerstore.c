@@ -47,6 +47,7 @@ static void* append_thread(void *arg) {
 void init_container_store() {
 
 	sds containerfile = sdsdup(destor.working_directory);
+	printf("working dir: %s\n", destor.working_directory);
 	containerfile = sdscat(containerfile, "/container.pool");
 	printf("container file:%s\n", containerfile);
 
