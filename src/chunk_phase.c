@@ -221,7 +221,8 @@ void start_chunk_phase() {
 		if(destor.jumpOnes){
 			gearjump_init(destor.jumpOnes);
 		}else{
-			gearjump_init(log2(destor.chunk_avg_size) - 2);
+//			gearjump_init(log2(destor.chunk_avg_size) - 2);
+			gearjump_init(1);
 		}
 #else
 		gearjump_init();
