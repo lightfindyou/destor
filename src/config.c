@@ -125,7 +125,7 @@ void load_config_from_string(sds config) {
 		} else if (strcasecmp(argv[0], "feature-len") == 0 && argc == 2) {
 			destor.featureLen = atoi(argv[1]);
 			int shiftLen = sizeof(destor.featureLenMask)*8 - destor.featureLen;
-			destor.featureLenMask = (~0)<<shiftLen>>shiftLen;
+			destor.featureLenMask = (~0LU)<<shiftLen>>shiftLen;
 //			 (1UL<<destor.featureLen) - 1;
 			printf("feature length: %d, len mask: 0x%lx\n",
 					 destor.featureLen, destor.featureLenMask);
