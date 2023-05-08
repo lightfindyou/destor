@@ -24,8 +24,10 @@ void ntransform_featuring(unsigned char* buf, int size, struct chunk* c);
 //#define HIGHDEDUP_FEATURE_MASK (0xffffffffffffffff)
 #define HIGHDEDUP_FEATURE_NUM 32
 //#define HIGHDEDUP_FEATURE_MASK (0xffff)
-#define HIGHDEDUP_FEATURE_MASK (0xffffffffffffffff)
+#define HIGHDEDUP_FEATURE_MASK (0XFFFFFFFFFFFFFFFF)
 void gearhash_gear_init(int featureNumber);
+
+int gear_highdedup_max(unsigned char *p, int n, feature* fea, int maxFeaNum, unsigned long feaLenMask);
 int gear_max_highdedup_12fea_64B_max(unsigned char *p, int n, feature* fea, int maxFeaNum, unsigned long feaMask);
 int gear_max_highdedup_32fea_16B_max(unsigned char *p, int n, feature* fea, int maxFeaNum, unsigned long feaMask);
 int gear_max_highdedup_32fea_16B_xxhash(unsigned char *p, int n, feature* fea, int maxFeaNum, unsigned long feaMask);
@@ -48,8 +50,8 @@ extern "C"
 {
 #endif
 
-extern void deepsketch_modelInit(char* modelPath);
-extern void deepsketch_getHash(struct chunk* c, int chunkLen, char* hash);
+void deepsketch_modelInit(char* modelPath);
+void deepsketch_getHash(struct chunk* c, int chunkLen, char* hash);
 
 #ifdef __cplusplus
 }

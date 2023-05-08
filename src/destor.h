@@ -238,6 +238,9 @@ struct destor {
 	int chunk_avg_size;
 	int jumpOnes;
 	int feature_algorithm;
+	int featureNum;
+	int featureLen;
+	unsigned long featureLenMask;
 	int similarity_algorithm;
 
 	/* the cache type and size */
@@ -318,7 +321,9 @@ struct destor {
 	int backup_retention_time;
 	char modelPath[PATHLEN];
 
-} destor;
+};
+
+extern struct destor destor;
 
 typedef unsigned char fingerprint[20];
 typedef unsigned char* fpp;
@@ -339,7 +344,7 @@ struct chunk {
 	fingerprint fp;
 	short feaNum;				//	number of feature
 	unsigned char *data;
-	feature fea[32];
+	feature fea[96];
 };
 
 /* struct segment only makes sense for index. */

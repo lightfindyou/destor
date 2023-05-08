@@ -10,10 +10,12 @@ AM_INIT_AUTOMAKE
 AC_PROG_CXX
 AC_PROG_CC
 CFLAGS="-g -O2 -Wall -ggdb"
+CXXFLAGS="-D_GLIBCXX_USE_CXX11_ABI=1 -I/home/xzjin/.local/lib/python3.8/site-packages/torch/include/"
+#-D_GLIBCXX_USE_CXX11_ABI=0
 
 # Checks for libraries.
 AC_CHECK_LIB([pthread], [pthread_create])
-AC_CHECK_LIB([glib], [g_hash_table_new],[found_glib=yes],[found_glib=no])
+AC_CHECK_LIB([glib-2.0], [g_hash_table_new],[found_glib=yes],[found_glib=no])
     if test "$found_glib" = "no"; then
     AC_MSG_ERROR([*** Working glib library not found ***])
     fi
@@ -60,6 +62,10 @@ AC_TYPE_UINT8_T
 AC_FUNC_MALLOC
 #AC_CHECK_FUNCS([gettimeofday memmove memset socket strerror])
 
+#        src/featuring/deepsketch/Makefile
+#        src/similariting/deepsketch/Makefile
+#        src/similariting/deepsketch/NGT/Makefile
+
 AC_OUTPUT(Makefile
         src/Makefile
         src/utils/Makefile
@@ -68,9 +74,6 @@ AC_OUTPUT(Makefile
         src/storage/Makefile
         src/chunking/Makefile
         src/featuring/Makefile
-        src/featuring/deepsketch/Makefile
         src/similariting/Makefile
-        src/similariting/deepsketch/Makefile
-        src/similariting/deepsketch/NGT/Makefile
         src/xdelta3/Makefile
         src/fsl/Makefile)
