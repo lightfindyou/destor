@@ -7,3 +7,11 @@ Makefile
 tags
 destor
 test/testor
+src/featuring/deepsketch/Makefile.in
+src/similariting/deepsketch/Makefile.in
+src/similariting/deepsketch/NGT/Makefile.in
+src/tmp
+test/AL
+test/dedup.output
+test/perfromanceBreakdown
+tmp
