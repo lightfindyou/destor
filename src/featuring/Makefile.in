@@ -107,7 +107,8 @@ libfeature_a_LIBADD =
 am_libfeature_a_OBJECTS = deepsketch_featuring.$(OBJEXT) \
 	finesse_featuring.$(OBJEXT) gear_hash.$(OBJEXT) \
 	highdedup_featuring.$(OBJEXT) ntransform_featuring.$(OBJEXT) \
-	odess_featuring.$(OBJEXT) rabin_hash.$(OBJEXT)
+	odess_featuring.$(OBJEXT) rabin_hash.$(OBJEXT) \
+	bruteforce_featuring.$(OBJEXT)
 libfeature_a_OBJECTS = $(am_libfeature_a_OBJECTS)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
@@ -124,7 +125,8 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/deepsketch_featuring.Po \
+am__depfiles_remade = ./$(DEPDIR)/bruteforce_featuring.Po \
+	./$(DEPDIR)/deepsketch_featuring.Po \
 	./$(DEPDIR)/finesse_featuring.Po ./$(DEPDIR)/gear_hash.Po \
 	./$(DEPDIR)/highdedup_featuring.Po \
 	./$(DEPDIR)/ntransform_featuring.Po \
@@ -264,7 +266,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 noinst_LIBRARIES = libfeature.a
-libfeature_a_SOURCES = deepsketch_featuring.c finesse_featuring.c gear_hash.c highdedup_featuring.c ntransform_featuring.c odess_featuring.c rabin_hash.c 
+libfeature_a_SOURCES = deepsketch_featuring.c finesse_featuring.c gear_hash.c highdedup_featuring.c ntransform_featuring.c odess_featuring.c rabin_hash.c bruteforce_featuring.c
 all: all-am
 
 .SUFFIXES:
@@ -313,6 +315,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bruteforce_featuring.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/deepsketch_featuring.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/finesse_featuring.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gear_hash.Po@am__quote@ # am--include-marker
@@ -465,7 +468,8 @@ clean: clean-am
 clean-am: clean-generic clean-noinstLIBRARIES mostlyclean-am
 
 distclean: distclean-am
-		-rm -f ./$(DEPDIR)/deepsketch_featuring.Po
+		-rm -f ./$(DEPDIR)/bruteforce_featuring.Po
+	-rm -f ./$(DEPDIR)/deepsketch_featuring.Po
 	-rm -f ./$(DEPDIR)/finesse_featuring.Po
 	-rm -f ./$(DEPDIR)/gear_hash.Po
 	-rm -f ./$(DEPDIR)/highdedup_featuring.Po
@@ -517,7 +521,8 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-		-rm -f ./$(DEPDIR)/deepsketch_featuring.Po
+		-rm -f ./$(DEPDIR)/bruteforce_featuring.Po
+	-rm -f ./$(DEPDIR)/deepsketch_featuring.Po
 	-rm -f ./$(DEPDIR)/finesse_featuring.Po
 	-rm -f ./$(DEPDIR)/gear_hash.Po
 	-rm -f ./$(DEPDIR)/highdedup_featuring.Po

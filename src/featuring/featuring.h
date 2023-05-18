@@ -35,6 +35,7 @@ int highdedup_32fea_16B_FSC(unsigned char *p, int n, feature* fea, int maxFeaNum
 void highdedup_featuring(unsigned char* buf, int size, struct chunk* c);
 void highdedup_featuring_fsc(unsigned char* buf, int size, struct chunk* c);
 
+void bruteforce_featuring(unsigned char* buf, int size, struct chunk* c);
 
 #define ODESS_FEATURE_NUM 12
 #define ODESS_SF_NUM 4

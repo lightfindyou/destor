@@ -66,6 +66,8 @@ void start_feature_phase() {
 	}else if(destor.feature_algorithm == FEAUTRE_ODESS_FLATFEA){
 		gearhash_gear_init(ODESS_FEATURE_NUM);
 		featuring = odess_featuring_flatFea;
+	}else if(destor.feature_algorithm == FEAUTRE_BRUTEFORCE){
+		featuring = bruteforce_featuring;
 	}
 
 	feature_queue = sync_queue_new(1000);

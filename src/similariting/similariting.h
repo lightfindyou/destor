@@ -10,7 +10,8 @@
 
 GHashTable* fineness_sufeature_tab;
 void fineness_similariting_init();
-struct chunk* fineness_similariting(struct chunk* c);
+
+struct chunk* bruteforce_similariting(struct chunk* c);
 
 void fineness_insert_flatFea(struct chunk* c);
 struct chunk* fineness_similariting_flatFea(struct chunk* c);

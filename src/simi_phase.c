@@ -63,7 +63,7 @@ void start_simi_phase() {
 		similariting = deepsketch_similariting;
 	}else if(destor.similarity_algorithm == SIMILARITY_FINENESS){
 		fineness_similariting_init();
-		similariting = fineness_similariting;
+		similariting = bruteforce_similariting;
 	}else if(destor.similarity_algorithm == SIMILARITY_HIGHDEDUP){
 		highdedup_similariting_init();
 		similariting = highdedup_similariting;
@@ -73,9 +73,9 @@ void start_simi_phase() {
 	}else if(destor.similarity_algorithm == SIMILARITY_FINENESS_FLATFEA){
 		fineness_similariting_init();
 		similariting = fineness_similariting_flatFea;
-	}else if(destor.similarity_algorithm == SIMILARITY_ODESS_FLATFEA){
-		odess_similariting_init();
-		similariting = odess_similariting_flatFea;
+	}else if(destor.similarity_algorithm == SIMILARITY_BRUTEFORCE){
+		bruteforce_similariting_init();
+		similariting = bruteforce_similariting;
 	}
 
 

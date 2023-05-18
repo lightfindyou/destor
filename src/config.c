@@ -154,6 +154,9 @@ void load_config_from_string(sds config) {
 			} else if (strcasecmp(argv[1], "odess_flatFea") == 0) {
 				destor.feature_algorithm = FEAUTRE_ODESS_FLATFEA;
 				destor.similarity_algorithm = SIMILARITY_ODESS_FLATFEA;
+			} else if (strcasecmp(argv[1], "bruteforce") == 0) {
+				destor.feature_algorithm = FEAUTRE_BRUTEFORCE;
+				destor.similarity_algorithm = SIMILARITY_BRUTEFORCE;
 			} else if (strcasecmp(argv[1], "fixed") == 0) {
 				printf("compared data: %s\n", argv[1]);
 				err = "Invalid chunk algorithm";
