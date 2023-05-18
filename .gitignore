@@ -7,9 +7,20 @@ Makefile
 tags
 destor
 test/testor
+<<<<<<< HEAD
+src/featuring/deepsketch/Makefile.in
+src/similariting/deepsketch/Makefile.in
+src/similariting/deepsketch/NGT/Makefile.in
+src/tmp
+test/AL
+test/dedup.output
+test/perfromanceBreakdown
+tmp
+=======
 autom4te.cache/*
 autom4te.cache/output.0
 config.log
 config.status
 Makefile.in
 .vscode/*
+>>>>>>> c579c37006bd9aef9cad2e98f8f2e6d848e17896
