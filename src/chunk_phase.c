@@ -37,16 +37,12 @@ static void* chunk_thread(void *arg) {
 		c = sync_queue_pop(read_queue);
 
 		if (c == NULL) {
-#ifndef NODEDUP
 			sync_queue_term(chunk_queue);
-#endif	//NODEDUP
 			break;
 		}
 
 		assert(CHECK_CHUNK(c, CHUNK_FILE_START));
-#ifndef NODEDUP
 			sync_queue_push(chunk_queue, c);
-#endif	//NODEDUP
 
 		/* Try to receive normal chunks. */
 		c = sync_queue_pop(read_queue);
@@ -83,8 +79,6 @@ static void* chunk_thread(void *arg) {
 
 			TIMER_END(1, jcr.chunk_time);
 
-#ifndef NODEDUP
-//do not pass the chunk down
 			struct chunk *nc = new_chunk(chunk_size);
 			memcpy(nc->data, leftbuf + leftoff, chunk_size);
 			leftlen -= chunk_size;
@@ -104,12 +98,9 @@ static void* chunk_thread(void *arg) {
 
 			jcr.chunk_num++;
 			jcr.data_size += nc->size;
-#endif	//NODEDUP
 		}
 		//xzjin add file tail chunk at last
-#ifndef NODEDUP
 		sync_queue_push(chunk_queue, c);
-#endif	//NODEDUP
 		leftoff = 0;
 		c = NULL;
 

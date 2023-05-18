@@ -63,7 +63,7 @@ void start_simi_phase() {
 		similariting = deepsketch_similariting;
 	}else if(destor.similarity_algorithm == SIMILARITY_FINENESS){
 		fineness_similariting_init();
-		similariting = bruteforce_similariting;
+		similariting = fineness_similariting;
 	}else if(destor.similarity_algorithm == SIMILARITY_HIGHDEDUP){
 		highdedup_similariting_init();
 		similariting = highdedup_similariting;
