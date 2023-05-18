@@ -46,6 +46,8 @@ void odess_featuring_flatFea(unsigned char* buf, int size, struct chunk* c);
 
 void deepsketch_featuring_init(char* modelPath);
 void deepsketch_featuring(unsigned char* buf, int size, struct chunk* c);
+
+void fineANN_featuring(unsigned char* buf, int size, struct chunk* c);
 #ifdef __cplusplus
 extern "C"
 {

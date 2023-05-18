@@ -32,17 +32,19 @@ void *xdelta_thread(void *arg) {
 		}
 
 		if(!CHECK_CHUNK(c, CHUNK_DUPLICATE)){	//the unique chunks
+			int deltaSize;
 			if(c->basechunk){	//chunk may be xdeltaed
 				struct chunk* basec = c->basechunk;
 				VERBOSE("Similariting phase: %ldth chunk similar with %d", chunk_num++, basec->basechunk);
 //				printf("xdelta c:%lx, c->flags:%x c->data:%lx, c->size:%ld, basec:%lx, basec->flag:%x, basec->data:%lx, basec->size:%ld\n", 
 //							c, c->flag, c->data, c->size, basec, basec->flag, basec->data, basec->size);
 
-				int deltaSize = xdelta3_compress(c->data, c->size, basec->data, basec->size, deltaOut, 1);
+				deltaSize = xdelta3_compress(c->data, c->size, basec->data, basec->size, deltaOut, 1);
 				if(deltaSize < c->size){
-					memcpy(c->data, deltaOut, deltaSize);
+					//NOTE: do not change origin data, it will be used by following xdelta
+//					memcpy(c->data, deltaOut, deltaSize);
 					int32_t ori_size = c->size;
-					c->size = deltaSize;
+//					c->size = deltaSize;
 //					printf("c->size: %d, delta size: %d\n", c->size, deltaSize);
 					assert(c->size);
 
@@ -51,8 +53,8 @@ void *xdelta_thread(void *arg) {
 						return;
 					}
 					jcr.total_xdelta_compressed_chunk++;
-					jcr.total_xdelta_size += c->size;
-					jcr.total_xdelta_saved_size += ori_size - c->size;
+					jcr.total_xdelta_size += deltaSize;
+					jcr.total_xdelta_saved_size += ori_size - deltaSize;
 				}else{
 					if (pthread_mutex_lock(&jcrMutex) != 0) {
 						puts("failed to lock jcrMutex!");
@@ -60,7 +62,7 @@ void *xdelta_thread(void *arg) {
 					}
 				}
 				jcr.total_xdelta_chunk++;
-				jcr.total_size_after_dedup += c->size;		//the size of chunk after xdelta
+				jcr.total_size_after_dedup += deltaSize;		//the size of chunk after xdelta
 			}else{				//chunk unable to be xdeltaed
 				if (pthread_mutex_lock(&jcrMutex) != 0) {
 					puts("failed to lock jcrMutex!");

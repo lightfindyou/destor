@@ -65,9 +65,10 @@ struct chunk* highdedup_similariting(struct chunk* c){
 
 	g_hash_table_destroy(cand_tab);
 
+	highdedup_insert_sufeature(c);
 	if(ret){ return ret; }
 
 	/*Only if the chunk is unique, add the chunk into sufeature table*/
-	highdedup_insert_sufeature(c);
+	/*UNNECESSARY, for high dedup ratio, always add*/
 	return NULL;
 }

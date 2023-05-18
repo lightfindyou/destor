@@ -39,6 +39,9 @@ struct chunk* most_match_similariting(struct chunk* c, int suFeaNum, GHashTable*
 void deepsketch_similariting_init();
 struct chunk* deepsketch_similariting(struct chunk* c);
 
+void fineANN_similariting_init();
+struct chunk* fineANN_similariting(struct chunk* c);
+
 #ifdef __cplusplus
 extern "C"
 {

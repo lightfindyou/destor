@@ -68,6 +68,8 @@ void start_feature_phase() {
 		featuring = odess_featuring_flatFea;
 	}else if(destor.feature_algorithm == FEAUTRE_BRUTEFORCE){
 		featuring = bruteforce_featuring;
+	}else if(destor.feature_algorithm == FEAUTRE_FINE_ANN){
+		featuring = fineANN_featuring;
 	}
 
 	feature_queue = sync_queue_new(1000);

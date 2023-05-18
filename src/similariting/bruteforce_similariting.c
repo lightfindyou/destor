@@ -44,7 +44,10 @@ static void similariting_thread(void* arg) {
 
 		//update candidate
 		pthread_mutex_lock(&mutex);
-		if(deltaSize < curDeltaSize){ ret = candc; }
+		if(deltaSize < curDeltaSize){
+			curDeltaSize = deltaSize;
+			ret = candc;
+		}
 		pthread_mutex_unlock(&mutex);
 	}
 }
