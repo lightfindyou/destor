@@ -58,7 +58,8 @@ uint64_t gearHighdedupMask;
 uint64_t odessMask;
 MD5_CTX gearhash_md5_ctx;
 
-void gearhash_gear_init(int featureNumber){
+void initGearMatrixFea(){
+
     char seed[SeedLength];
     for(int i=0; i<SymbolCount; i++){
         for(int j=0; j<SeedLength; j++){
@@ -75,6 +76,11 @@ void gearhash_gear_init(int featureNumber){
         memcpy(&gearhash_matrix[i], md5_result, sizeof(uint64_t));
     }
 
+}
+
+void gearhash_gear_init(int featureNumber){
+
+    initGearMatrixFea();
     int index = log2(destor.chunk_avg_size/featureNumber);
     gearHighdedupMask = gearhash_g_condition_mask[index];
     odessMask = gearhash_g_condition_mask[7];
@@ -239,4 +245,82 @@ void gear_odess(unsigned char *p, int n, feature* fea, int featureNum) {
         }
     }
 	return;
+}
+
+void setbit(unsigned char* hash, int index){
+    int byteOff = index/8;
+    int offset = index%8;
+    switch (offset) {
+    case 0:
+    	hash[byteOff] |= 0x1;
+        break;
+    
+    case 1:
+    	hash[byteOff] |= 0x2;
+        break;
+    
+    case 2:
+    	hash[byteOff] |= 0x4;
+        break;
+    
+    case 3:
+    	hash[byteOff] |= 0x8;
+        break;
+    
+    case 4:
+    	hash[byteOff] |= 0x10;
+        break;
+    
+    case 5:
+    	hash[byteOff] |= 0x20;
+        break;
+    
+    case 6:
+    	hash[byteOff] |= 0x40;
+        break;
+    
+    case 7:
+    	hash[byteOff] |= 0x80;
+        break;
+    
+    default:
+        printf("setbit error!!!\n");
+        break;
+    }
+}
+
+
+void gear_fineANN(unsigned char *p, int n, fineANN_t* fea, int featureNum) {
+
+    //limit the mask to lower 4 byte to constrain window size
+    uint64_t fineANN_mask[] = {
+        0x0000000000000000,// 1B
+        0x0000000001000000,// 2B
+        0x0000000003000000,// 4B
+        0x0000000013000000,// 8B
+        0x0000000093000000,// 16B
+        0x0000000093001000,// 32B
+
+        0x0000000093005000,// 64B
+        0x0000000093005100,// 128B
+        0x0000000093005500,// 256B
+        0x0000000093015500,// 512B
+        0x0000000093035500,// 1KB
+        0x0000000093035510,// 2KB
+        0x000000009303d510,// 4KB
+    };
+    uint64_t mask = fineANN_mask[5];
+    uint64_t fingerprint=0;
+    for(int i=0; i< n; i++){
+        fingerprint = (fingerprint<<1) + (gearhash_matrix[p[i]]);
+        if(!(fingerprint & mask)){
+//            int index = (fingerprint & WINDOW_MASK)%EFFCTIVE_LEN;
+            int index = (fingerprint )%FINEANN_FEATURE_BITS;
+            setbit(fea, index);
+            int weightOffset = FINEANN_MAX_FEATURE_BITS/8 + index;
+            fea[weightOffset] += 1;
+        }
+
+    }
+    return n;
 }

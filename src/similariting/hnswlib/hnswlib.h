@@ -194,7 +194,7 @@ AlgorithmInterface<dist_t>::searchKnnCloserFirst(const void* query_data, size_t 
 
 #define FEATUREBITS 256
 // Length of features
-#define FEALEN (FEATUREBITS/8/sizeof(int))
+#define FEALEN (FEATUREBITS/8/sizeof(unsigned char))
 }  // namespace hnswlib
 
 #include "space_l2.h"

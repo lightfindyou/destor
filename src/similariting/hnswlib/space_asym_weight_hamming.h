@@ -5,21 +5,18 @@ namespace hnswlib {
 
 static float
 AsymWeightHamming(const void *pVect1v, const void *pVect2v, const void *qty_ptr) {
-    int *pVect1 = (int *) pVect1v;
-    int *pVect2 = (int *) pVect2v;
+    unsigned char *pVect1 = (unsigned char *) pVect1v;
+    unsigned char *pVect2 = (unsigned char *) pVect2v;
 
     float res = 0;
     for (size_t i = 0; i < FEALEN; i++) {
-        int t = ((*pVect1) ^ (*pVect2)) & (*pVect1);
+        unsigned char t = ((pVect1[i]) ^ (pVect2[i])) & (pVect1[i]);
 
-        int baseOffset = FEALEN + i*sizeof(int);
-        for(size_t j = 0; (j < 8*sizeof(int)) && t ; j++){
-            if(t<0){ res += pVect1[baseOffset + j]; }
+        int baseOffset = FEALEN + i*sizeof(unsigned char);
+        for(size_t j = 0; (j < 8*sizeof(unsigned char)) && t ; j++){
+            if(t&0x80){ res += pVect1[baseOffset + j]; }
             t <<= 1;
         }
-
-        pVect1++;
-        pVect2++;
     }
     return res;
 }

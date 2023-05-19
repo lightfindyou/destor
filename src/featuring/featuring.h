@@ -25,6 +25,7 @@ void ntransform_featuring(unsigned char* buf, int size, struct chunk* c);
 #define HIGHDEDUP_FEATURE_NUM 32
 //#define HIGHDEDUP_FEATURE_MASK (0xffff)
 #define HIGHDEDUP_FEATURE_MASK (0XFFFFFFFFFFFFFFFF)
+void initGearMatrixFea();
 void gearhash_gear_init(int featureNumber);
 
 int gear_highdedup_max(unsigned char *p, int n, feature* fea, int maxFeaNum, unsigned long feaLenMask);
@@ -47,7 +48,13 @@ void odess_featuring_flatFea(unsigned char* buf, int size, struct chunk* c);
 void deepsketch_featuring_init(char* modelPath);
 void deepsketch_featuring(unsigned char* buf, int size, struct chunk* c);
 
+typedef unsigned char fineANN_t
+#define FINEANN_FEATURE_BITS 191
+#define FINEANN_MAX_FEATURE_BITS 256
+#define FINEANN_FEATURE_LEN FINEANN_MAX_FEATURE_BITS/8+FINEANN_MAX_FEATURE_BITS
+void gear_fineANN(unsigned char *p, int n, feature* fea, int fetureNum);
 void fineANN_featuring(unsigned char* buf, int size, struct chunk* c);
+
 #ifdef __cplusplus
 extern "C"
 {

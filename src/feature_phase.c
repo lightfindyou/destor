@@ -69,6 +69,7 @@ void start_feature_phase() {
 	}else if(destor.feature_algorithm == FEAUTRE_BRUTEFORCE){
 		featuring = bruteforce_featuring;
 	}else if(destor.feature_algorithm == FEAUTRE_FINE_ANN){
+		initGearMatrixFea();
 		featuring = fineANN_featuring;
 	}
 
