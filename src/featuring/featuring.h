@@ -48,12 +48,18 @@ void odess_featuring_flatFea(unsigned char* buf, int size, struct chunk* c);
 void deepsketch_featuring_init(char* modelPath);
 void deepsketch_featuring(unsigned char* buf, int size, struct chunk* c);
 
-typedef unsigned char fineANN_t
+typedef unsigned char fineANN_t;
 #define FINEANN_FEATURE_BITS 191
 #define FINEANN_MAX_FEATURE_BITS 256
-#define FINEANN_FEATURE_LEN FINEANN_MAX_FEATURE_BITS/8+FINEANN_MAX_FEATURE_BITS
-void gear_fineANN(unsigned char *p, int n, feature* fea, int fetureNum);
+#define FINEANN_FEATURE_LEN (FINEANN_MAX_FEATURE_BITS/8)+FINEANN_MAX_FEATURE_BITS
+
+void gear_fineANN(unsigned char *p, int n, fineANN_t* fea, int featureNum);
 void fineANN_featuring(unsigned char* buf, int size, struct chunk* c);
+
+typedef uint64_t statis_t;
+#define STATIS_FEATURE_NUM 6
+void statis_featuring(unsigned char* buf, int size, struct chunk* c);
+void gear_statis(unsigned char *p, int n, statis_t* fea, int featureNum);
 
 #ifdef __cplusplus
 extern "C"

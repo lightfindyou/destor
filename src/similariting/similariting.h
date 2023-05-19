@@ -8,7 +8,6 @@
 #include "../destor.h"
 #include "../featuring/featuring.h"
 
-GHashTable* fineness_sufeature_tab;
 void fineness_similariting_init();
 struct chunk* fineness_similariting(struct chunk* c);
 
@@ -41,6 +40,9 @@ struct chunk* deepsketch_similariting(struct chunk* c);
 
 void fineANN_similariting_init();
 struct chunk* fineANN_similariting(struct chunk* c);
+
+void statis_similariting_init();
+struct chunk* statis_similariting(struct chunk* c);
 
 #ifdef __cplusplus
 extern "C"

@@ -105,10 +105,11 @@ am__v_AR_1 =
 libfeature_a_AR = $(AR) $(ARFLAGS)
 libfeature_a_LIBADD =
 am_libfeature_a_OBJECTS = deepsketch_featuring.$(OBJEXT) \
-	finesse_featuring.$(OBJEXT) gear_hash.$(OBJEXT) \
+	finesse_featuring.$(OBJEXT) gear_hash_fea.$(OBJEXT) \
 	highdedup_featuring.$(OBJEXT) ntransform_featuring.$(OBJEXT) \
 	odess_featuring.$(OBJEXT) rabin_hash.$(OBJEXT) \
-	bruteforce_featuring.$(OBJEXT)
+	bruteforce_featuring.$(OBJEXT) fineANN_featuring.$(OBJEXT) \
+	statis_featuring.$(OBJEXT)
 libfeature_a_OBJECTS = $(am_libfeature_a_OBJECTS)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
@@ -127,10 +128,12 @@ depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/bruteforce_featuring.Po \
 	./$(DEPDIR)/deepsketch_featuring.Po \
-	./$(DEPDIR)/finesse_featuring.Po ./$(DEPDIR)/gear_hash.Po \
+	./$(DEPDIR)/fineANN_featuring.Po \
+	./$(DEPDIR)/finesse_featuring.Po ./$(DEPDIR)/gear_hash_fea.Po \
 	./$(DEPDIR)/highdedup_featuring.Po \
 	./$(DEPDIR)/ntransform_featuring.Po \
-	./$(DEPDIR)/odess_featuring.Po ./$(DEPDIR)/rabin_hash.Po
+	./$(DEPDIR)/odess_featuring.Po ./$(DEPDIR)/rabin_hash.Po \
+	./$(DEPDIR)/statis_featuring.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -266,7 +269,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 noinst_LIBRARIES = libfeature.a
-libfeature_a_SOURCES = deepsketch_featuring.c finesse_featuring.c gear_hash.c highdedup_featuring.c ntransform_featuring.c odess_featuring.c rabin_hash.c bruteforce_featuring.c
+libfeature_a_SOURCES = deepsketch_featuring.c finesse_featuring.c gear_hash_fea.c highdedup_featuring.c ntransform_featuring.c odess_featuring.c rabin_hash.c bruteforce_featuring.c fineANN_featuring.c statis_featuring.c
 all: all-am
 
 .SUFFIXES:
@@ -317,12 +320,14 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bruteforce_featuring.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/deepsketch_featuring.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fineANN_featuring.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/finesse_featuring.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gear_hash.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gear_hash_fea.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/highdedup_featuring.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ntransform_featuring.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/odess_featuring.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rabin_hash.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/statis_featuring.Po@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -470,12 +475,14 @@ clean-am: clean-generic clean-noinstLIBRARIES mostlyclean-am
 distclean: distclean-am
 		-rm -f ./$(DEPDIR)/bruteforce_featuring.Po
 	-rm -f ./$(DEPDIR)/deepsketch_featuring.Po
+	-rm -f ./$(DEPDIR)/fineANN_featuring.Po
 	-rm -f ./$(DEPDIR)/finesse_featuring.Po
-	-rm -f ./$(DEPDIR)/gear_hash.Po
+	-rm -f ./$(DEPDIR)/gear_hash_fea.Po
 	-rm -f ./$(DEPDIR)/highdedup_featuring.Po
 	-rm -f ./$(DEPDIR)/ntransform_featuring.Po
 	-rm -f ./$(DEPDIR)/odess_featuring.Po
 	-rm -f ./$(DEPDIR)/rabin_hash.Po
+	-rm -f ./$(DEPDIR)/statis_featuring.Po
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -523,12 +530,14 @@ installcheck-am:
 maintainer-clean: maintainer-clean-am
 		-rm -f ./$(DEPDIR)/bruteforce_featuring.Po
 	-rm -f ./$(DEPDIR)/deepsketch_featuring.Po
+	-rm -f ./$(DEPDIR)/fineANN_featuring.Po
 	-rm -f ./$(DEPDIR)/finesse_featuring.Po
-	-rm -f ./$(DEPDIR)/gear_hash.Po
+	-rm -f ./$(DEPDIR)/gear_hash_fea.Po
 	-rm -f ./$(DEPDIR)/highdedup_featuring.Po
 	-rm -f ./$(DEPDIR)/ntransform_featuring.Po
 	-rm -f ./$(DEPDIR)/odess_featuring.Po
 	-rm -f ./$(DEPDIR)/rabin_hash.Po
+	-rm -f ./$(DEPDIR)/statis_featuring.Po
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

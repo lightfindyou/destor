@@ -160,6 +160,9 @@ void load_config_from_string(sds config) {
 			} else if (strcasecmp(argv[1], "fineANN") == 0) {
 				destor.feature_algorithm = FEAUTRE_FINE_ANN;
 				destor.similarity_algorithm = SIMILARITY_FINE_ANN;
+			} else if (strcasecmp(argv[1], "statistics") == 0) {
+				destor.feature_algorithm = FEAUTRE_STATIS;
+				destor.similarity_algorithm = SIMILARITY_STATIS;
 			} else if (strcasecmp(argv[1], "fixed") == 0) {
 				printf("compared data: %s\n", argv[1]);
 				err = "Invalid chunk algorithm";

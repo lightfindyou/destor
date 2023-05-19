@@ -4,8 +4,6 @@
 
 #define BRUTE_SIMI_THREAD_NUM 50
 pthread_t brute_simi_thread_tid[BRUTE_SIMI_THREAD_NUM];
-//Together used by finess superfeature and flatfeature
-pthread_mutex_t fineness_sufeature_tab_mutex;
 GList* bruteforce_list = NULL;
 int processingChunk = 0;
 pthread_mutex_t mutex;

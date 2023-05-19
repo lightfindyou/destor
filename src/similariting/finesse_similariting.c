@@ -4,6 +4,7 @@
 
 //Together used by finess superfeature and flatfeature
 pthread_mutex_t fineness_sufeature_tab_mutex;
+GHashTable* fineness_sufeature_tab;
 
 void fineness_similariting_init(){
 	fineness_sufeature_tab = g_hash_table_new(g_int64_hash, g_chunk_feature_equal);
@@ -42,9 +43,10 @@ struct chunk* fineness_similariting(struct chunk* c){
 	}
 
 	/*only if the chunk is unique, add the chunk into sufeature table*/
-	fineness_insert_sufeature(c);
+	/*UNNECESSARY, for high dedup ratio, always add*/
 
 retPoint:
+	fineness_insert_sufeature(c);
 	return ret;
 }
 

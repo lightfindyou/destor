@@ -108,7 +108,9 @@ am_libsimilar_a_OBJECTS = deepsketch_similariting.$(OBJEXT) \
 	finesse_similariting.$(OBJEXT) \
 	highdedup_similariting.$(OBJEXT) \
 	ntransform_odess_similariting.$(OBJEXT) \
-	bruteforce_similariting.$(OBJEXT)
+	bruteforce_similariting.$(OBJEXT) \
+	fineANN_similariting.$(OBJEXT) statis_similariting.$(OBJEXT) \
+	common.$(OBJEXT)
 libsimilar_a_OBJECTS = $(am_libsimilar_a_OBJECTS)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
@@ -126,10 +128,12 @@ DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/bruteforce_similariting.Po \
-	./$(DEPDIR)/deepsketch_similariting.Po \
+	./$(DEPDIR)/common.Po ./$(DEPDIR)/deepsketch_similariting.Po \
+	./$(DEPDIR)/fineANN_similariting.Po \
 	./$(DEPDIR)/finesse_similariting.Po \
 	./$(DEPDIR)/highdedup_similariting.Po \
-	./$(DEPDIR)/ntransform_odess_similariting.Po
+	./$(DEPDIR)/ntransform_odess_similariting.Po \
+	./$(DEPDIR)/statis_similariting.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -265,7 +269,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 noinst_LIBRARIES = libsimilar.a
-libsimilar_a_SOURCES = deepsketch_similariting.c finesse_similariting.c highdedup_similariting.c ntransform_odess_similariting.c bruteforce_similariting.c
+libsimilar_a_SOURCES = deepsketch_similariting.c finesse_similariting.c highdedup_similariting.c ntransform_odess_similariting.c bruteforce_similariting.c fineANN_similariting.c  statis_similariting.c common.c
 all: all-am
 
 .SUFFIXES:
@@ -315,10 +319,13 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bruteforce_similariting.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/common.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/deepsketch_similariting.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fineANN_similariting.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/finesse_similariting.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/highdedup_similariting.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ntransform_odess_similariting.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/statis_similariting.Po@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -465,10 +472,13 @@ clean-am: clean-generic clean-noinstLIBRARIES mostlyclean-am
 
 distclean: distclean-am
 		-rm -f ./$(DEPDIR)/bruteforce_similariting.Po
+	-rm -f ./$(DEPDIR)/common.Po
 	-rm -f ./$(DEPDIR)/deepsketch_similariting.Po
+	-rm -f ./$(DEPDIR)/fineANN_similariting.Po
 	-rm -f ./$(DEPDIR)/finesse_similariting.Po
 	-rm -f ./$(DEPDIR)/highdedup_similariting.Po
 	-rm -f ./$(DEPDIR)/ntransform_odess_similariting.Po
+	-rm -f ./$(DEPDIR)/statis_similariting.Po
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -515,10 +525,13 @@ installcheck-am:
 
 maintainer-clean: maintainer-clean-am
 		-rm -f ./$(DEPDIR)/bruteforce_similariting.Po
+	-rm -f ./$(DEPDIR)/common.Po
 	-rm -f ./$(DEPDIR)/deepsketch_similariting.Po
+	-rm -f ./$(DEPDIR)/fineANN_similariting.Po
 	-rm -f ./$(DEPDIR)/finesse_similariting.Po
 	-rm -f ./$(DEPDIR)/highdedup_similariting.Po
 	-rm -f ./$(DEPDIR)/ntransform_odess_similariting.Po
+	-rm -f ./$(DEPDIR)/statis_similariting.Po
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

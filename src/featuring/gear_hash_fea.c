@@ -289,26 +289,26 @@ void setbit(unsigned char* hash, int index){
     }
 }
 
+uint64_t fineANN_mask[] = {
+    0x0000000000000000,// 1B
+    0x0000000001000000,// 2B
+    0x0000000003000000,// 4B
+    0x0000000013000000,// 8B
+    0x0000000093000000,// 16B
+    0x0000000093001000,// 32B
+
+    0x0000000093005000,// 64B
+    0x0000000093005100,// 128B
+    0x0000000093005500,// 256B
+    0x0000000093015500,// 512B
+    0x0000000093035500,// 1KB
+    0x0000000093035510,// 2KB
+    0x000000009303d510,// 4KB
+};
 
 void gear_fineANN(unsigned char *p, int n, fineANN_t* fea, int featureNum) {
 
     //limit the mask to lower 4 byte to constrain window size
-    uint64_t fineANN_mask[] = {
-        0x0000000000000000,// 1B
-        0x0000000001000000,// 2B
-        0x0000000003000000,// 4B
-        0x0000000013000000,// 8B
-        0x0000000093000000,// 16B
-        0x0000000093001000,// 32B
-
-        0x0000000093005000,// 64B
-        0x0000000093005100,// 128B
-        0x0000000093005500,// 256B
-        0x0000000093015500,// 512B
-        0x0000000093035500,// 1KB
-        0x0000000093035510,// 2KB
-        0x000000009303d510,// 4KB
-    };
     uint64_t mask = fineANN_mask[5];
     uint64_t fingerprint=0;
     for(int i=0; i< n; i++){
@@ -320,7 +320,50 @@ void gear_fineANN(unsigned char *p, int n, fineANN_t* fea, int featureNum) {
             int weightOffset = FINEANN_MAX_FEATURE_BITS/8 + index;
             fea[weightOffset] += 1;
         }
+    }
+}
+
+
+#define STATIS_WINDOW_SIZE 4
+#define STATIS_WINDOW_MASK ((1ULL<<(STATIS_WINDOW_SIZE*8)) - 1)
+#define STATIS_MAP_MAX 251
+
+void getLeastComm(uint64_t* freqArray, uint64_t* idxArray, int len, int* index, int* freq){
+    *freq = INT_MAX;
+    for(int i = 0; i < len; i++){
+        if(freqArray[idxArray[i]] < *freq){
+            *index = i;
+            *freq = freqArray[idxArray[i]];
+        }
+    }
+}
+
+void gear_statis(unsigned char *p, int n, statis_t* fea, int featureNum) {
+
+    uint64_t* statisTable = calloc(sizeof(uint64_t), STATIS_MAP_MAX);
+    //limit the mask to lower 4 byte to constrain window size
+    uint64_t mask = fineANN_mask[5];
+    uint64_t fingerprint=0;
+
+    for(int i=0; i < n; i++){
+        fingerprint = (fingerprint<<1) + (gearhash_matrix[p[i]]);
+        int index = (fingerprint & STATIS_WINDOW_MASK)%STATIS_MAP_MAX;
+        statisTable[index] += 1;
 
     }
-    return n;
+
+    /**choose the most frequent point from statisTable*/
+    int leastCommIdx, leastComm;
+    for(int i=0; i<STATIS_FEATURE_NUM; i++){
+        fea[i] = i;
+    }
+    getLeastComm(statisTable, fea, STATIS_FEATURE_NUM, &leastCommIdx, &leastComm);
+
+    for(int i=STATIS_FEATURE_NUM; i < STATIS_MAP_MAX; i++){
+        if(statisTable[i] > leastComm){
+            fea[leastCommIdx] = i;
+            getLeastComm(statisTable, fea, STATIS_FEATURE_NUM, &leastCommIdx, &leastComm);
+        }
+    }
+
 }

@@ -94,6 +94,7 @@ extern char* chunkAlgStr[];
 #define FEAUTRE_ODESS_FLATFEA 8
 #define FEAUTRE_BRUTEFORCE 9
 #define FEAUTRE_FINE_ANN 10
+#define FEAUTRE_STATIS 10
  
 
 extern char* featureAlgStr[];
@@ -108,6 +109,7 @@ extern char* featureAlgStr[];
 #define SIMILARITY_ODESS_FLATFEA 7
 #define SIMILARITY_BRUTEFORCE 8
 #define SIMILARITY_FINE_ANN 8
+#define SIMILARITY_STATIS 8
 
 /*
  * A global fingerprint index is required.
@@ -338,6 +340,7 @@ typedef uint64_t sufeature;
 typedef int64_t containerid; //container id
 typedef int64_t chunkid; //chunk id
 typedef int64_t segmentid;
+#define MAX_FEA_SIZE 96
 
 struct chunk {
 //	const int32_t size;
@@ -349,7 +352,7 @@ struct chunk {
 	fingerprint fp;
 	short feaNum;				//	number of feature
 	unsigned char *data;
-	feature fea[96];
+	feature fea[MAX_FEA_SIZE];
 };
 
 /* struct segment only makes sense for index. */

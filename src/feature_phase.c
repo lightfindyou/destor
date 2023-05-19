@@ -71,6 +71,9 @@ void start_feature_phase() {
 	}else if(destor.feature_algorithm == FEAUTRE_FINE_ANN){
 		initGearMatrixFea();
 		featuring = fineANN_featuring;
+	}else if(destor.feature_algorithm == FEAUTRE_STATIS){
+		initGearMatrixFea();
+		featuring = statis_featuring;
 	}
 
 	feature_queue = sync_queue_new(1000);
