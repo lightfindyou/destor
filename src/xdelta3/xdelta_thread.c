@@ -6,10 +6,19 @@
 #include "../similariting/similariting.h"
 #include "../xdelta3/xdelta3.h"
 #include "../xdelta3/xdelta_thread.h"
+#include "recordDelta.h"
 
 static int64_t chunk_num;
 
-void init_xdelta_thread(){ }
+void (*recordDelta)(struct chunk *c1, struct chunk* c2, void* delta, int deltaSize);
+
+void init_xdelta_thread(int recDeltaInfo){
+	if(recDeltaInfo){
+		recordDelta = recordChunkAndDelta;
+	}else{
+		recordDelta = recordNULL;
+	}
+}
 
 
 #pragma GCC push_options
@@ -41,6 +50,7 @@ void *xdelta_thread(void *arg) {
 
 				deltaSize = xdelta3_compress(c->data, c->size, basec->data, basec->size, deltaOut, 1);
 				if(deltaSize < c->size){
+					recordDelta(c, basec, deltaOut, deltaSize);
 					//NOTE: do not change origin data, it will be used by following xdelta
 //					memcpy(c->data, deltaOut, deltaSize);
 					int32_t ori_size = c->size;

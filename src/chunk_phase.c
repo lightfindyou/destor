@@ -80,6 +80,7 @@ static void* chunk_thread(void *arg) {
 			TIMER_END(1, jcr.chunk_time);
 
 			struct chunk *nc = new_chunk(chunk_size);
+			nc->chunkID = jcr.chunk_num;
 			memcpy(nc->data, leftbuf + leftoff, chunk_size);
 			leftlen -= chunk_size;
 			leftoff += chunk_size;

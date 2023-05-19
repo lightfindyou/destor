@@ -235,6 +235,8 @@ extern char* featureAlgStr[];
 
 struct destor {
 	sds working_directory;
+	sds deltaPath;
+	int storeDelta;
 	int simulation_level;
     int trace_format;
 	int verbosity;
@@ -345,6 +347,7 @@ typedef int64_t segmentid;
 struct chunk {
 //	const int32_t size;
 //	int32_t size;
+	int chunkID;
 	int size;
 	int flag;
 	containerid id;

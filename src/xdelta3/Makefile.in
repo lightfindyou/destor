@@ -104,7 +104,8 @@ am__v_AR_0 = @echo "  AR      " $@;
 am__v_AR_1 = 
 libxdelta_a_AR = $(AR) $(ARFLAGS)
 libxdelta_a_LIBADD =
-am_libxdelta_a_OBJECTS = xdelta3.$(OBJEXT) xdelta_thread.$(OBJEXT)
+am_libxdelta_a_OBJECTS = xdelta3.$(OBJEXT) xdelta_thread.$(OBJEXT) \
+	recordDelta.$(OBJEXT)
 libxdelta_a_OBJECTS = $(am_libxdelta_a_OBJECTS)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
@@ -121,8 +122,8 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/xdelta3.Po \
-	./$(DEPDIR)/xdelta_thread.Po
+am__depfiles_remade = ./$(DEPDIR)/recordDelta.Po \
+	./$(DEPDIR)/xdelta3.Po ./$(DEPDIR)/xdelta_thread.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -259,7 +260,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 noinst_LIBRARIES = libxdelta.a
-libxdelta_a_SOURCES = xdelta3.c xdelta_thread.c
+libxdelta_a_SOURCES = xdelta3.c xdelta_thread.c recordDelta.c
 all: all-am
 
 .SUFFIXES:
@@ -308,6 +309,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/recordDelta.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xdelta3.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xdelta_thread.Po@am__quote@ # am--include-marker
 
@@ -455,7 +457,8 @@ clean: clean-am
 clean-am: clean-generic clean-noinstLIBRARIES mostlyclean-am
 
 distclean: distclean-am
-		-rm -f ./$(DEPDIR)/xdelta3.Po
+		-rm -f ./$(DEPDIR)/recordDelta.Po
+	-rm -f ./$(DEPDIR)/xdelta3.Po
 	-rm -f ./$(DEPDIR)/xdelta_thread.Po
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
@@ -502,7 +505,8 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-		-rm -f ./$(DEPDIR)/xdelta3.Po
+		-rm -f ./$(DEPDIR)/recordDelta.Po
+	-rm -f ./$(DEPDIR)/xdelta3.Po
 	-rm -f ./$(DEPDIR)/xdelta_thread.Po
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic

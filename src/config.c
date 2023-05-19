@@ -122,6 +122,10 @@ void load_config_from_string(sds config) {
 		} else if (strcasecmp(argv[0], "feature-num") == 0 && argc == 2) {
 			destor.featureNum = atoi(argv[1]);
 			printf("feature number: %d\n", destor.featureNum);
+		} else if (strcasecmp(argv[0], "store-delta") == 0 && argc == 2) {
+			destor.storeDelta = atoi(argv[1]);
+		} else if (strcasecmp(argv[0], "delta-path") == 0 && argc == 2) {
+			destor.deltaPath = sdsnew(argv[1]);
 		} else if (strcasecmp(argv[0], "feature-len") == 0 && argc == 2) {
 			destor.featureLen = atoi(argv[1]);
 			int shiftLen = sizeof(destor.featureLenMask)*8 - destor.featureLen;
