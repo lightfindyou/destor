@@ -55,7 +55,7 @@ static void similariting_thread(void* arg) {
 */
 struct chunk* bruteforce_similariting(struct chunk* c){
 	processingChunk++;
-	printf("processing chunk: %d\n", processingChunk);
+	printf("processing chunk: %d\r", processingChunk);
 
 	curDeltaSize = INT_MAX;
 	ret = NULL;

@@ -168,6 +168,7 @@ void load_config_from_string(sds config) {
 				err = "Invalid chunk algorithm";
 				goto loaderr;
 			}
+			printf("xzjin feature algorithm: %d\n", destor.feature_algorithm);
 		} else if (strcasecmp(argv[0], "jumpOnes") == 0 && argc == 2) {
 			destor.jumpOnes = atoi(argv[1]);
 		} else if (strcasecmp(argv[0], "chunk-avg-size") == 0 && argc == 2) {

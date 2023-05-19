@@ -94,7 +94,7 @@ extern char* chunkAlgStr[];
 #define FEAUTRE_ODESS_FLATFEA 8
 #define FEAUTRE_BRUTEFORCE 9
 #define FEAUTRE_FINE_ANN 10
-#define FEAUTRE_STATIS 10
+#define FEAUTRE_STATIS 11
  
 
 extern char* featureAlgStr[];
@@ -108,8 +108,8 @@ extern char* featureAlgStr[];
 #define SIMILARITY_FINENESS_FLATFEA 6
 #define SIMILARITY_ODESS_FLATFEA 7
 #define SIMILARITY_BRUTEFORCE 8
-#define SIMILARITY_FINE_ANN 8
-#define SIMILARITY_STATIS 8
+#define SIMILARITY_FINE_ANN 9
+#define SIMILARITY_STATIS 10
 
 /*
  * A global fingerprint index is required.

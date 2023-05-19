@@ -79,6 +79,9 @@ void start_simi_phase() {
 	}else if(destor.similarity_algorithm == SIMILARITY_FINE_ANN){
 		fineANN_similariting_init();
 		similariting = fineANN_similariting;
+	}else if(destor.similarity_algorithm == SIMILARITY_STATIS){
+		statis_similariting_init();
+		similariting = statis_similariting;
 	}
 
 

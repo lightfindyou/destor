@@ -324,10 +324,6 @@ void gear_fineANN(unsigned char *p, int n, fineANN_t* fea, int featureNum) {
 }
 
 
-#define STATIS_WINDOW_SIZE 4
-#define STATIS_WINDOW_MASK ((1ULL<<(STATIS_WINDOW_SIZE*8)) - 1)
-#define STATIS_MAP_MAX 251
-
 void getLeastComm(uint64_t* freqArray, uint64_t* idxArray, int len, int* index, int* freq){
     *freq = INT_MAX;
     for(int i = 0; i < len; i++){

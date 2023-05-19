@@ -58,6 +58,12 @@ void fineANN_featuring(unsigned char* buf, int size, struct chunk* c);
 
 typedef uint64_t statis_t;
 #define STATIS_FEATURE_NUM 6
+#define STATIS_WINDOW_SIZE 4
+#define STATIS_WINDOW_MASK ((1ULL<<(STATIS_WINDOW_SIZE*8)) - 1)
+#define STATIS_MAP_MAX 191
+//#define STATIS_MAP_MAX 251
+//#define STATIS_MAP_MAX 521
+
 void statis_featuring(unsigned char* buf, int size, struct chunk* c);
 void gear_statis(unsigned char *p, int n, statis_t* fea, int featureNum);
 

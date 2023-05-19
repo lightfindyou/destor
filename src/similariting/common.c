@@ -16,8 +16,9 @@ void insert_sufeature(struct chunk* c, int suFeaNum, GHashTable* sufea_tab){
 	}
 }
 
-/** return base chunk fingerprint if similary chunk is found
+/** return base chunk if similary chunk is found
  *  else return 0
+ * base chunk is the one shares most features
 */
 struct chunk* most_match_similariting(struct chunk* c, int suFeaNum, GHashTable* sufea_tab){
 
