@@ -1,3 +1,3 @@
 noinst_LIBRARIES=libstorage.a
-libstorage_a_SOURCES=containerstore.c common.c
+libstorage_a_SOURCES=containerstore.c storageCommon.c
 LIBS=-lglib

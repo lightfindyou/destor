@@ -14,8 +14,10 @@ void (*recordDelta)(struct chunk *c1, struct chunk* c2, void* delta, int deltaSi
 
 void init_xdelta_thread(int recDeltaInfo){
 	if(recDeltaInfo){
+		printf("record delta info: true.");
 		recordDelta = recordChunkAndDelta;
 	}else{
+		printf("record delta info: false.");
 		recordDelta = recordNULL;
 	}
 }
@@ -68,7 +70,7 @@ void *xdelta_thread(void *arg) {
 				}else{
 					if (pthread_mutex_lock(&jcrMutex) != 0) {
 						puts("failed to lock jcrMutex!");
-						return;
+						return NULL;
 					}
 				}
 				jcr.total_xdelta_chunk++;
@@ -76,7 +78,7 @@ void *xdelta_thread(void *arg) {
 			}else{				//chunk unable to be xdeltaed
 				if (pthread_mutex_lock(&jcrMutex) != 0) {
 					puts("failed to lock jcrMutex!");
-					return;
+					return NULL;
 				}
 				if(!CHECK_CHUNK(c, CHUNK_DUPLICATE)){
 					jcr.total_size_after_dedup += c->size;	//the size unique chunks stored in storage
@@ -86,7 +88,7 @@ void *xdelta_thread(void *arg) {
 
 			if (pthread_mutex_unlock(&jcrMutex) != 0) {
 				puts("failed to unlock jcrMutex!");
-				return;
+				return NULL;
 			}
 		}else{	/*duplicate chunk*/ }
 	}

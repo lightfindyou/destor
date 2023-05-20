@@ -1,4 +1,4 @@
-#include "common.h"
+#include "storageCommon.h"
 
 int isFileExists(const char* path){
     if (access(path, F_OK) == 0) {
@@ -9,7 +9,7 @@ int isFileExists(const char* path){
 }
 
 FILE* createFile(const char* path){
-    assert(isFileExists == 0);
+    assert(isFileExists(path) == 0);
     FILE* fp = fopen(path, "a");
     assert(fp);
 

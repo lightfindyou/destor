@@ -1,5 +1,5 @@
 #include "recordDelta.h"
-#include "../storage/common.h"
+#include "../storage/storageCommon.h"
 
 void recordNULL(struct chunk *c1, struct chunk* c2, void* delta, int deltaSize){
 
@@ -13,7 +13,7 @@ void recordChunkAndDelta(struct chunk *compressed, struct chunk* ref, void* delt
 
     sprintf(chunkCompressedPath, "%s/%04d", destor.deltaPath, compressed->chunkID);
     sprintf(chunkRefPath, "%s/%04d", destor.deltaPath, ref->chunkID);
-    sprintf(deltaPath, "%s/%04d-%04d.delta", destor.deltaPath, compressed->id, ref->chunkID);
+    sprintf(deltaPath, "%s/%04d-%04d.delta", destor.deltaPath, compressed->chunkID, ref->chunkID);
 
     if(!isFileExists(chunkCompressedPath)){
         file = createFile(chunkCompressedPath);

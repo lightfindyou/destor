@@ -14,12 +14,12 @@ static pthread_t simi_t;
 static int64_t chunk_num;
 
 void start_xdelta_phase() {
+	init_xdelta_thread(destor.storeDelta);
 	xdelta_queue = sync_queue_new(1000);
 	start_xdelta_thread();
 }
 
 void stop_xdelta_phase() {
-	init_xdelta_thread(destor.storeDelta);
 	for (int i = 0; i < XDELTA_THREAD_NUM; i++){
 		pthread_join(xdelta_tid[i], NULL);
 	}
