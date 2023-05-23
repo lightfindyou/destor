@@ -122,6 +122,9 @@ void load_config_from_string(sds config) {
 		} else if (strcasecmp(argv[0], "feature-num") == 0 && argc == 2) {
 			destor.featureNum = atoi(argv[1]);
 			printf("feature number: %d\n", destor.featureNum);
+		} else if (strcasecmp(argv[0], "xdelta-threshold") == 0 && argc == 2) {
+			destor.compThreshold = atof(argv[1]);
+			printf("xdelta compression threshold: %.2f\n", destor.compThreshold);
 		} else if (strcasecmp(argv[0], "store-delta") == 0 && argc == 2) {
 			destor.storeDelta = atoi(argv[1]);
 		} else if (strcasecmp(argv[0], "delta-path") == 0 && argc == 2) {
@@ -167,6 +170,9 @@ void load_config_from_string(sds config) {
 			} else if (strcasecmp(argv[1], "statistics") == 0) {
 				destor.feature_algorithm = FEAUTRE_STATIS;
 				destor.similarity_algorithm = SIMILARITY_STATIS;
+			} else if (strcasecmp(argv[1], "weightchunk") == 0) {
+				destor.feature_algorithm = FEAUTRE_WEIGHTCHUNK;
+				destor.similarity_algorithm = SIMILARITY_WEIGHTCHUNK;
 			} else if (strcasecmp(argv[1], "fixed") == 0) {
 				printf("compared data: %s\n", argv[1]);
 				err = "Invalid chunk algorithm";

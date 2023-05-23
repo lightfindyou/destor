@@ -67,6 +67,12 @@ typedef uint64_t statis_t;
 void statis_featuring(unsigned char* buf, int size, struct chunk* c);
 void gear_statis(unsigned char *p, int n, statis_t* fea, int featureNum);
 
+#define WEIGHTCHUNK_FEATURE_NUM 32
+#define WEIGITCHUNKMINSIZE 16
+#define WEIGITCHUNKMAXSIZE 64
+void weightchunkGearInit();
+void weightchunk_featuring(unsigned char* buf, int size, struct chunk* c);
+
 #ifdef __cplusplus
 extern "C"
 {

@@ -51,7 +51,7 @@ void *xdelta_thread(void *arg) {
 //							c, c->flag, c->data, c->size, basec, basec->flag, basec->data, basec->size);
 
 				deltaSize = xdelta3_compress(c->data, c->size, basec->data, basec->size, deltaOut, 1);
-				if(deltaSize < c->size){
+				if(deltaSize < ((c->size)*(destor.compThreshold))){
 					recordDelta(c, basec, deltaOut, deltaSize);
 					//NOTE: do not change origin data, it will be used by following xdelta
 //					memcpy(c->data, deltaOut, deltaSize);

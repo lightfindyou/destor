@@ -95,6 +95,7 @@ extern char* chunkAlgStr[];
 #define FEAUTRE_BRUTEFORCE 9
 #define FEAUTRE_FINE_ANN 10
 #define FEAUTRE_STATIS 11
+#define FEAUTRE_WEIGHTCHUNK 12
  
 
 extern char* featureAlgStr[];
@@ -110,6 +111,7 @@ extern char* featureAlgStr[];
 #define SIMILARITY_BRUTEFORCE 8
 #define SIMILARITY_FINE_ANN 9
 #define SIMILARITY_STATIS 10
+#define SIMILARITY_WEIGHTCHUNK 11
 
 /*
  * A global fingerprint index is required.
@@ -329,6 +331,9 @@ struct destor {
 
 	int backup_retention_time;
 	char modelPath[PATHLEN];
+
+	/* threshold for xdelta compression*/
+	float compThreshold;
 
 };
 

@@ -44,6 +44,9 @@ struct chunk* fineANN_similariting(struct chunk* c);
 void statis_similariting_init();
 struct chunk* statis_similariting(struct chunk* c);
 
+void weightchunk_similariting_init();
+struct chunk* weightchunk_similariting(struct chunk* c);
+
 #ifdef __cplusplus
 extern "C"
 {

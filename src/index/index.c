@@ -67,6 +67,7 @@ void init_index() {
     index_buffer.chunk_num = 0;
 
     if(destor.index_specific != INDEX_SPECIFIC_NO){
+        printf("index specific: %d\n", destor.index_specific);
         destor.index_key_size = sizeof(fingerprint);
         switch(destor.index_specific){
             case INDEX_SPECIFIC_DDFS:{

@@ -109,7 +109,7 @@ am_libfeature_a_OBJECTS = deepsketch_featuring.$(OBJEXT) \
 	highdedup_featuring.$(OBJEXT) ntransform_featuring.$(OBJEXT) \
 	odess_featuring.$(OBJEXT) rabin_hash.$(OBJEXT) \
 	bruteforce_featuring.$(OBJEXT) fineANN_featuring.$(OBJEXT) \
-	statis_featuring.$(OBJEXT)
+	statis_featuring.$(OBJEXT) weightchunk_featuring.$(OBJEXT)
 libfeature_a_OBJECTS = $(am_libfeature_a_OBJECTS)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
@@ -133,7 +133,8 @@ am__depfiles_remade = ./$(DEPDIR)/bruteforce_featuring.Po \
 	./$(DEPDIR)/highdedup_featuring.Po \
 	./$(DEPDIR)/ntransform_featuring.Po \
 	./$(DEPDIR)/odess_featuring.Po ./$(DEPDIR)/rabin_hash.Po \
-	./$(DEPDIR)/statis_featuring.Po
+	./$(DEPDIR)/statis_featuring.Po \
+	./$(DEPDIR)/weightchunk_featuring.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -269,7 +270,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 noinst_LIBRARIES = libfeature.a
-libfeature_a_SOURCES = deepsketch_featuring.c finesse_featuring.c gear_hash_fea.c highdedup_featuring.c ntransform_featuring.c odess_featuring.c rabin_hash.c bruteforce_featuring.c fineANN_featuring.c statis_featuring.c
+libfeature_a_SOURCES = deepsketch_featuring.c finesse_featuring.c gear_hash_fea.c highdedup_featuring.c ntransform_featuring.c odess_featuring.c rabin_hash.c bruteforce_featuring.c fineANN_featuring.c statis_featuring.c weightchunk_featuring.c
 all: all-am
 
 .SUFFIXES:
@@ -328,6 +329,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/odess_featuring.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rabin_hash.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/statis_featuring.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/weightchunk_featuring.Po@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -483,6 +485,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/odess_featuring.Po
 	-rm -f ./$(DEPDIR)/rabin_hash.Po
 	-rm -f ./$(DEPDIR)/statis_featuring.Po
+	-rm -f ./$(DEPDIR)/weightchunk_featuring.Po
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -538,6 +541,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/odess_featuring.Po
 	-rm -f ./$(DEPDIR)/rabin_hash.Po
 	-rm -f ./$(DEPDIR)/statis_featuring.Po
+	-rm -f ./$(DEPDIR)/weightchunk_featuring.Po
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

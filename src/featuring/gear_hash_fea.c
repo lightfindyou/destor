@@ -88,7 +88,9 @@ void gearhash_gear_init(int featureNumber){
     printf("        odessMask: %lx\n", odessMask);
 }
 
-/** return the number of features*/
+/** devide chunk into subchunks accroding to fingerprint
+ *  choose the biggest fingerprint in subchunk
+ *  return the number of features*/
 int gear_max_highdedup_12fea_64B_max(unsigned char *p, int n, feature* fea,
                  int maxFeaNum, unsigned long feaLenMask){
 
@@ -114,6 +116,10 @@ int gear_max_highdedup_12fea_64B_max(unsigned char *p, int n, feature* fea,
     return feaNum;
 }
 
+/** devide chunk into subchunks accroding to fingerprint
+ *  choose the biggest fingerprint in subchunk
+ *  limited feature size by feaLenMask
+ *  return the number of features*/
 int gear_max_highdedup_32fea_16B_max(unsigned char *p, int n, feature* fea,
                  int maxFeaNum, unsigned long feaLenMask){
 
@@ -362,4 +368,52 @@ void gear_statis(unsigned char *p, int n, statis_t* fea, int featureNum) {
         }
     }
 
+}
+
+unsigned long weightChunkMask;
+
+void weightchunkGearInit(){
+    initGearMatrixFea();
+    weightChunkMask = gearhash_g_condition_mask[5];
+}
+
+void delIdentFea(feature* fea,  int* feaNum){
+
+    int i = 0;
+    int maxIdx = (*feaNum) - 1;
+    feature curFea = fea[maxIdx];
+    while(i < maxIdx){
+        if(fea[i] == curFea){
+            goto delFea;
+        }
+        i++;
+    }
+    return;
+delFea:
+    while(i < maxIdx){
+        fea[i] = fea[i+1];
+        i++;
+    }
+    *feaNum -= 1;
+}
+
+int weightchunkGearing(unsigned char *p, int n, feature* fea){
+
+    feature fingerprint=0;
+    int i=0, feaNum = 0;
+
+    while(i < n && feaNum < WEIGHTCHUNK_FEATURE_NUM ){     //if loop stop because feaNum, then feaNum = maxFeaNum;
+        int subChunkLen = 0;
+        fingerprint = (fingerprint<<1) + (gearhash_matrix[p[i]]);
+        i++;
+        subChunkLen++;
+
+        if(!(fingerprint & weightChunkMask)){
+            fea[feaNum] = fingerprint;
+            feaNum++;
+            delIdentFea(fea, &feaNum);
+        }
+    }
+
+    return feaNum;
 }

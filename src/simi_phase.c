@@ -82,6 +82,9 @@ void start_simi_phase() {
 	}else if(destor.similarity_algorithm == SIMILARITY_STATIS){
 		statis_similariting_init();
 		similariting = statis_similariting;
+	}else if(destor.similarity_algorithm == SIMILARITY_WEIGHTCHUNK){
+		weightchunk_similariting_init();
+		similariting = weightchunk_similariting;
 	}
 
 

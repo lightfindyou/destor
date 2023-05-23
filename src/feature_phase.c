@@ -74,6 +74,9 @@ void start_feature_phase() {
 	}else if(destor.feature_algorithm == FEAUTRE_STATIS){
 		initGearMatrixFea();
 		featuring = statis_featuring;
+	}else if(destor.feature_algorithm == FEAUTRE_WEIGHTCHUNK){
+		weightchunkGearInit();
+		featuring = weightchunk_featuring;
 	}
 
 	feature_queue = sync_queue_new(1000);

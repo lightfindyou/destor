@@ -121,6 +121,7 @@ void destor_start() {
 	destor.simulation_level = SIMULATION_NO;
     destor.trace_format = TRACE_DESTOR;
 	destor.verbosity = DESTOR_WARNING;
+	destor.compThreshold = 1.0;
 
 	destor.chunk_algorithm = CHUNK_RABIN;
 	destor.chunk_max_size = 65536;
