@@ -1,8 +1,8 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ([2.67])
-AC_INIT([destor], [2.0], [fumin@hust.edu.cn])
+AC_PREREQ([2.71])
+AC_INIT([destor],[2.0],[fumin@hust.edu.cn])
 AM_INIT_AUTOMAKE
 #AM_INIT_AUTOMAKE([destor], [2.0])
 
@@ -66,7 +66,7 @@ AC_FUNC_MALLOC
 #        src/similariting/deepsketch/Makefile
 #        src/similariting/deepsketch/NGT/Makefile
 
-AC_OUTPUT(Makefile
+AC_CONFIG_FILES([Makefile
         src/Makefile
         src/utils/Makefile
         src/index/Makefile
@@ -76,4 +76,5 @@ AC_OUTPUT(Makefile
         src/featuring/Makefile
         src/similariting/Makefile
         src/xdelta3/Makefile
-        src/fsl/Makefile)
+        src/fsl/Makefile])
+AC_OUTPUT

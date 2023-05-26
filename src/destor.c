@@ -402,11 +402,13 @@ int main(int argc, char **argv) {
 	return 0;
 }
 
+int chunkNum = 0;
 struct chunk* new_chunk(int32_t size) {
 	struct chunk* ck = (struct chunk*) calloc(1, sizeof(struct chunk));
 	memset(ck, 0x0, sizeof(struct chunk));
 	memset(&ck->fp, 0x0, sizeof(fingerprint));
 
+	ck->chunkID = chunkNum++;
 	ck->flag = CHUNK_UNIQUE;
 	ck->id = TEMPORARY_ID;
 	ck->size = size;
@@ -416,7 +418,7 @@ struct chunk* new_chunk(int32_t size) {
 	else
 		ck->data = NULL;
 
-	printf("\r");
+//	printf("new chunk: %p, id: %4d\n", ck, ck->chunkID);
 	return ck;
 }
 

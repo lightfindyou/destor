@@ -71,13 +71,12 @@ void sec_most_match_similariting(struct chunk* c, int suFeaNum,
 			GSequenceIter *iter = g_sequence_get_begin_iter(tq);
 			for (; iter != end; iter = g_sequence_iter_next(iter)) {
 				struct chunk* candChunk = (struct chunk*)g_sequence_get(iter);
-				ret = searchMostSimiChunk(cand_tab, candChunk, &curMaxHitTime, ret, NULL);
+				ret = searchMostSimiChunk(cand_tab, candChunk, &curMaxHitTime, ret, baseChunk);
 			}
 		}
 	}
 
 	g_hash_table_destroy(cand_tab);
-
 	c->secbasechunk = ret;
 	return;
 }
@@ -108,11 +107,12 @@ struct chunk* most_match_similariting(struct chunk* c, int suFeaNum, GHashTable*
 		}
 	}
 
-	sec_most_match_similariting(c, suFeaNum, sufea_tab, ret);
+//	sec_most_match_similariting(c, suFeaNum, sufea_tab, ret);
 
 	g_hash_table_destroy(cand_tab);
 	insert_sufeature(c, suFeaNum, sufea_tab);
 
+	printf("Similar chunk is: %p\n", ret);
 	if(ret){ return ret; }
 
 	/*Only if the chunk is unique, add the chunk into sufeature table*/

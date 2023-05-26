@@ -37,14 +37,17 @@ void *simi_thread(void *arg) {
 			jcr.featuredChunks++;
 
 			if(c->basechunk){
+				struct chunk* basec = c->basechunk;
 				jcr.similarChunks++;
+				printf("simi_phase Chunk similar with %p\n", basec);
+				printf("which similar with %p\n", basec->basechunk);
 				UNSET_CHUNK(c, CHUNK_UNIQUE);
 				SET_CHUNK(c, CHUNK_SIMILAR);
 			}
 		}
 		TIMER_END(1, jcr.simi_time);
 
-		VERBOSE("Similariting phase: %ldth chunk similar with %ld", chunk_num++, c->basechunk);
+		VERBOSE("Similariting phase: %ldth chunk similar with %p", chunk_num++, c->basechunk);
 
 		//TODO store chunk
 		sync_queue_push(simi_queue, c);
