@@ -116,12 +116,26 @@ int gear_max_highdedup_12fea_64B_max(unsigned char *p, int n, feature* fea,
     return feaNum;
 }
 
+struct chunk* preChunk = NULL;
+void checkDupFea(feature* fea, int* feaNum, struct chunk* c){
+    int curIdx = *feaNum - 1;
+    feature curFea = fea[curIdx];
+
+    for(int i = 0; i < curIdx; i++){
+        if(curFea == fea[i]){
+            c->basechunk = preChunk;
+            break;
+        }
+    }
+
+}
+
 /** devide chunk into subchunks accroding to fingerprint
  *  choose the biggest fingerprint in subchunk
  *  limited feature size by feaLenMask
  *  return the number of features*/
 int gear_max_highdedup_32fea_16B_max(unsigned char *p, int n, feature* fea,
-                 int maxFeaNum, unsigned long feaLenMask){
+                 int maxFeaNum, unsigned long feaLenMask, struct chunk* c){
 
     feature fingerprint=0;
     int i=0, feaNum = 0;
@@ -137,12 +151,17 @@ int gear_max_highdedup_32fea_16B_max(unsigned char *p, int n, feature* fea,
 
         if(!(fingerprint & gearHighdedupMask)){
             feaNum++;
+            if(!c->basechunk){
+                checkDupFea(fea, &feaNum, c);
+            }
         }
     }
 
     if(feaNum != maxFeaNum){
         feaNum++;
     }
+    preChunk = c;
+
     return feaNum;
 }
 

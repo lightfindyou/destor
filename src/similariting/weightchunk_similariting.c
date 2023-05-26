@@ -13,5 +13,6 @@ void weightchunk_similariting_init(){
 */
 struct chunk* weightchunk_similariting(struct chunk* c){
 	struct chunk* ret = most_match_similariting(c, c->feaNum, weightchunk_sufeature_tab);
+	ret = ret?ret:c->basechunk;
 	return ret;
 }

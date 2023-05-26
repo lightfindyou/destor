@@ -22,7 +22,7 @@ struct chunk* ntransform_similariting(struct chunk* c);
 
 struct chunk* deepsketch_similariting(struct chunk* c);
 
-GHashTable* highdedup_sufeature_tab;
+//GHashTable* highdedup_sufeature_tab;
 struct chunk* searchMostSimiChunk(GHashTable* cand_tab, struct chunk* c, int* curMaxHit, fpp curCandC);
 void highdedup_similariting_init();
 struct chunk* highdedup_similariting(struct chunk* c);

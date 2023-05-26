@@ -30,7 +30,7 @@ void gearhash_gear_init(int featureNumber);
 
 int gear_highdedup_max(unsigned char *p, int n, feature* fea, int maxFeaNum, unsigned long feaLenMask);
 int gear_max_highdedup_12fea_64B_max(unsigned char *p, int n, feature* fea, int maxFeaNum, unsigned long feaMask);
-int gear_max_highdedup_32fea_16B_max(unsigned char *p, int n, feature* fea, int maxFeaNum, unsigned long feaMask);
+int gear_max_highdedup_32fea_16B_max(unsigned char *p, int n, feature* fea, int maxFeaNum, unsigned long feaMask, struct chunk* c);
 int gear_max_highdedup_32fea_16B_xxhash(unsigned char *p, int n, feature* fea, int maxFeaNum, unsigned long feaMask);
 int highdedup_32fea_16B_FSC(unsigned char *p, int n, feature* fea, int maxFeaNum);
 void highdedup_featuring(unsigned char* buf, int size, struct chunk* c);

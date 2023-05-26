@@ -16,6 +16,26 @@ void insert_sufeature(struct chunk* c, int suFeaNum, GHashTable* sufea_tab){
 	}
 }
 
+struct chunk* searchMostSimiChunk(GHashTable* cand_tab, struct chunk* c, int* curMaxHit, fpp curCandC){
+
+	int* hitTime = g_hash_table_lookup(cand_tab, c);
+	if(hitTime){
+		*hitTime = *hitTime + 1;
+	}else{
+		hitTime = malloc(sizeof(int));
+		assert(hitTime);
+		*hitTime = 1;
+		g_hash_table_replace(cand_tab, c, hitTime);
+	}
+
+	if(*hitTime > *curMaxHit){
+		*curMaxHit = hitTime;
+		return c;
+	}
+
+	return curCandC;
+}
+
 /** return base chunk if similary chunk is found
  *  else return 0
  * base chunk is the one shares most features
