@@ -357,6 +357,7 @@ struct chunk {
 	int flag;
 	containerid id;
 	struct chunk* basechunk;	//chunk fingerprint of basechunk
+	struct chunk* secbasechunk;	//chunk fingerprint of basechunk
 	fingerprint fp;
 	short feaNum;				//	number of feature
 	unsigned char *data;

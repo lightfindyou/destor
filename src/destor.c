@@ -405,10 +405,10 @@ int main(int argc, char **argv) {
 struct chunk* new_chunk(int32_t size) {
 	struct chunk* ck = (struct chunk*) calloc(1, sizeof(struct chunk));
 	memset(ck, 0x0, sizeof(struct chunk));
+	memset(&ck->fp, 0x0, sizeof(fingerprint));
 
 	ck->flag = CHUNK_UNIQUE;
 	ck->id = TEMPORARY_ID;
-	memset(&ck->fp, 0x0, sizeof(fingerprint));
 	ck->size = size;
 
 	if (size > 0)
@@ -416,6 +416,7 @@ struct chunk* new_chunk(int32_t size) {
 	else
 		ck->data = NULL;
 
+	printf("\r");
 	return ck;
 }
 

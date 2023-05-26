@@ -9,6 +9,7 @@
 #include "recordDelta.h"
 
 static int64_t chunk_num;
+char xdeltaBase[16388];
 
 void (*recordDelta)(struct chunk *c1, struct chunk* c2, void* delta, int deltaSize);
 
@@ -46,11 +47,18 @@ void *xdelta_thread(void *arg) {
 			int deltaSize;
 			if(c->basechunk){	//chunk may be xdeltaed
 				struct chunk* basec = c->basechunk;
+				struct chunk* secbasec = c->secbasechunk;
 				VERBOSE("Similariting phase: %ldth chunk similar with %d", chunk_num++, basec->basechunk);
 //				printf("xdelta c:%lx, c->flags:%x c->data:%lx, c->size:%ld, basec:%lx, basec->flag:%x, basec->data:%lx, basec->size:%ld\n", 
 //							c, c->flag, c->data, c->size, basec, basec->flag, basec->data, basec->size);
-
-				deltaSize = xdelta3_compress(c->data, c->size, basec->data, basec->size, deltaOut, 1);
+				if(!secbasec){
+					deltaSize = xdelta3_compress(c->data, c->size, basec->data, basec->size, deltaOut, 1);
+				}else{
+					int refSize = basec->size + secbasec->size;
+					memcpy(xdeltaBase, basec->data, basec->size);
+					memcpy(&xdeltaBase[basec->size], secbasec->data, secbasec->size);
+					deltaSize = xdelta3_compress(c->data, c->size, xdeltaBase, refSize, deltaOut, 1);
+				}
 				if(deltaSize < ((c->size)*(destor.compThreshold))){
 					recordDelta(c, basec, deltaOut, deltaSize);
 					//NOTE: do not change origin data, it will be used by following xdelta

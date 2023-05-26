@@ -47,6 +47,7 @@ static void* chunk_thread(void *arg) {
 		/* Try to receive normal chunks. */
 		c = sync_queue_pop(read_queue);
 		if (!CHECK_CHUNK(c, CHUNK_FILE_END)) {
+			printf("c->data: %p, c->size: %d\n", c->data, c->size);
 			memcpy(leftbuf, c->data, c->size);
 			leftlen += c->size;
 			free_chunk(c);
