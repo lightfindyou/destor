@@ -107,12 +107,14 @@ struct chunk* most_match_similariting(struct chunk* c, int suFeaNum, GHashTable*
 		}
 	}
 
-//	sec_most_match_similariting(c, suFeaNum, sufea_tab, ret);
+	if(ret){
+		sec_most_match_similariting(c, suFeaNum, sufea_tab, ret);
+	}
 
 	g_hash_table_destroy(cand_tab);
 	insert_sufeature(c, suFeaNum, sufea_tab);
 
-	printf("Similar chunk is: %p\n", ret);
+//	printf("Most match similaring chunk is: %p\n", ret);
 	if(ret){ return ret; }
 
 	/*Only if the chunk is unique, add the chunk into sufeature table*/

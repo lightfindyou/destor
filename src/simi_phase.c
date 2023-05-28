@@ -39,8 +39,8 @@ void *simi_thread(void *arg) {
 			if(c->basechunk){
 				struct chunk* basec = c->basechunk;
 				jcr.similarChunks++;
-				printf("simi_phase Chunk similar with %p\n", basec);
-				printf("which similar with %p\n", basec->basechunk);
+//				printf("simi_phase Chunk similar with %p\n", basec);
+//				printf("which similar with %p\n", basec->basechunk);
 				UNSET_CHUNK(c, CHUNK_UNIQUE);
 				SET_CHUNK(c, CHUNK_SIMILAR);
 			}

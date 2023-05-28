@@ -33,6 +33,7 @@ void odess_similariting_init();
 struct chunk* odess_similariting(struct chunk* c);
 struct chunk* odess_similariting_flatFea(struct chunk* c);
 
+struct chunk* most_match_similariting(struct chunk* c, int suFeaNum, GHashTable* sufea_tab);
 void sec_most_match_similariting(struct chunk* c, int suFeaNum, GHashTable* sufea_tab, struct chunk* baseChunk);
 
 
