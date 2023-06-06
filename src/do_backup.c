@@ -53,7 +53,7 @@ void do_backup(char *path) {
         /*time_t now = time(NULL);*/
         fprintf(stderr,
                 "job %" PRId32 ", %" PRId64 " bytes, %" PRId32
-                " chunks, %d files, " PRId64 " bytes processed\r",
+                " chunks, %d files, %" PRId64 " bytes processed\r",
                 jcr.id, jcr.data_size, jcr.chunk_num, jcr.file_num, jcr.cur_porcessed_size);
     } while (jcr.status == JCR_STATUS_RUNNING || jcr.status != JCR_STATUS_DONE);
     fprintf(stderr,

@@ -183,6 +183,7 @@ void load_config_from_string(sds config) {
 			destor.jumpOnes = atoi(argv[1]);
 		} else if (strcasecmp(argv[0], "baseChunkNum") == 0 && argc == 2) {
 			destor.baseChunkNum = atoi(argv[1]);
+			printf("base chunk number: %d\n", atoi(argv[1]));
 		} else if (strcasecmp(argv[0], "chunk-avg-size") == 0 && argc == 2) {
 			destor.chunk_avg_size = atoi(argv[1]);
 		} else if (strcasecmp(argv[0], "chunk-max-size") == 0 && argc == 2) {

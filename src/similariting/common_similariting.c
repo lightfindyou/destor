@@ -80,7 +80,7 @@ struct chunk* most_match_similariting(struct chunk* c, int suFeaNum, GHashTable*
 	GHashTable* cand_tab = g_hash_table_new_full(g_int64_hash,
 			 g_int64_equal, NULL, free);
 	GHashTable* existing_fea_tab = g_hash_table_new_full(g_int64_hash,
-			 g_int64_equal, NULL, free);
+			 g_int64_equal, NULL, NULL);
 	int r = rand();
 	int curMaxHitTime = 0;
 
