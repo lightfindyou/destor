@@ -14,6 +14,7 @@ static pthread_t simi_t;
 static int64_t chunk_num;
 
 void start_xdelta_phase() {
+	xdeltaBase = malloc(destor.baseChunkNum * destor.chunk_max_size);
 	init_xdelta_thread(destor.storeDelta);
 	xdelta_queue = sync_queue_new(1000);
 	start_xdelta_thread();
@@ -23,5 +24,6 @@ void stop_xdelta_phase() {
 	for (int i = 0; i < XDELTA_THREAD_NUM; i++){
 		pthread_join(xdelta_tid[i], NULL);
 	}
+	free(xdeltaBase);
 	NOTICE("xdelta phase stops successfully: %d chunks", chunk_num);
 }

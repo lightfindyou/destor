@@ -128,6 +128,7 @@ void destor_start() {
 	destor.chunk_min_size = 1024;
 	destor.chunk_avg_size = 8192;
 	destor.jumpOnes = 1;
+	destor.baseChunkNum = 1;
 	destor.featureLenMask = 0xFFFFFFFFFFFFFFFF;
 
 	destor.restore_cache[0] = RESTORE_CACHE_LRU;
@@ -407,6 +408,7 @@ struct chunk* new_chunk(int32_t size) {
 	struct chunk* ck = (struct chunk*) calloc(1, sizeof(struct chunk));
 	memset(ck, 0x0, sizeof(struct chunk));
 	memset(&ck->fp, 0x0, sizeof(fingerprint));
+	ck->basechunk = g_queue_new();
 
 	ck->chunkID = chunkNum++;
 	ck->flag = CHUNK_UNIQUE;

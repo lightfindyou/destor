@@ -11,11 +11,7 @@ void highdedup_similariting_init(){
 /** return base chunk fingerprint if similary chunk is found
  *  else return 0
 */
-struct chunk* highdedup_similariting(struct chunk* c){
-	struct chunk* ret = most_match_similariting(c, c->feaNum, highdedup_sufeature_tab);
-//	if(ret){
-//		printf("highdedup Similar chunk is: %p\n", ret);
-//		printf("highdedup Similar chunk->data is: %p\n", ret->data);
-//	}
-	return ret;
+void highdedup_similariting(struct chunk* c){
+	most_match_similariting(c, c->feaNum, highdedup_sufeature_tab);
+	return;
 }

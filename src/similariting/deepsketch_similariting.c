@@ -7,7 +7,7 @@ void deepsketch_similariting_init(){
 	return ;
 }
 
-struct chunk* deepsketch_similariting(struct chunk* c){
+void deepsketch_similariting(struct chunk* c){
 //	return deepsketch_ANN_similariting(c);
-	return NULL;
+	return;
 }

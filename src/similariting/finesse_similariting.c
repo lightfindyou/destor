@@ -28,7 +28,7 @@ void fineness_insert_sufeature(struct chunk* c){
 /** return base chunk fingerprint if similary chunk is found
  *  else return 0
 */
-struct chunk* fineness_similariting(struct chunk* c){
+void fineness_similariting(struct chunk* c){
 
 	unsigned char* ret = NULL;
 	for (int i = 0; i < FINESSE_SF_NUM; i++) {
@@ -47,11 +47,11 @@ struct chunk* fineness_similariting(struct chunk* c){
 
 retPoint:
 	fineness_insert_sufeature(c);
-	return ret;
+	g_queue_push_tail(c->basechunk, ret);
+	return;
 }
 
-struct chunk* fineness_similariting_flatFea(struct chunk* c){
-
-	struct chunk* ret = most_match_similariting(c, FINESSE_FEATURE_NUM, fineness_sufeature_tab);
-	return ret;
+void fineness_similariting_flatFea(struct chunk* c){
+	most_match_similariting(c, FINESSE_FEATURE_NUM, fineness_sufeature_tab);
+	return;
 }

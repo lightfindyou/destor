@@ -9,7 +9,7 @@
 #include "recordDelta.h"
 
 static int64_t chunk_num;
-char xdeltaBase[16388];
+char* xdeltaBase;
 
 void (*recordDelta)(struct chunk *c1, struct chunk* c2, void* delta, int deltaSize);
 
@@ -43,24 +43,25 @@ void *xdelta_thread(void *arg) {
 			continue;
 		}
 
+		jcr.cur_porcessed_size += c->size;
 		if(!CHECK_CHUNK(c, CHUNK_DUPLICATE)){	//the unique chunks
 			int deltaSize;
 			if(c->basechunk){	//chunk may be xdeltaed
-				struct chunk* basec = c->basechunk;
-				struct chunk* secbasec = c->secbasechunk;
-				VERBOSE("Similariting phase: %ldth chunk similar with %d", chunk_num++, basec->basechunk);
 //				printf("xdelta c:%lx, c->flags:%x c->data:%lx, c->size:%ld, basec:%lx, basec->flag:%x, basec->data:%lx, basec->size:%ld\n", 
 //							c, c->flag, c->data, c->size, basec, basec->flag, basec->data, basec->size);
-				if(!secbasec){
-					deltaSize = xdelta3_compress(c->data, c->size, basec->data, basec->size, deltaOut, 1);
-				}else{
-					int refSize = basec->size + secbasec->size;
-					memcpy(xdeltaBase, basec->data, basec->size);
-					memcpy(&xdeltaBase[basec->size], secbasec->data, secbasec->size);
-					deltaSize = xdelta3_compress(c->data, c->size, xdeltaBase, refSize, deltaOut, 1);
+				int refSize = 0;
+				int refNum = g_queue_get_length(c->basechunk);
+				VERBOSE("Similariting phase: %ldth chunk similar with %d chunks", chunk_num++, refNum);
+				struct chunk* firstBase = g_queue_peek_head(c->basechunk);
+				for(int i = 0; i < refNum; i++){
+					//TODO copy data to buffer 
+					struct chunk* basec = g_queue_pop_head(c->basechunk);
+					memcpy(&xdeltaBase[refSize], basec->data, basec->size);
+					refSize += basec->size;
 				}
+				deltaSize = xdelta3_compress(c->data, c->size, xdeltaBase, refSize, deltaOut, 1);
 				if(deltaSize < ((c->size)*(destor.compThreshold))){
-					recordDelta(c, basec, deltaOut, deltaSize);
+					recordDelta(c, firstBase, deltaOut, deltaSize);
 					//NOTE: do not change origin data, it will be used by following xdelta
 //					memcpy(c->data, deltaOut, deltaSize);
 					int32_t ori_size = c->size;

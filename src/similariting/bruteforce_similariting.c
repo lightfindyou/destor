@@ -53,7 +53,7 @@ static void similariting_thread(void* arg) {
 /** return base chunk fingerprint if similary chunk is found
  *  else return 0
 */
-struct chunk* bruteforce_similariting(struct chunk* c){
+void bruteforce_similariting(struct chunk* c){
 	processingChunk++;
 	printf("processing chunk: %d\r", processingChunk);
 
@@ -70,6 +70,7 @@ struct chunk* bruteforce_similariting(struct chunk* c){
 	}
 	/*only if the chunk is unique, add the chunk into sufeature table*/
 	bruteforce_insert_chunk(c);
+	g_queue_push_tail(c->basechunk, ret);
 
-	return ret;
+	return;
 }

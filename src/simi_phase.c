@@ -9,7 +9,7 @@
 static pthread_t simi_t;
 static int64_t chunk_num;
 
-static struct chunk* (*similariting)(struct chunk* c);
+static void (*similariting)(struct chunk* c);
 
 void *simi_thread(void *arg) {
 	char deltaOut[2*destor.chunk_avg_size];
@@ -33,7 +33,7 @@ void *simi_thread(void *arg) {
 		//here cannot use CHECK_CHUNK(c, CHUNK_UNIQUE), because CHUNK_UNIQUE is 0x0
 		if(!CHECK_CHUNK(c, CHUNK_DUPLICATE)){
 			/*find similar chunks*/
-			c->basechunk = similariting(c);
+			similariting(c);
 			jcr.featuredChunks++;
 
 			if(c->basechunk){
@@ -49,7 +49,6 @@ void *simi_thread(void *arg) {
 
 		VERBOSE("Similariting phase: %ldth chunk similar with %p", chunk_num++, c->basechunk);
 
-		//TODO store chunk
 		sync_queue_push(simi_queue, c);
 	}
 	return NULL;

@@ -10,3 +10,4 @@
 pthread_t xdelta_tid[XDELTA_THREAD_NUM];
 void init_xdelta_thread(int recDeltaInfo);
 void start_xdelta_thread();
+extern char* xdeltaBase;

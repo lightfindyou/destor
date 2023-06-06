@@ -11,8 +11,7 @@ void weightchunk_similariting_init(){
 /** return base chunk fingerprint if similary chunk is found
  *  else return 0
 */
-struct chunk* weightchunk_similariting(struct chunk* c){
-	struct chunk* ret = most_match_similariting(c, c->feaNum, weightchunk_sufeature_tab);
-	ret = ret?ret:c->basechunk;
-	return ret;
+void weightchunk_similariting(struct chunk* c){
+	most_match_similariting(c, c->feaNum, weightchunk_sufeature_tab);
+	return;
 }

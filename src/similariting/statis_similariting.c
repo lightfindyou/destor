@@ -11,7 +11,7 @@ void statis_similariting_init(){
 /** return base chunk fingerprint if similary chunk is found
  *  else return 0
 */
-struct chunk* statis_similariting(struct chunk* c){
-	struct chunk* ret = most_match_similariting(c, STATIS_FEATURE_NUM, statis_sufeature_tab);
-	return ret;
+void statis_similariting(struct chunk* c){
+	most_match_similariting(c, STATIS_FEATURE_NUM, statis_sufeature_tab);
+	return;
 }
