@@ -28,12 +28,13 @@ void *simi_thread(void *arg) {
 			continue;
 		}
 
-		TIMER_DECLARE(1);
-		TIMER_BEGIN(1);
 		//here cannot use CHECK_CHUNK(c, CHUNK_UNIQUE), because CHUNK_UNIQUE is 0x0
 		if(!CHECK_CHUNK(c, CHUNK_DUPLICATE)){
+			TIMER_DECLARE(1);
+			TIMER_BEGIN(1);
 			/*find similar chunks*/
 			similariting(c);
+			TIMER_END(1, jcr.seaFea_time);
 			jcr.featuredChunks++;
 
 			if(c->basechunk){
@@ -45,7 +46,6 @@ void *simi_thread(void *arg) {
 				SET_CHUNK(c, CHUNK_SIMILAR);
 			}
 		}
-		TIMER_END(1, jcr.simi_time);
 
 		VERBOSE("Similariting phase: %ldth chunk similar with %p", chunk_num++, c->basechunk);
 

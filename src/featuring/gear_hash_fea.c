@@ -251,6 +251,7 @@ int highdedup_32fea_16B_FSC(unsigned char *p, int n, feature* fea,
     return maxFeaNum;
 }
 
+//Odess is the same with N-transfrom, but less fp are transformed
 void gear_odess(unsigned char *p, int n, feature* fea, int featureNum) {
 
     feature fingerprint=0, s=0;

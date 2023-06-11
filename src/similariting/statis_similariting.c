@@ -6,6 +6,7 @@ GHashTable* statis_sufeature_tab;
 
 void statis_similariting_init(){
 	statis_sufeature_tab = g_hash_table_new(g_int64_hash, g_int64_equal);
+	common_similariting_init();
 }
 
 /** return base chunk fingerprint if similary chunk is found

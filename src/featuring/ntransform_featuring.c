@@ -18,4 +18,5 @@ void ntransform_featuring(unsigned char* buf, int size, struct chunk* c){
 		}
 		superfeature[i] = XXH64(temp, sizeof(feature) * NTRANSFORM_FEATURE_NUM / NTRANSFORM_SF_NUM, 0);
 	}
+	c->feaNum = NTRANSFORM_SF_NUM;
 }

@@ -9,6 +9,7 @@ GHashTable* fineness_sufeature_tab;
 void fineness_similariting_init(){
 	fineness_sufeature_tab = g_hash_table_new(g_int64_hash, g_chunk_feature_equal);
 	pthread_mutex_init(& fineness_sufeature_tab_mutex, 0);
+	common_similariting_init();
 }
 
 /*Insert super features into the hash table*/
@@ -47,7 +48,9 @@ void fineness_similariting(struct chunk* c){
 
 retPoint:
 	fineness_insert_sufeature(c);
-	g_queue_push_tail(c->basechunk, ret);
+	if(ret){
+		g_queue_push_tail(c->basechunk, ret);
+	}
 	return;
 }
 

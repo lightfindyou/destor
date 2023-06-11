@@ -30,7 +30,7 @@ void *feature_thread(void *arg) {
 		TIMER_BEGIN(1);
 		/*calculate features*/
 		featuring(c->data, c->size, c);
-		TIMER_END(1, jcr.hash_time);
+		TIMER_END(1, jcr.fea_time);
 
 		//TODO xzjin out of boundary fix
 		VERBOSE("Feature phase: %ldth chunk featured by %s", chunk_num++, c->fea);

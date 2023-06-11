@@ -34,6 +34,7 @@ void odess_similariting(struct chunk* c);
 void odess_similariting_flatFea(struct chunk* c);
 
 struct chunk* most_match_similariting(struct chunk* c, int suFeaNum, GHashTable* sufea_tab);
+struct chunk* topK_match_similariting(struct chunk* c, int suFeaNum, GHashTable* sufea_tab);
 void sec_most_match_similariting(struct chunk* c, int suFeaNum, GHashTable* sufea_tab, struct chunk* baseChunk);
 
 
@@ -48,6 +49,8 @@ void statis_similariting(struct chunk* c);
 
 void weightchunk_similariting_init();
 void weightchunk_similariting(struct chunk* c);
+
+void common_similariting_init();
 
 #ifdef __cplusplus
 extern "C"

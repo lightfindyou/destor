@@ -7,4 +7,5 @@ void statis_featuring(unsigned char* buf, int size, struct chunk* c){
 	memset(superfeature, 0, sizeof(feature)*MAX_FEA_SIZE);
 
 	gear_statis(buf, size, superfeature, STATIS_FEATURE_NUM);
+	c->feaNum = STATIS_FEATURE_NUM;
 }

@@ -4,6 +4,7 @@
 #include "jcr.h"
 #include "storage/containerstore.h"
 #include "utils/sync_queue.h"
+#include "xdelta3/xdelta_thread.h"
 
 /* defined in index.c */
 extern struct {
@@ -43,6 +44,8 @@ void do_backup(char *path) {
     start_feature_phase();
     start_simi_phase();
     start_xdelta_phase();
+    //TODO need to make a token to measure the execution time
+    //TOOD add stote phase
 
 //    start_store_phase();
 //  start_rewrite_phase();
@@ -135,16 +138,22 @@ void do_backup(char *path) {
     destor.zero_chunk_size += jcr.zero_chunk_size;
     destor.rewritten_chunk_num += jcr.rewritten_chunk_num;
     destor.rewritten_chunk_size += jcr.rewritten_chunk_size;
+//    jcr.xdelta_time /= XDELTA_THREAD_NUM;
 
-    printf("read_time : %.3fs, %.2fMB/s\n", jcr.read_time / 1000000,
+    printf("read_time  : %.3f s, %.2f MB/s\n", jcr.read_time / 1000000,
            jcr.data_size * 1000000 / jcr.read_time / 1024 / 1024);
-    printf("chunk_time : %.3fs, %.2fMB/s\n", jcr.chunk_time / 1000000,
+    printf("chunk_time : %.3f s, %.2f MB/s\n", jcr.chunk_time / 1000000,
            jcr.data_size * 1000000 / jcr.chunk_time / 1024 / 1024);
-    printf("hash_time : %.3fs, %.2fMB/s\n", jcr.hash_time / 1000000,
+    printf("hash_time  : %.3f s, %.2f MB/s\n", jcr.hash_time / 1000000,
            jcr.data_size * 1000000 / jcr.hash_time / 1024 / 1024);
-
-    printf("dedup_time : %.3fs, %.2fMB/s\n", jcr.dedup_time / 1000000,
+    printf("dedup_time : %.3f s, %.2f MB/s\n", jcr.dedup_time / 1000000,
            jcr.data_size * 1000000 / jcr.dedup_time / 1024 / 1024);
+    printf("featu_time : %.3f s, %.2f MB/s\n", jcr.fea_time / 1000000,
+           jcr.data_size * 1000000 / jcr.fea_time / 1024 / 1024);
+    printf("seaFe_time : %.3f s, %.2f MB/s\n", jcr.seaFea_time / 1000000,
+           jcr.data_size * 1000000 / jcr.seaFea_time / 1024 / 1024);
+    printf("xdelt_time : %.3f s, %.2f MB/s\n", jcr.xdelta_time / 1000000,
+           jcr.data_size * 1000000 / jcr.xdelta_time / 1024 / 1024);
 
 //    printf("rewrite_time : %.3fs, %.2fMB/s\n", jcr.rewrite_time / 1000000,
 //           jcr.data_size * 1000000 / jcr.rewrite_time / 1024 / 1024);

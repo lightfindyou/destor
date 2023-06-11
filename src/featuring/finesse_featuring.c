@@ -46,6 +46,7 @@ void finesse_featuring(unsigned char* buf, int size, struct chunk* c){
 		superfeature[i] = XXH64(temp, sizeof(feature) * FINESSE_FEATURE_NUM / FINESSE_SF_NUM, 0);
 	}
 
+	c->feaNum = FINESSE_SF_NUM;
 //	printf("new chunk: %lx, chunk->data: %lx, fp addr: %lx, chunk->size: %d, feature: %6lu %6lu %6lu %6lu\n",
 //			 c, c->data, c->fp, c->size,
 //			 c->fea[0] & 0x3f, c->fea[1] & 0x3f, c->fea[2] & 0x3f, c->fea[3] & 0x3f);
@@ -67,4 +68,5 @@ void finesse_featuring_flatFea(unsigned char* buf, int size, struct chunk* c){
 
 		rabin_finesse(&buf[subchs*i], len, &curFea[i]);
 	}
+	c->feaNum = FINESSE_FEATURE_NUM;
 }

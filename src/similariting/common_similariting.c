@@ -2,6 +2,16 @@
 #include "../destor.h"
 #include "similariting.h"
 
+GHashTable* cand_tab;
+GHashTable* existing_fea_tab;
+
+void common_similariting_init(){
+	cand_tab = g_hash_table_new_full(g_int64_hash,
+									 g_int64_equal, NULL, free);
+	existing_fea_tab = g_hash_table_new_full(g_int64_hash,
+			 						 g_int64_equal, NULL, NULL);
+}
+
 /** Insert super features into the hash table
  * hash table[fea] --> List ---> chunk addr
 */
@@ -77,14 +87,49 @@ gboolean true( gpointer key, gpointer value, gpointer user_data){
 struct chunk* most_match_similariting(struct chunk* c, int suFeaNum, GHashTable* sufea_tab){
 
 	struct chunk* ret = NULL;
-	GHashTable* cand_tab = g_hash_table_new_full(g_int64_hash,
-			 g_int64_equal, NULL, free);
-	GHashTable* existing_fea_tab = g_hash_table_new_full(g_int64_hash,
-			 g_int64_equal, NULL, NULL);
-	int r = rand();
 	int curMaxHitTime = 0;
 
-	for(int feaIdx = 0; feaIdx < destor.baseChunkNum; feaIdx++ ){
+	for (int i = 0; i < suFeaNum; i++) {
+		/**skip the fea that is contained in exist feature*/
+		if (g_hash_table_lookup(existing_fea_tab, &(c->fea[i]))) { continue; }
+		GSequence *tq = g_hash_table_lookup(sufea_tab, &(c->fea[i]));
+		if(tq){
+	//		printf("tq:%lx\n", tq);
+	//		printf("sequence length: %d\n", g_sequence_get_length(tq));
+			GSequenceIter *end = g_sequence_get_end_iter(tq);
+			GSequenceIter *iter = g_sequence_get_begin_iter(tq);
+			for (; iter != end; iter = g_sequence_iter_next(iter)) {
+				struct chunk* candChunk = (struct chunk*)g_sequence_get(iter);
+				ret = searchMostSimiChunk(cand_tab, candChunk, &curMaxHitTime, ret, NULL);
+			}
+		}
+	}
+
+	g_hash_table_remove_all(cand_tab);
+	insert_sufeature(c, suFeaNum, sufea_tab);
+
+//	printf("Most match similaring chunk is: %p\n", ret);
+	if(ret){
+		//insert ret into chunk
+		g_queue_push_tail(c->basechunk, ret);
+		return ret;
+	}
+
+	/*Only if the chunk is unique, add the chunk into sufeature table*/
+	/*UNNECESSARY, for high dedup ratio, always add*/
+	return NULL;
+}
+
+/** return base chunk if similary chunk is found
+ *  else return 0
+ * base chunk is the one shares most features
+*/
+struct chunk* topK_match_similariting(struct chunk* c, int suFeaNum, GHashTable* sufea_tab){
+
+	struct chunk* ret = NULL;
+	int curMaxHitTime = 0;
+
+	for(int baseNum = 0; baseNum < destor.baseChunkNum; baseNum++ ){
 		ret = NULL;
 		for (int i = 0; i < suFeaNum; i++) {
 			/**skip the fea that is contained in exist feature*/
@@ -110,8 +155,8 @@ struct chunk* most_match_similariting(struct chunk* c, int suFeaNum, GHashTable*
 		g_hash_table_foreach_remove(cand_tab, true, NULL);
 	}
 
-	g_hash_table_destroy(cand_tab);
-	g_hash_table_destroy(existing_fea_tab);
+	g_hash_table_remove_all(cand_tab);
+	g_hash_table_remove_all(existing_fea_tab);
 	insert_sufeature(c, suFeaNum, sufea_tab);
 
 //	printf("Most match similaring chunk is: %p\n", ret);

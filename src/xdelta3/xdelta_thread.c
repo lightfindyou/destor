@@ -45,6 +45,9 @@ void *xdelta_thread(void *arg) {
 
 		jcr.cur_porcessed_size += c->size;
 		if(!CHECK_CHUNK(c, CHUNK_DUPLICATE)){	//the unique chunks
+
+			TIMER_DECLARE(1);
+			TIMER_BEGIN(1);
 			int deltaSize;
 			if(c->basechunk){	//chunk may be xdeltaed
 //				printf("xdelta c:%lx, c->flags:%x c->data:%lx, c->size:%ld, basec:%lx, basec->flag:%x, basec->data:%lx, basec->size:%ld\n", 
@@ -99,6 +102,8 @@ void *xdelta_thread(void *arg) {
 				puts("failed to unlock jcrMutex!");
 				return NULL;
 			}
+			//TODO this time is uncorrect
+			TIMER_END(1, jcr.xdelta_time);
 		}else{	/*duplicate chunk*/ }
 	}
 
