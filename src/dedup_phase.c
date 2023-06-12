@@ -70,6 +70,7 @@ void send_segment(struct segment* s) {
 void *dedup_thread(void *arg) {
 	struct segment* s = NULL;
 	while (1) {
+		if(!(destor.curStatus & status_dedup)){ continue; }
 		struct chunk *c = NULL;
 		if (destor.simulation_level != SIMULATION_ALL)
 			c = sync_queue_pop(hash_queue);

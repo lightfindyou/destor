@@ -12,6 +12,7 @@ static void (*featuring)(unsigned char* buf, int size, struct chunk* c);
 
 void *feature_thread(void *arg) {
 	while (1) {
+		if(!(destor.curStatus & status_feature)){ continue; }
 		struct chunk* c = sync_queue_pop(dedup_queue);
 
 		if (c == NULL) {

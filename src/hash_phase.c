@@ -7,7 +7,8 @@ static int64_t chunk_num;
 
 static void* sha1_thread(void* arg) {
 	char code[41];
-	while (1) {
+	while (destor.curStatus & status_hash) {
+		if(!(destor.curStatus & status_hash)){ continue; }
 		struct chunk* c = sync_queue_pop(chunk_queue);
 
 		if (c == NULL) {
@@ -39,7 +40,7 @@ static void* sha1_thread(void* arg) {
 
 //xzjin calculate SHA1 and put into hash_queue
 void start_hash_phase() {
-	hash_queue = sync_queue_new(100);
+	hash_queue = sync_queue_new(1000);
 #ifndef NODEDUP
 	pthread_create(&hash_t, NULL, sha1_thread, NULL);
 #endif	//NODEDUP

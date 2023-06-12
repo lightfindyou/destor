@@ -235,6 +235,17 @@ extern char* featureAlgStr[];
 #define UNSET_CHUNK(c, f) (c->flag &= ~f)
 #define CHECK_CHUNK(c, f) (c->flag & f)
 
+enum status{
+	status_read = 0x1,
+	status_chunk = 0x2,
+	status_hash	= 0x4,
+	status_dedup = 0x8,
+	status_feature = 0x10,
+	status_simi	= 0x20,
+	status_xdelta = 0x40,
+	status_parallel = 0xFFFF
+};
+
 struct destor {
 	sds working_directory;
 	sds deltaPath;
@@ -335,7 +346,7 @@ struct destor {
 
 	/* threshold for xdelta compression*/
 	float compThreshold;
-
+	enum status curStatus;
 };
 
 extern struct destor destor;

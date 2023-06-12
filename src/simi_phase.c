@@ -12,8 +12,10 @@ static int64_t chunk_num;
 static void (*similariting)(struct chunk* c);
 
 void *simi_thread(void *arg) {
+//	printf("simi thread         tid: %d\n", gettid());
 	char deltaOut[2*destor.chunk_avg_size];
 	while (1) {
+		if(!(destor.curStatus != status_simi)){ continue; }
 		struct chunk* c = sync_queue_pop(feature_queue);
 
 		if (c == NULL) {

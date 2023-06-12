@@ -1,4 +1,5 @@
 #include "sync_queue.h"
+#include "../destor.h"
 #include <stdio.h>
 
 SyncQueue* sync_queue_new(int size) {

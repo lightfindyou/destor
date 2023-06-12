@@ -32,6 +32,7 @@ static void* chunk_thread(void *arg) {
 	struct chunk* c = NULL;
 
 	while (1) {
+		if(!(destor.curStatus & status_chunk)){ continue; }
 
 		/* Try to receive a CHUNK_FILE_START. */
 		c = sync_queue_pop(read_queue);
@@ -241,7 +242,7 @@ void start_chunk_phase() {
 		exit(1);
 	}
 
-	chunk_queue = sync_queue_new(100);
+	chunk_queue = sync_queue_new(1000);
 	pthread_create(&chunk_t, NULL, chunk_thread, NULL);
     pid_t tid = gettid(); 
 	printf("chunking thread          id: %ld\n", chunk_t);

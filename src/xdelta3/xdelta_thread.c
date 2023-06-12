@@ -30,6 +30,7 @@ void *xdelta_thread(void *arg) {
 	char deltaOut[4*destor.chunk_max_size];
 //	printf("size of deltaOut: %lx\n", 2*destor.chunk_max_size);
 	while (1) {
+		if(!(destor.curStatus & status_xdelta)){ continue; }
 		struct chunk* c = sync_queue_pop(simi_queue);
 
 		if (c == NULL) {
