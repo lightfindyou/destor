@@ -182,8 +182,8 @@ void load_config_from_string(sds config) {
 		} else if (strcasecmp(argv[0], "parallelExecute") == 0 && argc == 2) {
 			int parallel = atoi(argv[1]);
 			if(parallel == 0){
-				destor.curStatus = status_chunk;
-//				destor.curStatus = status_read;
+				destor.curStatus = STATUS_CHUNK;
+//				destor.curStatus = STATUS_READ;
 			}
 		} else if (strcasecmp(argv[0], "jumpOnes") == 0 && argc == 2) {
 			destor.jumpOnes = atoi(argv[1]);

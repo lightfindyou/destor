@@ -56,20 +56,27 @@ void stop_filter_phase();
 void start_append_phase();
 void stop_append_phase();
 
+#define READQUESIZE 10
 /* Output of read phase. */
 SyncQueue* read_queue;
+#define CHUNKQUESIZE 1000
 /* Output of chunk phase. */
 SyncQueue* chunk_queue;
+#define HASHQUESIZE 1000
 /* Output of hash phase. */
 SyncQueue* hash_queue;
 /* Output of trace phase. */
 SyncQueue* trace_queue;
+#define DEDUPQUESIZE 1000
 /* Output of dedup phase */
 SyncQueue* dedup_queue;
+#define FEAQUESIZE 1000
 /* Output of feature phase */
 SyncQueue* feature_queue;
+#define SIMIQUESIZE 1000
 /* Output of simi phase */
 SyncQueue* simi_queue;
+#define XDElTAQUESIZE 1000
 /* Output of xdelta phase */
 SyncQueue* xdelta_queue;
 /* Output of rewrite phase. */

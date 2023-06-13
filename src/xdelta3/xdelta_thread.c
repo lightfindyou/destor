@@ -30,7 +30,9 @@ void *xdelta_thread(void *arg) {
 	char deltaOut[4*destor.chunk_max_size];
 //	printf("size of deltaOut: %lx\n", 2*destor.chunk_max_size);
 	while (1) {
-		if(!(destor.curStatus & status_xdelta)){ continue; }
+		if((destor.curStatus & STATUS_XDELTA) == 0){
+			continue;
+		}
 		struct chunk* c = sync_queue_pop(simi_queue);
 
 		if (c == NULL) {
@@ -103,8 +105,15 @@ void *xdelta_thread(void *arg) {
 				puts("failed to unlock jcrMutex!");
 				return NULL;
 			}
-			//TODO this time is uncorrect
+			if (pthread_mutex_lock(&xdeltaTimeMutex) != 0) {
+				puts("failed to lock!");
+				return;
+			}
 			TIMER_END(1, jcr.xdelta_time);
+			if (pthread_mutex_unlock(&xdeltaTimeMutex)) {
+				puts("failed to unlock!");
+				return;
+			}
 		}else{	/*duplicate chunk*/ }
 	}
 

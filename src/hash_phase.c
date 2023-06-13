@@ -6,13 +6,18 @@ static pthread_t hash_t;
 static int64_t chunk_num;
 
 static void* sha1_thread(void* arg) {
+	printf("hash thread         tid: %d\n", gettid());
 	char code[41];
-	while (destor.curStatus & status_hash) {
-		if(!(destor.curStatus & status_hash)){ continue; }
+	while (1) {
+		if((destor.curStatus & STATUS_HASH) == 0){
+//			printf("hashing: %d\n", destor.curStatus & STATUS_HASH);
+			continue;
+		}
 		struct chunk* c = sync_queue_pop(chunk_queue);
 
 		if (c == NULL) {
 			sync_queue_term(hash_queue);
+			printf("terminal hash phase");
 			break;
 		}
 
@@ -35,18 +40,21 @@ static void* sha1_thread(void* arg) {
 
 		sync_queue_push(hash_queue, c);
 	}
+
+	printf("hash over!\n");
 	return NULL;
 }
 
 //xzjin calculate SHA1 and put into hash_queue
 void start_hash_phase() {
-	hash_queue = sync_queue_new(1000);
+	hash_queue = sync_queue_new(HASHQUESIZE);
 #ifndef NODEDUP
 	pthread_create(&hash_t, NULL, sha1_thread, NULL);
 #endif	//NODEDUP
 }
 
 void stop_hash_phase() {
+    SETSTATUS(STATUS_HASH);
 	pthread_join(hash_t, NULL);
 	NOTICE("hash phase stops successfully!");
 }

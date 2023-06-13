@@ -12,10 +12,13 @@ static int64_t chunk_num;
 static void (*similariting)(struct chunk* c);
 
 void *simi_thread(void *arg) {
-//	printf("simi thread         tid: %d\n", gettid());
+	printf("simi thread         tid: %d\n", gettid());
 	char deltaOut[2*destor.chunk_avg_size];
 	while (1) {
-		if(!(destor.curStatus != status_simi)){ continue; }
+		if((destor.curStatus & STATUS_SIMI) == 0){
+//			printf("simi: %d\n", destor.curStatus & STATUS_SIMI);
+			continue;
+		}
 		struct chunk* c = sync_queue_pop(feature_queue);
 
 		if (c == NULL) {
@@ -53,8 +56,9 @@ void *simi_thread(void *arg) {
 
 		sync_queue_push(simi_queue, c);
 	}
-	return NULL;
 
+	printf("simi over!\n");
+	return NULL;
 }
 
 void start_simi_phase() {
@@ -92,11 +96,12 @@ void start_simi_phase() {
 	}
 
 
-	simi_queue = sync_queue_new(1000);
+	simi_queue = sync_queue_new(SIMIQUESIZE);
 	pthread_create(&simi_t, NULL, simi_thread, NULL);
 }
 
 void stop_simi_phase() {
+    SETSTATUS(STATUS_SIMI);
 	pthread_join(simi_t, NULL);
 	NOTICE("similarity phase stops successfully: %d chunks", chunk_num);
 }

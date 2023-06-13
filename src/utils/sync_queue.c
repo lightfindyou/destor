@@ -39,6 +39,19 @@ void sync_queue_push(SyncQueue* s_queue, void* item) {
 	while (s_queue->max_size > 0
 			&& queue_size(s_queue->queue) >= s_queue->max_size) {
 		pthread_cond_wait(&s_queue->max_work, &s_queue->mutex);
+//		if(destor.curStatus == STATUS_PARALLEL){
+//			pthread_cond_wait(&s_queue->max_work, &s_queue->mutex);
+//		}else{
+//			pthread_mutex_unlock(&s_queue->mutex);
+//			while(s_queue->max_size > 0
+//			&& queue_size(s_queue->queue) >= s_queue->max_size){
+//				usleep(2000);
+//			}
+//			if (pthread_mutex_lock(&s_queue->mutex) != 0) {
+//				puts("failed to lock!");
+//				return;
+//			}
+//		}
 	}
 
 	queue_push(s_queue->queue, item);
@@ -46,7 +59,7 @@ void sync_queue_push(SyncQueue* s_queue, void* item) {
 	pthread_cond_broadcast(&s_queue->min_work);
 
 	if (pthread_mutex_unlock(&s_queue->mutex)) {
-		puts("failed to lock!");
+		puts("failed to unlock!");
 		return;
 	}
 }
@@ -66,6 +79,18 @@ void* sync_queue_pop(SyncQueue* s_queue) {
 			return NULL;
 		}
 		pthread_cond_wait(&s_queue->min_work, &s_queue->mutex);
+//		if(destor.curStatus == STATUS_PARALLEL){
+//			pthread_cond_wait(&s_queue->min_work, &s_queue->mutex);
+//		}else{
+//			pthread_mutex_unlock(&s_queue->mutex);
+//			while(queue_size(s_queue->queue) == 0){
+//				usleep(2000);
+//			}
+//			if (pthread_mutex_lock(&s_queue->mutex) != 0) {
+//				puts("failed to lock!");
+//				return;
+//			}
+//		}
 	}
 
 	void * item = queue_pop(s_queue->queue);
@@ -129,6 +154,18 @@ void* sync_queue_get_top(SyncQueue* s_queue) {
 			return NULL;
 		}
 		pthread_cond_wait(&s_queue->min_work, &s_queue->mutex);
+//		if(destor.curStatus == STATUS_PARALLEL){
+//			pthread_cond_wait(&s_queue->min_work, &s_queue->mutex);
+//		}else{
+//			pthread_mutex_unlock(&s_queue->mutex);
+//			while(queue_size(s_queue->queue) == 0){
+//				usleep(2000);
+//			}
+//			if (pthread_mutex_lock(&s_queue->mutex) != 0) {
+//				puts("failed to lock!");
+//				return;
+//			}
+//		}
 	}
 
 	void * item = queue_top(s_queue->queue);

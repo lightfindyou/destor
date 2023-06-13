@@ -9,7 +9,7 @@ AM_INIT_AUTOMAKE
 # Checks for programs.
 AC_PROG_CXX
 AC_PROG_CC
-CFLAGS="-g -O2 -Wall -ggdb"
+CFLAGS="-g3 -O2 -Wall -ggdb"
 CXXFLAGS="-D_GLIBCXX_USE_CXX11_ABI=1 -I/home/xzjin/.local/lib/python3.8/site-packages/torch/include/"
 #-D_GLIBCXX_USE_CXX11_ABI=0
 

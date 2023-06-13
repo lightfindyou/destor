@@ -171,7 +171,7 @@ void destor_start() {
 	 * A negative value indicates all backups are retained.
 	 */
 	destor.backup_retention_time = -1;
-	destor.curStatus = status_parallel;
+	destor.curStatus = STATUS_PARALLEL;
 
 	load_config();
 

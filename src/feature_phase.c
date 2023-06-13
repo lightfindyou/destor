@@ -11,8 +11,12 @@ static int64_t chunk_num;
 static void (*featuring)(unsigned char* buf, int size, struct chunk* c);
 
 void *feature_thread(void *arg) {
+	printf("feature thread         tid: %d\n", gettid());
 	while (1) {
-		if(!(destor.curStatus & status_feature)){ continue; }
+		if((destor.curStatus & STATUS_FEATURE) == 0){
+//			printf("feature: %d\n", destor.curStatus & STATUS_FEATURE);
+			continue;
+		}
 		struct chunk* c = sync_queue_pop(dedup_queue);
 
 		if (c == NULL) {
@@ -38,8 +42,9 @@ void *feature_thread(void *arg) {
 
 		sync_queue_push(feature_queue, c);
 	}
-	return NULL;
 
+	printf("feature over!\n");
+	return NULL;
 }
 
 void start_feature_phase() {
@@ -80,12 +85,13 @@ void start_feature_phase() {
 		featuring = weightchunk_featuring;
 	}
 
-	feature_queue = sync_queue_new(1000);
+	feature_queue = sync_queue_new(FEAQUESIZE);
 
 	pthread_create(&feature_t, NULL, feature_thread, NULL);
 }
 
 void stop_feature_phase() {
+    SETSTATUS(STATUS_FEATURE);
 	pthread_join(feature_t, NULL);
 	NOTICE("feature phase stops successfully: %d chunks", chunk_num);
 }

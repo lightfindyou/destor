@@ -16,6 +16,68 @@ extern struct {
     int read_prefetching_units;
 } index_overhead;
 
+void switchStatus(){
+
+//	STATUS_READ = 0x1,
+//	STATUS_CHUNK = 0x2,
+//	STATUS_HASH	= 0x4,
+//	STATUS_DEDUP = 0x8,
+//	STATUS_FEATURE = 0x10,
+//	STATUS_SIMI	= 0x20,
+//	STATUS_XDELTA = 0x40,
+
+    if(destor.curStatus != STATUS_PARALLEL){
+        switch(destor.curStatus){
+            case STATUS_CHUNK:
+                if(sync_queue_size(read_queue)<=0 ||
+                     sync_queue_size(chunk_queue) >= CHUNKQUESIZE){
+//                    destor.curStatus = STATUS_HASH;
+                    SETSTATUS(STATUS_HASH);
+                }
+                break;
+
+            case STATUS_HASH:
+                if(sync_queue_size(chunk_queue)<=0 ||
+                     sync_queue_size(hash_queue) >= HASHQUESIZE){
+//                    destor.curStatus = STATUS_DEDUP;
+                    SETSTATUS(STATUS_DEDUP);
+                }
+                break;
+
+            case STATUS_DEDUP:
+                if(sync_queue_size(hash_queue)<=0 ||
+                     sync_queue_size(dedup_queue) >= DEDUPQUESIZE){
+//                    destor.curStatus = STATUS_FEATURE;
+                    SETSTATUS(STATUS_FEATURE);
+                }
+                break;
+
+            case STATUS_FEATURE:
+                if(sync_queue_size(dedup_queue)<=0 ||
+                     sync_queue_size(feature_queue) >= FEAQUESIZE){
+//                    destor.curStatus = STATUS_SIMI;
+                    SETSTATUS(STATUS_SIMI);
+                }
+                break;
+
+            case STATUS_SIMI:
+                if(sync_queue_size(feature_queue)<=0 ||
+                     sync_queue_size(simi_queue) >= XDElTAQUESIZE){
+//                    destor.curStatus = STATUS_XDELTA;
+                    SETSTATUS(STATUS_XDELTA);
+                }
+                break;
+
+            case STATUS_XDELTA:
+                if(sync_queue_size(simi_queue)<=0){
+//                    destor.curStatus = STATUS_CHUNK;
+                    SETSTATUS(STATUS_CHUNK);
+                }
+                break;
+        }
+    }
+}
+
 void do_backup(char *path) {
 
     double dedup_time = 0;
@@ -53,6 +115,8 @@ void do_backup(char *path) {
 
     do {
         usleep(2000);
+        switchStatus();
+
         /*time_t now = time(NULL);*/
         fprintf(stderr,
                 "job %" PRId32 ", %" PRId64 " bytes, %" PRId32

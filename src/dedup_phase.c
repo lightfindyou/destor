@@ -68,9 +68,13 @@ void send_segment(struct segment* s) {
 }
 
 void *dedup_thread(void *arg) {
+	printf("dedup thread         tid: %d\n", gettid());
 	struct segment* s = NULL;
 	while (1) {
-		if(!(destor.curStatus & status_dedup)){ continue; }
+		if((destor.curStatus & STATUS_DEDUP) == 0){ 
+//			printf("dedup: %d\n", destor.curStatus & STATUS_DEDUP);
+			continue;
+		}
 		struct chunk *c = NULL;
 		if (destor.simulation_level != SIMULATION_ALL)
 			c = sync_queue_pop(hash_queue);
@@ -108,6 +112,7 @@ void *dedup_thread(void *arg) {
 
 	sync_queue_term(dedup_queue);
 
+	printf("dedup over!\n");
 	return NULL;
 }
 
@@ -124,13 +129,14 @@ void start_dedup_phase() {
 	pthread_cond_init(&index_lock.cond, NULL);
 
 #ifndef NODEDUP
-	dedup_queue = sync_queue_new(1000);
+	dedup_queue = sync_queue_new(DEDUPQUESIZE);
 
 	pthread_create(&feature_t, NULL, dedup_thread, NULL);
 #endif	//NODEDUP
 }
 
 void stop_dedup_phase() {
+    SETSTATUS(STATUS_DEDUP);
 	pthread_join(feature_t, NULL);
 	NOTICE("dedup phase stops successfully: %d segments of %d chunks on average",
 			segment_num, segment_num ? chunk_num / segment_num : 0);
