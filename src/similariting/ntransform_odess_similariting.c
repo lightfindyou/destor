@@ -13,13 +13,16 @@ void odess_similariting_init(){
 }
 
 void ntransform_similariting(struct chunk* c){
-	most_match_similariting(c, NTRANSFORM_SF_NUM, ntransform_sufeature_tab);
+//	most_match_similariting(c, NTRANSFORM_SF_NUM, ntransform_sufeature_tab);
+	first_match_similariting(c, NTRANSFORM_SF_NUM, ntransform_sufeature_tab);
 }
 
 void odess_similariting(struct chunk* c){
-	most_match_similariting(c, ODESS_SF_NUM, odess_sufeature_tab);
+//	most_match_similariting(c, ODESS_SF_NUM, odess_sufeature_tab);
+	first_match_similariting(c, ODESS_SF_NUM, odess_sufeature_tab);
 }
 
 void odess_similariting_flatFea(struct chunk* c){
-	most_match_similariting(c, ODESS_FEATURE_NUM, odess_sufeature_tab);
+//	most_match_similariting(c, ODESS_FEATURE_NUM, odess_sufeature_tab);
+	first_match_similariting(c, ODESS_FEATURE_NUM, odess_sufeature_tab);
 }

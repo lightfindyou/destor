@@ -3,16 +3,7 @@
 #include "similariting.h"
 #include "../jcr.h"
 
-GHashTable* cand_tab;
-GHashTable* existing_fea_tab;
-
-void common_similariting_init(){
-	cand_tab = g_hash_table_new_full(g_int64_hash,
-									 g_int64_equal, NULL, free);
-	existing_fea_tab = g_hash_table_new_full(g_int64_hash,
-			 						 g_int64_equal, NULL, NULL);
-}
-
+pthread_cond_t simi_cond;
 /** Insert super features into the hash table
  * hash table[fea] --> List ---> chunk addr
 */
@@ -73,30 +64,6 @@ gboolean true( gpointer key, gpointer value, gpointer user_data){
 	return 1;
 }
 
-struct chunk* first_match_similariting(struct chunk* c, int suFeaNum, GHashTable* sufea_tab){
-
-	struct chunk* ret = NULL;
-	int curMaxHitTime = 0;
-
-	for (int i = 0; i < suFeaNum; i++) {
-		GSequence *tq = g_hash_table_lookup(sufea_tab, &(c->fea[i]));
-		if(tq){
-			ret = (struct chunk*)g_sequence_get(g_sequence_get_begin_iter(tq));
-			goto retPoint;
-		}
-	}
-
-retPoint:
-	insert_sufeature(c, suFeaNum, sufea_tab);
-	if(ret){
-		//insert ret into chunk
-		g_queue_push_tail(c->basechunk, ret);
-	}
-
-	/*Only if the chunk is unique, add the chunk into sufeature table*/
-	/*UNNECESSARY, for high dedup ratio, always add*/
-	return ret;
-}
 
 /** return base chunk if similary chunk is found
  *  else return 0
@@ -191,4 +158,12 @@ struct chunk* topK_match_similariting(struct chunk* c, int suFeaNum, GHashTable*
 	/*Only if the chunk is unique, add the chunk into sufeature table*/
 	/*UNNECESSARY, for high dedup ratio, always add*/
 	return NULL;
+}
+
+void common_similariting_initMT(){
+	cand_tab = g_hash_table_new_full(g_int64_hash,
+									 g_int64_equal, NULL, free);
+	existing_fea_tab = g_hash_table_new_full(g_int64_hash,
+			 						 g_int64_equal, NULL, NULL);
+	pthread_cond_init(&simi_cond, 0);
 }

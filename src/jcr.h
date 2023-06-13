@@ -68,6 +68,9 @@ struct jcr{
 	double filter_time;
 	double write_time;
 	double store_time;
+	double lookupFea_time;
+	double chooseMostSim_time;
+	double insertFea_time;
 
 	double read_recipe_time;
 	double read_chunk_time;

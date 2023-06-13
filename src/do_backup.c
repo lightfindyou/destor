@@ -17,21 +17,11 @@ extern struct {
 } index_overhead;
 
 void switchStatus(){
-
-//	STATUS_READ = 0x1,
-//	STATUS_CHUNK = 0x2,
-//	STATUS_HASH	= 0x4,
-//	STATUS_DEDUP = 0x8,
-//	STATUS_FEATURE = 0x10,
-//	STATUS_SIMI	= 0x20,
-//	STATUS_XDELTA = 0x40,
-
     if(destor.curStatus != STATUS_PARALLEL){
         switch(destor.curStatus){
             case STATUS_CHUNK:
                 if(sync_queue_size(read_queue)<=0 ||
                      sync_queue_size(chunk_queue) >= CHUNKQUESIZE){
-//                    destor.curStatus = STATUS_HASH;
                     SETSTATUS(STATUS_HASH);
                 }
                 break;
@@ -39,7 +29,6 @@ void switchStatus(){
             case STATUS_HASH:
                 if(sync_queue_size(chunk_queue)<=0 ||
                      sync_queue_size(hash_queue) >= HASHQUESIZE){
-//                    destor.curStatus = STATUS_DEDUP;
                     SETSTATUS(STATUS_DEDUP);
                 }
                 break;
@@ -47,7 +36,6 @@ void switchStatus(){
             case STATUS_DEDUP:
                 if(sync_queue_size(hash_queue)<=0 ||
                      sync_queue_size(dedup_queue) >= DEDUPQUESIZE){
-//                    destor.curStatus = STATUS_FEATURE;
                     SETSTATUS(STATUS_FEATURE);
                 }
                 break;
@@ -55,7 +43,6 @@ void switchStatus(){
             case STATUS_FEATURE:
                 if(sync_queue_size(dedup_queue)<=0 ||
                      sync_queue_size(feature_queue) >= FEAQUESIZE){
-//                    destor.curStatus = STATUS_SIMI;
                     SETSTATUS(STATUS_SIMI);
                 }
                 break;
@@ -63,14 +50,12 @@ void switchStatus(){
             case STATUS_SIMI:
                 if(sync_queue_size(feature_queue)<=0 ||
                      sync_queue_size(simi_queue) >= XDElTAQUESIZE){
-//                    destor.curStatus = STATUS_XDELTA;
                     SETSTATUS(STATUS_XDELTA);
                 }
                 break;
 
             case STATUS_XDELTA:
                 if(sync_queue_size(simi_queue)<=0){
-//                    destor.curStatus = STATUS_CHUNK;
                     SETSTATUS(STATUS_CHUNK);
                 }
                 break;
@@ -218,6 +203,14 @@ void do_backup(char *path) {
            jcr.data_size * 1000000 / jcr.seaFea_time / 1024 / 1024);
     printf("xdelt_time : %.3f s, %.2f MB/s\n", jcr.xdelta_time / 1000000,
            jcr.data_size * 1000000 / jcr.xdelta_time / 1024 / 1024);
+
+
+    printf("lookupFea_time     : %.3f s, %.2f MB/s\n", jcr.lookupFea_time/ 1000000,
+           jcr.data_size * 1000000 / jcr.lookupFea_time/ 1024 / 1024);
+    printf("chooseMostSim_time : %.3f s, %.2f MB/s\n", jcr.chooseMostSim_time/ 1000000,
+           jcr.data_size * 1000000 / jcr.chooseMostSim_time/ 1024 / 1024);
+    printf("insertFea_time     : %.3f s, %.2f MB/s\n", jcr.insertFea_time/ 1000000,
+           jcr.data_size * 1000000 / jcr.insertFea_time/ 1024 / 1024);
 
 //    printf("rewrite_time : %.3fs, %.2fMB/s\n", jcr.rewrite_time / 1000000,
 //           jcr.data_size * 1000000 / jcr.rewrite_time / 1024 / 1024);
