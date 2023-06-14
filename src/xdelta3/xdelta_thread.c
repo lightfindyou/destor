@@ -52,7 +52,7 @@ void *xdelta_thread(void *arg) {
 			TIMER_DECLARE(1);
 			TIMER_BEGIN(1);
 			int deltaSize;
-			if(c->basechunk){	//chunk may be xdeltaed
+			if(c->basechunk && g_queue_get_length(c->basechunk)){	//chunk may be xdeltaed
 //				printf("xdelta c:%lx, c->flags:%x c->data:%lx, c->size:%ld, basec:%lx, basec->flag:%x, basec->data:%lx, basec->size:%ld\n", 
 //							c, c->flag, c->data, c->size, basec, basec->flag, basec->data, basec->size);
 				int refSize = 0;
