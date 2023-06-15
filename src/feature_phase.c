@@ -35,6 +35,7 @@ void *feature_thread(void *arg) {
 		TIMER_BEGIN(1);
 		/*calculate features*/
 		featuring(c->data, c->size, c);
+		jcr.totalFeaNum += c->feaNum;
 		TIMER_END(1, jcr.fea_time);
 
 		//TODO xzjin out of boundary fix

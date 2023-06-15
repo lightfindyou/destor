@@ -121,10 +121,8 @@ void load_config_from_string(sds config) {
 			}
 		} else if (strcasecmp(argv[0], "feature-num") == 0 && argc == 2) {
 			destor.featureNum = atoi(argv[1]);
-			printf("feature number: %d\n", destor.featureNum);
 		} else if (strcasecmp(argv[0], "xdelta-threshold") == 0 && argc == 2) {
 			destor.compThreshold = atof(argv[1]);
-			printf("xdelta compression threshold: %.2f\n", destor.compThreshold);
 		} else if (strcasecmp(argv[0], "store-delta") == 0 && argc == 2) {
 			destor.storeDelta = atoi(argv[1]);
 		} else if (strcasecmp(argv[0], "delta-path") == 0 && argc == 2) {
@@ -134,8 +132,6 @@ void load_config_from_string(sds config) {
 			int shiftLen = sizeof(destor.featureLenMask)*8 - destor.featureLen;
 			destor.featureLenMask = (~0LU)<<shiftLen>>shiftLen;
 //			 (1UL<<destor.featureLen) - 1;
-			printf("feature length: %d, len mask: 0x%lx\n",
-					 destor.featureLen, destor.featureLenMask);
 		} else if (strcasecmp(argv[0], "feature-algorithm") == 0 && argc == 2) {
 			if (strcasecmp(argv[1], "ntransform") == 0) {
 				destor.feature_algorithm = FEAUTRE_NTRANSFORM;
@@ -185,11 +181,14 @@ void load_config_from_string(sds config) {
 				destor.curStatus = STATUS_CHUNK;
 //				destor.curStatus = STATUS_READ;
 			}
+		} else if (strcasecmp(argv[0], "compressSelf") == 0 && argc == 2) {
+			destor.compressSelf = atoi(argv[1]);
+		} else if (strcasecmp(argv[0], "simiCandLimit") == 0 && argc == 2) {
+			destor.simiCandLimit = atoi(argv[1]);
 		} else if (strcasecmp(argv[0], "jumpOnes") == 0 && argc == 2) {
 			destor.jumpOnes = atoi(argv[1]);
 		} else if (strcasecmp(argv[0], "baseChunkNum") == 0 && argc == 2) {
 			destor.baseChunkNum = atoi(argv[1]);
-			printf("base chunk number: %d\n", atoi(argv[1]));
 		} else if (strcasecmp(argv[0], "chunk-avg-size") == 0 && argc == 2) {
 			destor.chunk_avg_size = atoi(argv[1]);
 		} else if (strcasecmp(argv[0], "chunk-max-size") == 0 && argc == 2) {

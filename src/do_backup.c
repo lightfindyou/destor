@@ -91,7 +91,6 @@ void do_backup(char *path) {
     start_feature_phase();
     start_simi_phase();
     start_xdelta_phase();
-    //TODO need to make a token to measure the execution time
     //TOOD add stote phase
 
 //    start_store_phase();
@@ -212,6 +211,14 @@ void do_backup(char *path) {
            jcr.data_size * 1000000 / jcr.chooseMostSim_time/ 1024 / 1024);
     printf("insertFea_time     : %.3f s, %.2f MB/s\n", jcr.insertFea_time/ 1000000,
            jcr.data_size * 1000000 / jcr.insertFea_time/ 1024 / 1024);
+
+    printf("total candidata num: %ld \n", jcr.candNum);
+    printf("total sim chunk num: %ld , %.2f candidates per chunk\n", jcr.featuredChunks,
+                             (float)jcr.candNum/jcr.featuredChunks);
+    printf("searched featur num: %ld , %.2f candidates per feature\n", jcr.simiFeaNum,
+                             (float)jcr.candNum/jcr.simiFeaNum);
+    printf("total features  num: %ld , %.2f features per chunk\n", jcr.totalFeaNum,
+                             (float)jcr.totalFeaNum/jcr.featuredChunks);
 
 //    printf("rewrite_time : %.3fs, %.2fMB/s\n", jcr.rewrite_time / 1000000,
 //           jcr.data_size * 1000000 / jcr.rewrite_time / 1024 / 1024);

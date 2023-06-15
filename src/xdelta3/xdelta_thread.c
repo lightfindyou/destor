@@ -15,10 +15,10 @@ void (*recordDelta)(struct chunk *c1, struct chunk* c2, void* delta, int deltaSi
 
 void init_xdelta_thread(int recDeltaInfo){
 	if(recDeltaInfo){
-		printf("record delta info: true.");
+		printf("record delta info: true.\n");
 		recordDelta = recordChunkAndDelta;
 	}else{
-		printf("record delta info: false.");
+		printf("record delta info: false.\n");
 		recordDelta = recordNULL;
 	}
 }
@@ -47,23 +47,25 @@ void *xdelta_thread(void *arg) {
 		}
 
 		jcr.cur_porcessed_size += c->size;
-		if(!CHECK_CHUNK(c, CHUNK_DUPLICATE)){	//the unique chunks
+		if(!CHECK_CHUNK(c, CHUNK_DUPLICATE)){	//NOT the unique chunks
 
 			TIMER_DECLARE(1);
 			TIMER_BEGIN(1);
 			int deltaSize;
-			if(c->basechunk && g_queue_get_length(c->basechunk)){	//chunk may be xdeltaed
+			if(CHECK_CHUNK(c, CHUNK_SIMILAR)){	//chunk may be xdeltaed
 //				printf("xdelta c:%lx, c->flags:%x c->data:%lx, c->size:%ld, basec:%lx, basec->flag:%x, basec->data:%lx, basec->size:%ld\n", 
 //							c, c->flag, c->data, c->size, basec, basec->flag, basec->data, basec->size);
 				int refSize = 0;
-				int refNum = g_queue_get_length(c->basechunk);
-				VERBOSE("Similariting phase: %ldth chunk similar with %d chunks", chunk_num++, refNum);
-				struct chunk* firstBase = g_queue_peek_head(c->basechunk);
-				for(int i = 0; i < refNum; i++){
-					//TODO copy data to buffer 
-					struct chunk* basec = g_queue_pop_head(c->basechunk);
-					memcpy(&xdeltaBase[refSize], basec->data, basec->size);
-					refSize += basec->size;
+				if(c->basechunk && g_queue_get_length(c->basechunk)){	//NOT self compress chunk
+					int refNum = g_queue_get_length(c->basechunk);
+					VERBOSE("Similariting phase: %ldth chunk similar with %d chunks", chunk_num++, refNum);
+					struct chunk* firstBase = g_queue_peek_head(c->basechunk);
+					for(int i = 0; i < refNum; i++){
+						//TODO copy data to buffer 
+						struct chunk* basec = g_queue_pop_head(c->basechunk);
+						memcpy(&xdeltaBase[refSize], basec->data, basec->size);
+						refSize += basec->size;
+					}
 				}
 				deltaSize = xdelta3_compress(c->data, c->size, xdeltaBase, refSize, deltaOut, 1);
 				if(deltaSize < ((c->size)*(destor.compThreshold))){

@@ -77,6 +77,9 @@ struct jcr{
 	double write_chunk_time;
 
 	int32_t read_container_num;
+	int64_t candNum;
+	int64_t simiFeaNum;
+	int64_t totalFeaNum;
 };
 
 extern struct jcr jcr;

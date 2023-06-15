@@ -347,6 +347,8 @@ struct destor {
 	/* threshold for xdelta compression*/
 	float compThreshold;
 	volatile int32_t curStatus;
+	int simiCandLimit;
+	int compressSelf;
 };
 
 extern struct destor destor;

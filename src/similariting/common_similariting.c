@@ -160,16 +160,27 @@ struct chunk* topK_match_similariting(struct chunk* c, int suFeaNum, GHashTable*
 		for (int i = 0; i < suFeaNum; i++) {
 			/**skip the fea that is contained in exist feature*/
 			if (g_hash_table_lookup(existing_fea_tab, &(c->fea[i]))) { continue; }
+			jcr.simiFeaNum++;
+			TIMER_DECLARE(1);
+			TIMER_BEGIN(1);
 			GSequence *tq = g_hash_table_lookup(sufea_tab, &(c->fea[i]));
+			TIMER_END(1, jcr.lookupFea_time);
 			if(tq){
+				int seqLen = g_sequence_get_length(tq);
+				jcr.candNum += seqLen;
+				int iterBeginPos = 0>(seqLen-50)?0:(seqLen-50);
 	//			printf("tq:%lx\n", tq);
 	//			printf("sequence length: %d\n", g_sequence_get_length(tq));
 				GSequenceIter *end = g_sequence_get_end_iter(tq);
-				GSequenceIter *iter = g_sequence_get_begin_iter(tq);
+//				GSequenceIter *iter = g_sequence_get_begin_iter(tq);
+				GSequenceIter *iter = g_sequence_get_iter_at_pos(tq, iterBeginPos);
+				TIMER_DECLARE(2);
+				TIMER_BEGIN(2);
 				for (; iter != end; iter = g_sequence_iter_next(iter)) {
 					struct chunk* candChunk = (struct chunk*)g_sequence_get(iter);
 					ret = searchMostSimiChunk(cand_tab, candChunk, &curMaxHitTime, ret, NULL);
 				}
+				TIMER_END(2, jcr.chooseMostSim_time);
 			}
 		}
 		if(ret == NULL) { break; }
@@ -183,7 +194,10 @@ struct chunk* topK_match_similariting(struct chunk* c, int suFeaNum, GHashTable*
 
 	g_hash_table_remove_all(cand_tab);
 	g_hash_table_remove_all(existing_fea_tab);
+	TIMER_DECLARE(3);
+	TIMER_BEGIN(3);
 	insert_sufeature(c, suFeaNum, sufea_tab);
+	TIMER_END(3, jcr.insertFea_time);
 
 //	printf("Most match similaring chunk is: %p\n", ret);
 	if(ret){ return ret; }

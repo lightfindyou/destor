@@ -172,6 +172,8 @@ void destor_start() {
 	 */
 	destor.backup_retention_time = -1;
 	destor.curStatus = STATUS_PARALLEL;
+	destor.simiCandLimit = 50;
+	destor.compressSelf= 1;
 
 	load_config();
 
@@ -220,6 +222,18 @@ void destor_start() {
 	}
 
 	sdsfree(stat_file);
+}
+
+void printDestorStatus(){
+	printf("Parallel  execute: %s.\n", (destor.curStatus==STATUS_PARALLEL)?"TRUE":"FALSE");
+	printf("base chunk number: %d\n", destor.baseChunkNum);
+	printf("feature length: %d, len mask: 0x%lx\n",
+			 destor.featureLen, destor.featureLenMask);
+	printf("feature number: %d\n", destor.featureNum);
+	printf("xdelta compression threshold: %.2f\n", destor.compThreshold);
+	printf("  chunk algorithm: %s.\n", chunkAlgStr[destor.chunk_algorithm]);
+	printf("feature algorithm: %s.\n", featureAlgStr[destor.feature_algorithm]);
+	printf("compress self    : %s.\n", destor.compressSelf?"TRUE":"FALSE");
 }
 
 void destor_shutdown() {
@@ -338,8 +352,7 @@ int main(int argc, char **argv) {
 		}
 	}
 
-	printf("  chunk algorithm: %s.\n", chunkAlgStr[destor.chunk_algorithm]);
-	printf("feature algorithm: %s.\n", featureAlgStr[destor.feature_algorithm]);
+	printDestorStatus();
 	sds path = NULL;
 
 	switch (job) {
