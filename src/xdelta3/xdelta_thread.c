@@ -53,13 +53,12 @@ void *xdelta_thread(void *arg) {
 			TIMER_BEGIN(1);
 			int deltaSize;
 			if(CHECK_CHUNK(c, CHUNK_SIMILAR)){	//chunk may be xdeltaed
-//				printf("xdelta c:%lx, c->flags:%x c->data:%lx, c->size:%ld, basec:%lx, basec->flag:%x, basec->data:%lx, basec->size:%ld\n", 
-//							c, c->flag, c->data, c->size, basec, basec->flag, basec->data, basec->size);
 				int refSize = 0;
+				struct chunk* firstBase;
 				if(c->basechunk && g_queue_get_length(c->basechunk)){	//NOT self compress chunk
 					int refNum = g_queue_get_length(c->basechunk);
 					VERBOSE("Similariting phase: %ldth chunk similar with %d chunks", chunk_num++, refNum);
-					struct chunk* firstBase = g_queue_peek_head(c->basechunk);
+					firstBase = g_queue_peek_head(c->basechunk);
 					for(int i = 0; i < refNum; i++){
 						//TODO copy data to buffer 
 						struct chunk* basec = g_queue_pop_head(c->basechunk);

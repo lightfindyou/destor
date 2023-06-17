@@ -168,7 +168,7 @@ struct chunk* topK_match_similariting(struct chunk* c, int suFeaNum, GHashTable*
 			if(tq){
 				int seqLen = g_sequence_get_length(tq);
 				jcr.candNum += seqLen;
-				int iterBeginPos = 0>(seqLen-50)?0:(seqLen-50);
+				int iterBeginPos = 0>(seqLen-destor.simiCandLimit)?0:(seqLen-destor.simiCandLimit);
 	//			printf("tq:%lx\n", tq);
 	//			printf("sequence length: %d\n", g_sequence_get_length(tq));
 				GSequenceIter *end = g_sequence_get_end_iter(tq);

@@ -227,6 +227,7 @@ void destor_start() {
 void printDestorStatus(){
 	printf("Parallel  execute: %s.\n", (destor.curStatus==STATUS_PARALLEL)?"TRUE":"FALSE");
 	printf("base chunk number: %d\n", destor.baseChunkNum);
+	printf("simi  cand number: %d\n", destor.simiCandLimit);
 	printf("feature length: %d, len mask: 0x%lx\n",
 			 destor.featureLen, destor.featureLenMask);
 	printf("feature number: %d\n", destor.featureNum);
