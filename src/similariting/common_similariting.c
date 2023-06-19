@@ -5,8 +5,10 @@
 
 GHashTable* cand_tab;
 GHashTable* existing_fea_tab;
+GHashTable* commonSimiSufeatureTab;
 
 void common_similariting_init(){
+	commonSimiSufeatureTab = g_hash_table_new(g_int64_hash, g_int64_equal);
 	cand_tab = g_hash_table_new_full(g_int64_hash,
 									 g_int64_equal, NULL, free);
 	existing_fea_tab = g_hash_table_new_full(g_int64_hash,
@@ -30,9 +32,8 @@ void insert_sufeature(struct chunk* c, int suFeaNum, GHashTable* sufea_tab){
 }
 
 struct chunk* searchMostSimiChunk(GHashTable* cand_tab, struct chunk* c, int* curMaxHit,
-							 fpp curCandC, struct chunk* excludedChunk){
+							 fpp curCandC){
 
-	if(c == excludedChunk) {return curCandC;}
 	int* hitTime = g_hash_table_lookup(cand_tab, c);
 	if(hitTime){
 		*hitTime = *hitTime + 1;
@@ -122,7 +123,7 @@ struct chunk* most_match_similariting(struct chunk* c, int suFeaNum, GHashTable*
 			TIMER_BEGIN(2);
 			for (; iter != end; iter = g_sequence_iter_next(iter)) {
 				struct chunk* candChunk = (struct chunk*)g_sequence_get(iter);
-				ret = searchMostSimiChunk(cand_tab, candChunk, &curMaxHitTime, ret, NULL);
+				ret = searchMostSimiChunk(cand_tab, candChunk, &curMaxHitTime, ret);
 			}
 			TIMER_END(2, jcr.chooseMostSim_time);
 		}
@@ -150,7 +151,7 @@ struct chunk* most_match_similariting(struct chunk* c, int suFeaNum, GHashTable*
  *  else return 0
  * base chunk is the one shares most features
 */
-struct chunk* topK_match_similariting(struct chunk* c, int suFeaNum, GHashTable* sufea_tab){
+struct chunk* topK_match_similariting(struct chunk* c, int suFeaNum){
 
 	struct chunk* ret = NULL;
 	int curMaxHitTime = 0;
@@ -163,7 +164,7 @@ struct chunk* topK_match_similariting(struct chunk* c, int suFeaNum, GHashTable*
 			jcr.simiFeaNum++;
 			TIMER_DECLARE(1);
 			TIMER_BEGIN(1);
-			GSequence *tq = g_hash_table_lookup(sufea_tab, &(c->fea[i]));
+			GSequence *tq = g_hash_table_lookup(commonSimiSufeatureTab, &(c->fea[i]));
 			TIMER_END(1, jcr.lookupFea_time);
 			if(tq){
 				int seqLen = g_sequence_get_length(tq);
@@ -178,7 +179,7 @@ struct chunk* topK_match_similariting(struct chunk* c, int suFeaNum, GHashTable*
 				TIMER_BEGIN(2);
 				for (; iter != end; iter = g_sequence_iter_next(iter)) {
 					struct chunk* candChunk = (struct chunk*)g_sequence_get(iter);
-					ret = searchMostSimiChunk(cand_tab, candChunk, &curMaxHitTime, ret, NULL);
+					ret = searchMostSimiChunk(cand_tab, candChunk, &curMaxHitTime, ret);
 				}
 				TIMER_END(2, jcr.chooseMostSim_time);
 			}
@@ -196,7 +197,7 @@ struct chunk* topK_match_similariting(struct chunk* c, int suFeaNum, GHashTable*
 	g_hash_table_remove_all(existing_fea_tab);
 	TIMER_DECLARE(3);
 	TIMER_BEGIN(3);
-	insert_sufeature(c, suFeaNum, sufea_tab);
+	insert_sufeature(c, suFeaNum, commonSimiSufeatureTab);
 	TIMER_END(3, jcr.insertFea_time);
 
 //	printf("Most match similaring chunk is: %p\n", ret);

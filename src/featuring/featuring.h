@@ -7,6 +7,8 @@
 
 #include "../destor.h"
 
+#define MAX_FEANUM 32
+
 extern const int maMatrix[12][2];
 #define FINESSE_FEATURE_NUM 12
 #define FINESSE_SF_NUM 4

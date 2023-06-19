@@ -10,6 +10,7 @@ static pthread_t simi_t;
 static int64_t chunk_num;
 
 static void (*similariting)(struct chunk* c);
+static void (*stopSimilariting)();
 
 void *simi_thread(void *arg) {
 	printf("simi thread         tid: %d\n", gettid());
@@ -61,38 +62,53 @@ void *simi_thread(void *arg) {
 	return NULL;
 }
 
+static void voidStopSimilariting(){
+
+}
+
+
 void start_simi_phase() {
 
 	if (destor.similarity_algorithm == SIMILARITY_NTRANSFORM){
 		ntransform_similariting_init();
 		similariting = ntransform_similariting;
+		stopSimilariting = voidStopSimilariting;
 	}else if(destor.similarity_algorithm == SIMILARITY_DEEPSKETCH){
 		deepsketch_similariting_init();
 		similariting = deepsketch_similariting;
+		stopSimilariting = voidStopSimilariting;
 	}else if(destor.similarity_algorithm == SIMILARITY_FINENESS){
 		fineness_similariting_init();
 		similariting = fineness_similariting;
+		stopSimilariting = voidStopSimilariting;
 	}else if(destor.similarity_algorithm == SIMILARITY_HIGHDEDUP){
 		highdedup_similariting_init();
 		similariting = highdedup_similariting;
+		stopSimilariting = highdedup_similariting_stop;
 	}else if(destor.similarity_algorithm == SIMILARITY_ODESS){
 		odess_similariting_init();
 		similariting = odess_similariting;
+		stopSimilariting = voidStopSimilariting;
 	}else if(destor.similarity_algorithm == SIMILARITY_FINENESS_FLATFEA){
 		fineness_similariting_init();
 		similariting = fineness_similariting_flatFea;
+		stopSimilariting = voidStopSimilariting;
 	}else if(destor.similarity_algorithm == SIMILARITY_BRUTEFORCE){
 		bruteforce_similariting_init();
 		similariting = bruteforce_similariting;
+		stopSimilariting = voidStopSimilariting;
 	}else if(destor.similarity_algorithm == SIMILARITY_FINE_ANN){
 		fineANN_similariting_init();
 		similariting = fineANN_similariting;
+		stopSimilariting = voidStopSimilariting;
 	}else if(destor.similarity_algorithm == SIMILARITY_STATIS){
 		statis_similariting_init();
 		similariting = statis_similariting;
+		stopSimilariting = voidStopSimilariting;
 	}else if(destor.similarity_algorithm == SIMILARITY_WEIGHTCHUNK){
 		weightchunk_similariting_init();
 		similariting = weightchunk_similariting;
+		stopSimilariting = voidStopSimilariting;
 	}
 
 
@@ -102,6 +118,8 @@ void start_simi_phase() {
 
 void stop_simi_phase() {
     SETSTATUS(STATUS_SIMI);
+	//subsubthreead shoud be stoped before sub-thread
+	stopSimilariting();
 	pthread_join(simi_t, NULL);
 	NOTICE("similarity phase stops successfully: %d chunks", chunk_num);
 }

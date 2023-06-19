@@ -22,11 +22,14 @@ void ntransform_similariting(struct chunk* c);
 
 void deepsketch_similariting(struct chunk* c);
 
-//GHashTable* highdedup_sufeature_tab;
+void insertFeaToTab(GHashTable* tab, struct chunk* c);
+//GHashTable* commonSimiSufeatureTab;
+gboolean true( gpointer key, gpointer value, gpointer user_data);
 struct chunk* searchMostSimiChunk(GHashTable* cand_tab, struct chunk* c, int* curMaxHit,
-                                 fpp curCandC, struct chunk* excludedChunk);
+                                 fpp curCandC);
 void highdedup_similariting_init();
 void highdedup_similariting(struct chunk* c);
+void highdedup_similariting_stop();
 
 GHashTable* odess_sufeature_tab;
 void odess_similariting_init();
@@ -35,7 +38,7 @@ void odess_similariting_flatFea(struct chunk* c);
 
 struct chunk* first_match_similariting(struct chunk* c, int suFeaNum, GHashTable* sufea_tab);
 struct chunk* most_match_similariting(struct chunk* c, int suFeaNum, GHashTable* sufea_tab);
-struct chunk* topK_match_similariting(struct chunk* c, int suFeaNum, GHashTable* sufea_tab);
+struct chunk* topK_match_similariting(struct chunk* c, int suFeaNum);
 void sec_most_match_similariting(struct chunk* c, int suFeaNum, GHashTable* sufea_tab, struct chunk* baseChunk);
 
 
@@ -53,8 +56,13 @@ void weightchunk_similariting(struct chunk* c);
 
 void common_similariting_init();
 
+void common_similariting_init_MT(int feaNum);
+void common_similariting_stop_MT();
+struct chunk* topK_match_similariting_MT(struct chunk* c, int suFeaNum);
+
 extern GHashTable* cand_tab;
 extern GHashTable* existing_fea_tab;
+extern GHashTable* commonSimiSufeatureTab;
 
 #ifdef __cplusplus
 extern "C"
