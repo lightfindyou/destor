@@ -22,6 +22,7 @@ void ntransform_similariting(struct chunk* c);
 
 void deepsketch_similariting(struct chunk* c);
 
+void insert_sufeature(struct chunk* c, int suFeaNum, GHashTable* sufea_tab);
 void insertFeaToTab(GHashTable* tab, struct chunk* c);
 //GHashTable* commonSimiSufeatureTab;
 gboolean true( gpointer key, gpointer value, gpointer user_data);

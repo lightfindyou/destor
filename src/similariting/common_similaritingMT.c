@@ -10,20 +10,18 @@ int simiFeatureNum = 0;
 int loopIdx;
 pthread_mutex_t simi_mutex[MAX_FEANUM];
 pthread_mutex_t threadCounterMutex;
+//pthread_mutex_t mutexThreadReturnResult;
 pthread_cond_t simi_cond_begin;
-pthread_cond_t simi_cond_start[MAX_FEANUM];
-pthread_cond_t simi_cond_end[MAX_FEANUM];
 pthread_cond_t simi_cond_ReturnResult;
 pthread_mutex_t  mutexReturnResult;
 pthread_rwlock_t candTableRWLock;
+pthread_rwlock_t mainThreadRWLock;
 static pthread_t simi_t[MAX_FEANUM];
-static pthread_t getChunk_simi_t;
 struct chunk* oneSearchRet = NULL;
 int curMaxHitTime = 0;
 int threadIdx[MAX_FEANUM];
 
-struct chunk* searchMostSimiChunk_MT(GHashTable* cand_tab, struct chunk* c, int* curMaxHit,
-							 fpp curCandC){
+struct chunk* searchMostSimiChunk_MT(GHashTable* cand_tab, struct chunk* c, int* curMaxHit){
 
 	if(pthread_rwlock_rdlock(&candTableRWLock)){
 		printf("search most similar chunk read lock fails\n");
@@ -32,26 +30,29 @@ struct chunk* searchMostSimiChunk_MT(GHashTable* cand_tab, struct chunk* c, int*
 	if(pthread_rwlock_unlock(&candTableRWLock)){
 		printf("search most similar chunk read unlock fails\n");
 	}
+
+	if(pthread_rwlock_wrlock(&candTableRWLock)){
+		printf("search most similar chunk write lock fails\n");
+	}
 	if(hitTime){
-		__sync_add_and_fetch(hitTime, 1);
+//		__sync_add_and_fetch(hitTime, 1);
+		*hitTime = *hitTime+1;
 	}else{
 		hitTime = malloc(sizeof(int));
 		assert(hitTime);
 		*hitTime = 1;
-		if(pthread_rwlock_wrlock(&candTableRWLock)){
-			printf("search most similar chunk write lock fails\n");
-		}
 		g_hash_table_replace(cand_tab, c, hitTime);
-		if(pthread_rwlock_unlock(&candTableRWLock)){
-			printf("search most similar chunk write unlock fails\n");
-		}
 	}
 
 	if(*hitTime > *curMaxHit){
-		*curMaxHit = hitTime;
+		*curMaxHit = *hitTime;
 		oneSearchRet = c;
 	}
+	if(pthread_rwlock_unlock(&candTableRWLock)){
+		printf("search most similar chunk write unlock fails\n");
+	}
 
+	return NULL;
 }
 
 void addAndTestCounter(){
@@ -66,6 +67,7 @@ void addAndTestCounter(){
 			puts("topK common simi MT failed to unlock threadCounterMutex!");
 			return;
 		}
+		//NOTE here lock main lock to guarantee the main thread is waiting for signal
 		if (pthread_mutex_lock(&mutexReturnResult) != 0) {
 			puts("topK common simi MT failed to lock!");
 			return;
@@ -85,24 +87,31 @@ void addAndTestCounter(){
 	}
 }
 
-struct chunk* thread_topK_match_similariting_MT(int *threadIdx){
-	printf("simi thread index %d\n", *threadIdx);
+void* thread_topK_match_similariting_MT(void *idp){
+	int threadId = *(int*)idp;
+	printf("simi thread index %d\n", threadId);
 
-	if (pthread_mutex_lock(&simi_mutex[*threadIdx]) != 0) {
+	if (pthread_mutex_lock(&simi_mutex[threadId]) != 0) {
 		puts("common simi MT failed to lock!");
 		return NULL;
 	}
 	while(1){
+		if(pthread_rwlock_unlock(&mainThreadRWLock)){
+			printf("top-K thread MT unlock rwLock error.\n");
+		}
 		/** If put the thread signal lock here, sometimes signal will
 		 *  send before this thread gain the lock, thus
 		 *  missing the signal
 		 */
-		pthread_cond_wait(&simi_cond_begin, &simi_mutex[*threadIdx]);
+		pthread_cond_wait(&simi_cond_begin, &simi_mutex[threadId]);
+		if(pthread_rwlock_rdlock(&mainThreadRWLock)){
+			printf("top-K thread MT unlock rwLock error.\n");
+		}
 
-		printf("loop %d, thread %2d of feature %2d start\n", loopIdx, *threadIdx, simiFeatureNum);
+		printf("loop %d, thread %2d of feature %2d start\n", loopIdx, threadId, simiFeatureNum);
 		if(!simiFeature){
-			printf("simi thread %d over!", *threadIdx);	
-			if (pthread_mutex_unlock(&simi_mutex[*threadIdx]) != 0) {
+			printf("simi thread %d over!", threadId);	
+			if (pthread_mutex_unlock(&simi_mutex[threadId]) != 0) {
 				puts("common simi MT failed to unlock!");
 				return NULL;
 			}
@@ -110,16 +119,15 @@ struct chunk* thread_topK_match_similariting_MT(int *threadIdx){
 		}
 		/**does not run if threadID is bigger than feature ID and
 		 * skip the fea that is contained in exist feature*/
-		if((*threadIdx) >= simiFeatureNum){
+		if((threadId) >= simiFeatureNum){
 			continue;
-//			goto nextLoop;
 //			goto skipFeaSearch;
 		}
 
-		if(g_hash_table_lookup(existing_fea_tab, &(simiFeature[*threadIdx]))){
+		if(g_hash_table_lookup(existing_fea_tab, &(simiFeature[threadId]))){
 			goto skipFeaSearch;
 		}
-		GSequence *tq = g_hash_table_lookup(commonSimiSufeatureTab, &(simiFeature[*threadIdx]));
+		GSequence *tq = g_hash_table_lookup(commonSimiSufeatureTab, &(simiFeature[threadId]));
 		if(tq){
 //			printf("tq:%lx\n", tq);
 //			printf("sequence length: %d\n", g_sequence_get_length(tq));
@@ -127,21 +135,12 @@ struct chunk* thread_topK_match_similariting_MT(int *threadIdx){
 			GSequenceIter *iter = g_sequence_get_begin_iter(tq);
 			for (; iter != end; iter = g_sequence_iter_next(iter)) {
 				struct chunk* candChunk = (struct chunk*)g_sequence_get(iter);
-				searchMostSimiChunk_MT(cand_tab, candChunk, &curMaxHitTime, oneSearchRet);
+				searchMostSimiChunk_MT(cand_tab, candChunk, &curMaxHitTime);
 			}
 		}
 
 skipFeaSearch:
-		printf("loop %d, thread %2d of feature %2d execute over\n", loopIdx, *threadIdx, simiFeatureNum);
-nextLoop:
-//		if (pthread_mutex_unlock(&simi_mutex[*threadIdx]) != 0) {
-//			puts("common simi MT failed to unlock!");
-//			return NULL;
-//		}
-//		if (pthread_mutex_lock(&simi_mutex[*threadIdx]) != 0) {
-//			puts("common simi MT failed to lock!");
-//			return NULL;
-//		}
+		printf("loop %d, thread %2d of feature %2d execute over\n", loopIdx, threadId, simiFeatureNum);
 		addAndTestCounter();
 	}
 }
@@ -154,6 +153,7 @@ inline void simiThreadStartBroadcasting(int suFeaNum){
 			printf("topK common simi MT failed to lock %d mutex!", i);
 			return;
 		}
+		printf("lock simi_mutex %d over\n", i);
 	}
 	pthread_cond_broadcast(&simi_cond_begin);
 	for(int i = 0; i < suFeaNum; i++){
@@ -175,24 +175,25 @@ struct chunk* topK_match_similariting_MT(struct chunk* c, int suFeaNum){
 	simiFeatureNum = suFeaNum;
 	printf("feature number: %d\n", suFeaNum);
 
+	if (pthread_mutex_lock(&mutexReturnResult) != 0) {
+		puts("topK common simi MT failed to lock!");
+		return NULL;
+	}
+
 	for(int baseNum = 0; baseNum < destor.baseChunkNum; baseNum++ ){
 		loopIdx = baseNum;
 		executeOverThreadNum = 0;
 		oneSearchRet = NULL;
 		curMaxHitTime = 0;
 
-		if (pthread_mutex_lock(&mutexReturnResult) != 0) {
-			puts("topK common simi MT failed to lock!");
-			return;
-		}
-
 		simiThreadStartBroadcasting(suFeaNum);
 //		simiThreadStartBroadcasting(MAX_FEANUM);
+		if(pthread_rwlock_unlock(&mainThreadRWLock)){
+			printf("top-K MT unlock rwLock error.\n");
+		}
 		pthread_cond_wait(&simi_cond_ReturnResult, &mutexReturnResult);
-
-		if (pthread_mutex_unlock(&mutexReturnResult) != 0) {
-			puts("topK common simi MT failed to unlock!");
-			return;
+		if(pthread_rwlock_wrlock(&mainThreadRWLock)){
+			printf("top-K MT lock rwLock error.\n");
 		}
 
 		if(oneSearchRet == NULL) { break; }
@@ -209,6 +210,11 @@ struct chunk* topK_match_similariting_MT(struct chunk* c, int suFeaNum){
 	g_hash_table_remove_all(existing_fea_tab);
 	insert_sufeature(c, suFeaNum, commonSimiSufeatureTab);
 
+	if (pthread_mutex_unlock(&mutexReturnResult) != 0) {
+		puts("topK common simi MT failed to unlock!");
+		return NULL;
+	}
+
 	/*Only if the chunk is unique, add the chunk into sufeature table*/
 	/*UNNECESSARY, for high dedup ratio, always add*/
 	return NULL;
@@ -220,23 +226,23 @@ void common_similariting_init_MT(int feaNum){
 									 g_int64_equal, NULL, free);
 	existing_fea_tab = g_hash_table_new_full(g_int64_hash,
 			 						 g_int64_equal, NULL, NULL);
-	pthread_cond_init(&simi_cond_start, 0);
 	pthread_cond_init(&simi_cond_begin, 0);
 	pthread_cond_init(&simi_cond_ReturnResult, 0);
 	pthread_rwlock_init(&candTableRWLock, 0);
+	pthread_rwlock_init(&mainThreadRWLock, 0);
 	pthread_mutex_init(&threadCounterMutex, 0);
+//	pthread_mutex_init(&mutexThreadReturnResult, 0);
 
 	for(int i = 0; i< feaNum; i++){
-		if (pthread_mutex_init(&simi_mutex[i], 0)
-			|| pthread_cond_init(&simi_cond_start[i], 0)
-			|| pthread_cond_init(&simi_cond_end[i], 0)){
+		if (pthread_mutex_init(&simi_mutex[i], 0)){
 				printf("init cond %d error\n", i);
 		}
 		threadIdx[i] = i;
-		if(pthread_create(&simi_t[i], NULL, thread_topK_match_similariting_MT, &threadIdx[i])){
+		if(pthread_create(&simi_t[i], NULL, thread_topK_match_similariting_MT,
+					 (void*)(&threadIdx[i]))){
 			printf("create simi thread MT error\n");
 		}else{
-			printf("create simi thread %d\n", simi_t[i]);
+			printf("create simi thread %lu\n", simi_t[i]);
 		}
 	}
 
