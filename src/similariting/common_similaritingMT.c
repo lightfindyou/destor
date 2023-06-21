@@ -1,4 +1,8 @@
+#ifndef __USE_UNIX98
+#define __USE_UNIX98
+#endif //__USE_UNIX98
 #include <xxhash.h>
+#include <pthread.h>
 #include "../destor.h"
 #include "similariting.h"
 #include "../featuring/featuring.h"
@@ -8,8 +12,8 @@ feature* simiFeature;
 int simiFeatureNum = 0;
 int loopIdx;
 pthread_mutex_t threadCounterMutex;
-pthread_rwlock_t candTableRWLock;
-pthread_rwlock_t mainThreadRWLock;
+pthread_rwlock_t candTableRWLock = PTHREAD_RWLOCK_INITIALIZER;
+volatile pthread_rwlock_t mainThreadRWLock = PTHREAD_RWLOCK_INITIALIZER;
 static pthread_t simi_t[MAX_FEANUM];
 struct chunk* oneSearchRet = NULL;
 int curMaxHitTime = 0;
@@ -50,6 +54,7 @@ struct chunk* searchMostSimiChunk_MT(GHashTable* cand_tab, struct chunk* c, int*
 	return NULL;
 }
 
+inline void addAndTestCounter() __attribute__((always_inline));
 void addAndTestCounter(){
 	if (pthread_mutex_lock(&threadCounterMutex) != 0) {
 		puts("topK common simi MT failed to lock threadCounterMutex!");
@@ -57,23 +62,19 @@ void addAndTestCounter(){
 	}
 	executeOverThreadNum++;
 	if(executeOverThreadNum == simiFeatureNum){
-		if (pthread_mutex_unlock(&threadCounterMutex) != 0) {
-			puts("topK common simi MT failed to unlock threadCounterMutex!");
-			return;
-		}
 		printf("return statified, broadcasting, feature num: %d!\n", simiFeatureNum);
 	}else{
 		printf("return NOT statified, feature number: %d\n", executeOverThreadNum);
-		if (pthread_mutex_unlock(&threadCounterMutex) != 0) {
-			puts("topK common simi MT failed to unlock threadCounterMutex!");
-			return;
-		}
+	}
+
+	if (pthread_mutex_unlock(&threadCounterMutex) != 0) {
+		puts("topK common simi MT failed to unlock threadCounterMutex!");
+		return;
 	}
 }
 
 void* thread_topK_match_similariting_MT(void *idp){
 	int threadId = *(int*)idp;
-	printf("simi thread index %d\n", threadId);
 
 	while(1){
 		if(threadNeedExecute[threadId] == 0){
@@ -105,8 +106,6 @@ void* thread_topK_match_similariting_MT(void *idp){
 		}
 		GSequence *tq = g_hash_table_lookup(commonSimiSufeatureTab, &(simiFeature[threadId]));
 		if(tq){
-//			printf("tq:%lx\n", tq);
-//			printf("sequence length: %d\n", g_sequence_get_length(tq));
 			GSequenceIter *end = g_sequence_get_end_iter(tq);
 			GSequenceIter *iter = g_sequence_get_begin_iter(tq);
 			for (; iter != end; iter = g_sequence_iter_next(iter)) {
@@ -118,8 +117,8 @@ void* thread_topK_match_similariting_MT(void *idp){
 skipFeaSearch:
 		addAndTestCounter();
 		printf("loop %d, thread %2d of feature %2d execute over\n", loopIdx, threadId, simiFeatureNum);
-continuePosition:
 
+continuePosition:
 		threadNeedExecute[threadId] = 0;
 		if(pthread_rwlock_unlock(&mainThreadRWLock)){
 			printf("top-K thread MT unlock rwLock error.\n");
