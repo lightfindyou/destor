@@ -98,7 +98,8 @@ void do_backup(char *path) {
 //  start_filter_phase();
 
     do {
-        usleep(2000);
+//        usleep(2000);
+        usleep(1000000);
         switchStatus();
 
         /*time_t now = time(NULL);*/

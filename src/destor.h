@@ -31,6 +31,7 @@
 #include <getopt.h>
 
 #include "utils/sds.h"
+#include "debug.h"
 
 #define SENTEST 1
 #define PATHLEN 256
