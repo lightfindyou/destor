@@ -377,6 +377,7 @@ struct chunk {
 	short feaNum;				//	number of feature
 	unsigned char *data;
 	feature fea[MAX_FEA_SIZE];
+	uint16_t simiHitTime;
 };
 
 /* struct segment only makes sense for index. */
