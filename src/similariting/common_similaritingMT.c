@@ -16,8 +16,9 @@ int curMaxHitTime = 0;
 int threadIdx[MAX_FEANUM];
 volatile short threadNeedExecute[MAX_FEANUM];
 volatile int executeOverThreadNum = 0;
-struct chunk* oneSearchRet = NULL;
+struct chunk* simiSearchRet = NULL;
 GAsyncQueue* candQueue;
+GAsyncQueue* threadCandQueue[MAX_FEANUM];
 
 void resetCandQueue(GAsyncQueue* queue){
 	int queueLen = g_async_queue_length(queue);
@@ -27,9 +28,9 @@ void resetCandQueue(GAsyncQueue* queue){
 	}
 }
 
-inline struct chunk* searchMostSimiChunk_MT(GHashTable* cand_tab,
+inline struct chunk* searchMostSimiChunk_MT_hashtab(GHashTable* cand_tab,
 		 struct chunk* c, int* curMaxHit) __attribute__((always_inline));
-struct chunk* searchMostSimiChunk_MT(GHashTable* cand_tab, struct chunk* c, int* curMaxHit){
+struct chunk* searchMostSimiChunk_MT_hashtab(GHashTable* cand_tab, struct chunk* c, int* curMaxHit){
 
 	if(pthread_mutex_lock(&candTableMutex)){
 		ERROR("search most similar chunk lock fails\n");
@@ -46,7 +47,7 @@ struct chunk* searchMostSimiChunk_MT(GHashTable* cand_tab, struct chunk* c, int*
 
 	if(*hitTime > *curMaxHit){
 		*curMaxHit = *hitTime;
-		oneSearchRet = c;
+		simiSearchRet = c;
 	}
 	if(pthread_mutex_unlock(&candTableMutex)){
 		ERROR("search most similar chunk unlock fails\n");
@@ -61,7 +62,7 @@ struct chunk* searchMostSimiChunk_MT_list(GAsyncQueue* queue, struct chunk* c, i
 
 	if(hitTime > *curMaxHit){
 		*curMaxHit = hitTime;
-		oneSearchRet = c;
+		simiSearchRet = c;
 	}
 
 	if(hitTime == 1){
@@ -122,10 +123,24 @@ void* thread_topK_match_similariting_MT(void *idp){
 			GSequenceIter *iter = g_sequence_get_begin_iter(tq);
 			for (; iter != end; iter = g_sequence_iter_next(iter)) {
 				struct chunk* candChunk = (struct chunk*)g_sequence_get(iter);
-//				searchMostSimiChunk_MT(cand_tab, candChunk, &curMaxHitTime);
-				searchMostSimiChunk_MT_list(candQueue, candChunk, &curMaxHitTime);
+//				searchMostSimiChunk_MT_hashtab(cand_tab, candChunk, &curMaxHitTime);
+//				searchMostSimiChunk_MT_list(candQueue, candChunk, &curMaxHitTime);
+				//change multiple thread
+				{
+					int hitTime = __sync_add_and_fetch(&(candChunk->simiHitTime), 1);
+
+					if(hitTime > curMaxHitTime){
+						curMaxHitTime = hitTime;
+						simiSearchRet = candChunk;
+					}
+
+					if(hitTime == 1){
+						g_async_queue_push(threadCandQueue[threadId], candChunk);
+					}
+				}
 			}
 		}
+		resetCandQueue(threadCandQueue[threadId]);
 		TIMER_END(2, jcr.chooseMostSim_time);
 
 skipFeaSearch:
@@ -154,7 +169,7 @@ struct chunk* topK_match_similariting_MT(struct chunk* c, int suFeaNum){
 	for(int baseNum = 0; baseNum < destor.baseChunkNum; baseNum++){
 		loopIdx = baseNum;
 		executeOverThreadNum = 0;
-		oneSearchRet = NULL;
+		simiSearchRet = NULL;
 		curMaxHitTime = 0;
 
 		memset((short *)threadNeedExecute, 1, sizeof(short)*simiFeatureNum);
@@ -167,14 +182,14 @@ struct chunk* topK_match_similariting_MT(struct chunk* c, int suFeaNum){
 			ERROR("top-K MT lock rwLock error.\n");
 		}
 
-		if(oneSearchRet == NULL) {
+		if(simiSearchRet == NULL) {
 			//the unlock outside the loop while act
 			break; 
 		}
 		//insert ret into chunk
-		g_queue_push_tail(c->basechunk, oneSearchRet);
+		g_queue_push_tail(c->basechunk, simiSearchRet);
 		//insert feature to hash table
-		insertFeaToTab(existing_fea_tab, oneSearchRet);
+		insertFeaToTab(existing_fea_tab, simiSearchRet);
 		//clear cand_tab
 //		g_hash_table_remove_all(cand_tab);
 		resetCandQueue(candQueue);
@@ -188,7 +203,7 @@ struct chunk* topK_match_similariting_MT(struct chunk* c, int suFeaNum){
 	TIMER_DECLARE(3);
 	TIMER_BEGIN(3);
 //	g_hash_table_remove_all(cand_tab);
-	resetCandQueue(candQueue);
+//	resetCandQueue(candQueue);
 
 	g_hash_table_remove_all(existing_fea_tab);
 	insert_sufeature(c, suFeaNum, commonSimiSufeatureTab);
@@ -218,6 +233,7 @@ void common_similariting_init_MT(int feaNum){
 
 	for(int i = 0; i< feaNum; i++){
 		threadIdx[i] = i;
+		threadCandQueue[i] = g_async_queue_new();
 		if(pthread_create(&simi_t[i], NULL, thread_topK_match_similariting_MT,
 					 (void*)(&threadIdx[i]))){
 			printf("create simi thread MT error\n");
