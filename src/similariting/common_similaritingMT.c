@@ -7,8 +7,7 @@
 feature* simiFeature;
 int simiFeatureNum = 0;
 int loopIdx;
-pthread_mutex_t addCounterMutex;
-pthread_mutex_t candTableMutex;
+pthread_mutex_t simiThreadOverMutex;
 //pthread_rwlock_t candTableRWLock = PTHREAD_RWLOCK_INITIALIZER;
 pthread_rwlock_t mainThreadRWLock = PTHREAD_RWLOCK_INITIALIZER;
 static pthread_t simi_t[MAX_FEANUM];
@@ -20,40 +19,13 @@ struct chunk* simiSearchRet = NULL;
 GAsyncQueue* candQueue;
 GAsyncQueue* threadCandQueue[MAX_FEANUM];
 
+inline void resetCandQueue(GAsyncQueue* queue) __attribute__((always_inline));
 void resetCandQueue(GAsyncQueue* queue){
 	int queueLen = g_async_queue_length(queue);
 	for(int i=0; i<queueLen; i++){
 		struct chunk* c = g_async_queue_pop(queue);
 		c->simiHitTime = 0;
 	}
-}
-
-inline struct chunk* searchMostSimiChunk_MT_hashtab(GHashTable* cand_tab,
-		 struct chunk* c, int* curMaxHit) __attribute__((always_inline));
-struct chunk* searchMostSimiChunk_MT_hashtab(GHashTable* cand_tab, struct chunk* c, int* curMaxHit){
-
-	if(pthread_mutex_lock(&candTableMutex)){
-		ERROR("search most similar chunk lock fails\n");
-	}
-	int* hitTime = g_hash_table_lookup(cand_tab, c);
-	if(hitTime){
-		*hitTime = *hitTime+1;
-	}else{
-		hitTime = malloc(sizeof(int));
-		assert(hitTime);
-		*hitTime = 1;
-		g_hash_table_replace(cand_tab, c, hitTime);
-	}
-
-	if(*hitTime > *curMaxHit){
-		*curMaxHit = *hitTime;
-		simiSearchRet = c;
-	}
-	if(pthread_mutex_unlock(&candTableMutex)){
-		ERROR("search most similar chunk unlock fails\n");
-	}
-
-	return NULL;
 }
 
 struct chunk* searchMostSimiChunk_MT_list(GAsyncQueue* queue, struct chunk* c, int* curMaxHit){
@@ -76,14 +48,14 @@ struct chunk* searchMostSimiChunk_MT_list(GAsyncQueue* queue, struct chunk* c, i
 
 inline void addAndTestCounter() __attribute__((always_inline));
 void addAndTestCounter(){
-	if (pthread_mutex_lock(&addCounterMutex) != 0) {
-		ERROR("topK common simi MT failed to lock addCounterMutex!");
+	if (pthread_mutex_lock(&simiThreadOverMutex) != 0) {
+		ERROR("topK common simi MT failed to lock simiThreadOverMutex!");
 		return;
 	}
 	executeOverThreadNum++;
 
-	if (pthread_mutex_unlock(&addCounterMutex) != 0) {
-		ERROR("topK common simi MT failed to unlock addCounterMutex!");
+	if (pthread_mutex_unlock(&simiThreadOverMutex) != 0) {
+		ERROR("topK common simi MT failed to unlock simiThreadOverMutex!");
 		return;
 	}
 }
@@ -123,20 +95,15 @@ void* thread_topK_match_similariting_MT(void *idp){
 			GSequenceIter *iter = g_sequence_get_begin_iter(tq);
 			for (; iter != end; iter = g_sequence_iter_next(iter)) {
 				struct chunk* candChunk = (struct chunk*)g_sequence_get(iter);
-//				searchMostSimiChunk_MT_hashtab(cand_tab, candChunk, &curMaxHitTime);
-//				searchMostSimiChunk_MT_list(candQueue, candChunk, &curMaxHitTime);
-				//change multiple thread
-				{
-					int hitTime = __sync_add_and_fetch(&(candChunk->simiHitTime), 1);
+				int hitTime = __sync_add_and_fetch(&(candChunk->simiHitTime), 1);
 
-					if(hitTime > curMaxHitTime){
-						curMaxHitTime = hitTime;
-						simiSearchRet = candChunk;
-					}
+				if(hitTime > curMaxHitTime){
+					curMaxHitTime = hitTime;
+					simiSearchRet = candChunk;
+				}
 
-					if(hitTime == 1){
-						g_async_queue_push(threadCandQueue[threadId], candChunk);
-					}
+				if(hitTime == 1){
+					g_async_queue_push(threadCandQueue[threadId], candChunk);
 				}
 			}
 		}
@@ -190,8 +157,7 @@ struct chunk* topK_match_similariting_MT(struct chunk* c, int suFeaNum){
 		g_queue_push_tail(c->basechunk, simiSearchRet);
 		//insert feature to hash table
 		insertFeaToTab(existing_fea_tab, simiSearchRet);
-		//clear cand_tab
-//		g_hash_table_remove_all(cand_tab);
+		//clear cand_queue
 		resetCandQueue(candQueue);
 
 	}
@@ -202,8 +168,6 @@ struct chunk* topK_match_similariting_MT(struct chunk* c, int suFeaNum){
 
 	TIMER_DECLARE(3);
 	TIMER_BEGIN(3);
-//	g_hash_table_remove_all(cand_tab);
-//	resetCandQueue(candQueue);
 
 	g_hash_table_remove_all(existing_fea_tab);
 	insert_sufeature(c, suFeaNum, commonSimiSufeatureTab);
@@ -223,9 +187,8 @@ void common_similariting_init_MT(int feaNum){
 			 						 g_int64_equal, NULL, NULL);
 	candQueue = g_async_queue_new();
 	
-	if(pthread_mutex_init(&candTableMutex, 0) ||
-			pthread_rwlock_init(&mainThreadRWLock, 0) ||
-			pthread_mutex_init(&addCounterMutex, 0)){
+	if(pthread_rwlock_init(&mainThreadRWLock, 0) ||
+			pthread_mutex_init(&simiThreadOverMutex, 0)){
 		ERROR("init mutex error\n");
 	}
 
