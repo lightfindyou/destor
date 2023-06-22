@@ -1,15 +1,9 @@
-#ifndef __USE_UNIX98
-#define __USE_UNIX98
-#endif //__USE_UNIX98
 #include <xxhash.h>
-#include <pthread.h>
-#include <sys/queue.h>
 #include "../destor.h"
 #include "similariting.h"
 #include "../featuring/featuring.h"
 #include "../jcr.h"
 
-GAsyncQueue* simi_cand_queue;
 feature* simiFeature;
 int simiFeatureNum = 0;
 int loopIdx;
@@ -18,11 +12,12 @@ pthread_mutex_t candTableMutex;
 //pthread_rwlock_t candTableRWLock = PTHREAD_RWLOCK_INITIALIZER;
 pthread_rwlock_t mainThreadRWLock = PTHREAD_RWLOCK_INITIALIZER;
 static pthread_t simi_t[MAX_FEANUM];
-struct chunk* oneSearchRet = NULL;
 int curMaxHitTime = 0;
 int threadIdx[MAX_FEANUM];
 volatile short threadNeedExecute[MAX_FEANUM];
 volatile int executeOverThreadNum = 0;
+struct chunk* oneSearchRet = NULL;
+GAsyncQueue* candQueue;
 
 void resetCandQueue(GAsyncQueue* queue){
 	int queueLen = g_async_queue_length(queue);
@@ -35,34 +30,6 @@ void resetCandQueue(GAsyncQueue* queue){
 inline struct chunk* searchMostSimiChunk_MT(GHashTable* cand_tab,
 		 struct chunk* c, int* curMaxHit) __attribute__((always_inline));
 struct chunk* searchMostSimiChunk_MT(GHashTable* cand_tab, struct chunk* c, int* curMaxHit){
-//	if(pthread_rwlock_rdlock(&candTableRWLock)){
-//		ERROR("search most similar chunk readlock fails\n");
-//	}
-//	int* hitTime = g_hash_table_lookup(cand_tab, c);
-//	if(pthread_rwlock_unlock(&candTableRWLock)){
-//		ERROR("search most similar chunk unlock fails\n");
-//	}
-//
-//	if(pthread_rwlock_wrlock(&candTableRWLock)){
-//		ERROR("search most similar chunk lock fails\n");
-//	}
-//	hitTime = g_hash_table_lookup(cand_tab, c);
-//	if(hitTime){
-//		*hitTime = *hitTime+1;
-//	}else{
-//		hitTime = malloc(sizeof(int));
-//		assert(hitTime);
-//		*hitTime = 1;
-//		g_hash_table_replace(cand_tab, c, hitTime);
-//	}
-//
-//	if(*hitTime > *curMaxHit){
-//		*curMaxHit = *hitTime;
-//		oneSearchRet = c;
-//	}
-//	if(pthread_rwlock_unlock(&candTableRWLock)){
-//		ERROR("search most similar chunk unlock fails\n");
-//	}
 
 	if(pthread_mutex_lock(&candTableMutex)){
 		ERROR("search most similar chunk lock fails\n");
@@ -156,7 +123,7 @@ void* thread_topK_match_similariting_MT(void *idp){
 			for (; iter != end; iter = g_sequence_iter_next(iter)) {
 				struct chunk* candChunk = (struct chunk*)g_sequence_get(iter);
 //				searchMostSimiChunk_MT(cand_tab, candChunk, &curMaxHitTime);
-				searchMostSimiChunk_MT_list(simi_cand_queue, candChunk, &curMaxHitTime);
+				searchMostSimiChunk_MT_list(candQueue, candChunk, &curMaxHitTime);
 			}
 		}
 		TIMER_END(2, jcr.chooseMostSim_time);
@@ -210,7 +177,8 @@ struct chunk* topK_match_similariting_MT(struct chunk* c, int suFeaNum){
 		insertFeaToTab(existing_fea_tab, oneSearchRet);
 		//clear cand_tab
 //		g_hash_table_remove_all(cand_tab);
-		resetCandQueue(simi_cand_queue);
+		resetCandQueue(candQueue);
+
 	}
 
 	if(pthread_rwlock_unlock(&mainThreadRWLock)){
@@ -220,7 +188,7 @@ struct chunk* topK_match_similariting_MT(struct chunk* c, int suFeaNum){
 	TIMER_DECLARE(3);
 	TIMER_BEGIN(3);
 //	g_hash_table_remove_all(cand_tab);
-	resetCandQueue(simi_cand_queue);
+	resetCandQueue(candQueue);
 
 	g_hash_table_remove_all(existing_fea_tab);
 	insert_sufeature(c, suFeaNum, commonSimiSufeatureTab);
@@ -232,20 +200,17 @@ struct chunk* topK_match_similariting_MT(struct chunk* c, int suFeaNum){
 }
 
 void common_similariting_init_MT(int feaNum){
+
 	commonSimiSufeatureTab = g_hash_table_new(g_int64_hash, g_int64_equal);
 	cand_tab = g_hash_table_new_full(g_int64_hash,
 									 g_int64_equal, NULL, free);
 	existing_fea_tab = g_hash_table_new_full(g_int64_hash,
 			 						 g_int64_equal, NULL, NULL);
-									 GAsyncQueue*
-	simi_cand_queue = g_async_queue_new();
+	candQueue = g_async_queue_new();
 	
 	if(pthread_mutex_init(&candTableMutex, 0) ||
 			pthread_rwlock_init(&mainThreadRWLock, 0) ||
 			pthread_mutex_init(&addCounterMutex, 0)){
-//	if(pthread_rwlock_init(&candTableRWLock, 0) ||
-//			pthread_rwlock_init(&mainThreadRWLock, 0) ||
-//			pthread_mutex_init(&addCounterMutex, 0))
 		ERROR("init mutex error\n");
 	}
 

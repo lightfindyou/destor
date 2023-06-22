@@ -62,9 +62,9 @@ void common_similariting_stop_MT();
 struct chunk* topK_match_similariting_MT(struct chunk* c, int suFeaNum);
 
 extern GHashTable* cand_tab;
-extern GAsyncQueue* simi_cand_queue;
 extern GHashTable* existing_fea_tab;
 extern GHashTable* commonSimiSufeatureTab;
+extern GAsyncQueue* candQueue;
 
 #ifdef __cplusplus
 extern "C"

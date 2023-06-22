@@ -99,7 +99,8 @@ void do_backup(char *path) {
 
     do {
 //        usleep(2000);
-        usleep(1000000);
+        usleep(80000);
+//        usleep(1000000);
         switchStatus();
 
         /*time_t now = time(NULL);*/
@@ -121,7 +122,7 @@ void do_backup(char *path) {
         stop_hash_phase();
     }
     stop_dedup_phase();
-    if (destor.simulation_level != SIMULATION_ALL) {
+    if (destor.simulation_level != SIMULATION_ALL){
         TIMER_END(2, dedup_time);
         printf("\x1B[32mDedup time(s)\e: %.3f\n\x1B[37m", dedup_time / 1000000);
     }
