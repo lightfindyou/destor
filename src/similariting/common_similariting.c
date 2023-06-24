@@ -31,6 +31,35 @@ void insert_sufeature(struct chunk* c, int suFeaNum, GHashTable* sufea_tab){
 	}
 }
 
+/** Insert super features into the hash table
+ * hash table[fea] --> chunkList ---> list --> chunk addr
+*/
+void insert_sufeatureHashList(struct chunk* c, int suFeaNum, GHashTable* sufea_tab){
+
+	for (int i = 0; i < suFeaNum; i++) {
+		chunkList *cl = g_hash_table_lookup(sufea_tab, &(c->fea[i]));
+		//alloc address
+		if (!cl) {
+			cl = calloc(1, sizeof(chunkList));
+			assert(cl);
+			cl->list = calloc(INITCHUNKLISTSIZE, sizeof(struct chunk*));
+			assert(cl->list);
+			cl->capacity = INITCHUNKLISTSIZE;
+			cl->length = 0;
+			g_hash_table_replace(sufea_tab, &(c->fea[i]), cl);
+		}
+
+		//enlarge array
+		if(cl->length == cl->capacity){
+			cl->capacity += cl->capacity;
+			cl->list= reallocarray(cl->list,
+					 cl->capacity, sizeof(struct chunk*));
+		}
+
+		cl->list[cl->length++] = c;
+	}
+}
+
 struct chunk* searchMostSimiChunk(GHashTable* cand_tab, struct chunk* c, int* curMaxHit,
 							 fpp curCandC){
 

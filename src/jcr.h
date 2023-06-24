@@ -76,6 +76,13 @@ struct jcr{
 	double read_chunk_time;
 	double write_chunk_time;
 
+	double getQueue_time;
+	double selfIncr_time;
+	double setCand_time;
+	double pushQueue_time;
+	double getIter_time;
+	double clearQueue_time;
+
 	int32_t read_container_num;
 	int64_t candNum;
 	int64_t simiFeaNum;

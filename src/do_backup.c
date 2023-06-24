@@ -203,7 +203,7 @@ void do_backup(char *path) {
            jcr.data_size * 1000000 / jcr.fea_time / 1024 / 1024);
     printf("seaFe_time : %.3f s, %.2f MB/s\n", jcr.seaFea_time / 1000000,
            jcr.data_size * 1000000 / jcr.seaFea_time / 1024 / 1024);
-    printf("xdelt_time : %.3f s, %.2f MB/s\n", jcr.xdelta_time / 1000000,
+    printf("xdelt_time : %.3f s, %.2f MB/s\n\n", jcr.xdelta_time / 1000000,
            jcr.data_size * 1000000 / jcr.xdelta_time / 1024 / 1024);
 
 
@@ -211,8 +211,24 @@ void do_backup(char *path) {
            jcr.data_size * 1000000 / jcr.lookupFea_time/ 1024 / 1024);
     printf("chooseMostSim_time : %.3f s, %.2f MB/s\n", jcr.chooseMostSim_time/ 1000000,
            jcr.data_size * 1000000 / jcr.chooseMostSim_time/ 1024 / 1024);
-    printf("insertFea_time     : %.3f s, %.2f MB/s\n", jcr.insertFea_time/ 1000000,
+    printf("insertFea_time     : %.3f s, %.2f MB/s\n\n", jcr.insertFea_time/ 1000000,
            jcr.data_size * 1000000 / jcr.insertFea_time/ 1024 / 1024);
+
+    
+    printf("getIter_time       : %.3f s, %.2f MB/s\n", jcr.getIter_time/ 1000000,
+           jcr.data_size * 1000000 / jcr.getIter_time/ 1024 / 1024);
+    printf("getQueue_time      : %.3f s, %.2f MB/s\n", jcr.getQueue_time/ 1000000,
+           jcr.data_size * 1000000 / jcr.getQueue_time/ 1024 / 1024);
+    printf("selfIncr_time      : %.3f s, %.2f MB/s\n", jcr.selfIncr_time/ 1000000,
+           jcr.data_size * 1000000 / jcr.selfIncr_time/ 1024 / 1024);
+    printf("setCand_time       : %.3f s, %.2f MB/s\n", jcr.setCand_time/ 1000000,
+           jcr.data_size * 1000000 / jcr.setCand_time/ 1024 / 1024);
+    printf("pushQueue_time     : %.3f s, %.2f MB/s\n", jcr.pushQueue_time/ 1000000,
+           jcr.data_size * 1000000 / jcr.pushQueue_time/ 1024 / 1024);
+    printf("getIter_time       : %.3f s, %.2f MB/s\n", jcr.getIter_time/ 1000000,
+           jcr.data_size * 1000000 / jcr.getIter_time/ 1024 / 1024);
+    printf("clearQueue_time    : %.3f s, %.2f MB/s\n", jcr.clearQueue_time/ 1000000,
+           jcr.data_size * 1000000 / jcr.clearQueue_time/ 1024 / 1024);
 
     printf("total candidata num: %ld \n", jcr.candNum);
     printf("total sim chunk num: %ld , %.2f candidates per chunk\n", jcr.featuredChunks,

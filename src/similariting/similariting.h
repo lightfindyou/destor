@@ -8,6 +8,15 @@
 #include "../destor.h"
 #include "../featuring/featuring.h"
 
+#define INITCHUNKLISTSIZE 50
+struct _chunkList {
+	struct chunk** list;
+	int capacity;
+	int length;
+};
+
+typedef struct _chunkList chunkList;
+
 void fineness_similariting_init();
 void fineness_similariting(struct chunk* c);
 
@@ -23,6 +32,7 @@ void ntransform_similariting(struct chunk* c);
 void deepsketch_similariting(struct chunk* c);
 
 void insert_sufeature(struct chunk* c, int suFeaNum, GHashTable* sufea_tab);
+void insert_sufeatureHashList(struct chunk* c, int suFeaNum, GHashTable* sufea_tab);
 void insertFeaToTab(GHashTable* tab, struct chunk* c);
 //GHashTable* commonSimiSufeatureTab;
 gboolean true( gpointer key, gpointer value, gpointer user_data);
