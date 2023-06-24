@@ -9,7 +9,6 @@ int simiFeatureNum = 0;
 int loopIdx;
 pthread_mutex_t simiThreadOverMutex;
 pthread_mutex_t timeMutex[11];
-//pthread_rwlock_t candTableRWLock = PTHREAD_RWLOCK_INITIALIZER;
 pthread_rwlock_t mainThreadRWLock = PTHREAD_RWLOCK_INITIALIZER;
 static pthread_t simi_t[MAX_FEANUM];
 int curMaxHitTime = 0;
@@ -85,65 +84,29 @@ void* thread_topK_match_similariting_MT(void *idp){
 		TIMER_END(1, jcr.lookupFea_time);
 		pthread_mutex_unlock(&timeMutex[1]);
 
-//		if(tq)
 		if(cl){
 			TIMER_DECLARE(2);
 			TIMER_BEGIN(2);
-//			TIMER_DECLARE(10);
-//			TIMER_BEGIN(10);
-//
+
 			int listLen = cl->length;
 			struct chunk** candList = cl->list;
 			jcr.candNum += listLen;
 			int iterBeginPos = 0>(listLen-destor.simiCandLimit)?0:(listLen-destor.simiCandLimit);
-//			pthread_mutex_lock(&timeMutex[10]);
-//			TIMER_END(10, jcr.getIter_time);
-//			pthread_mutex_unlock(&timeMutex[10]);
 
-
-//			for (; iter != end;)
 			for (int i = iterBeginPos; i < listLen; i++) {
 
-//				TIMER_DECLARE(4);
-//				TIMER_BEGIN(4);
 				struct chunk* candChunk = candList[i];
-//				pthread_mutex_lock(&timeMutex[4]);
-//				TIMER_END(4, jcr.getQueue_time);
-//				pthread_mutex_unlock(&timeMutex[4]);
-
-//				TIMER_DECLARE(5);
-//				TIMER_BEGIN(5);
 				int hitTime = __sync_add_and_fetch(&(candChunk->simiHitTime), 1);
-//				pthread_mutex_lock(&timeMutex[5]);
-//				TIMER_END(5, jcr.selfIncr_time);
-//				pthread_mutex_unlock(&timeMutex[5]);
 
-//				TIMER_DECLARE(6);
-//				TIMER_BEGIN(6);
 				if(hitTime > curMaxHitTime){
 					curMaxHitTime = hitTime;
 					simiSearchRet = candChunk;
 				}
-//				pthread_mutex_lock(&timeMutex[6]);
-//				TIMER_END(6, jcr.setCand_time);
-//				pthread_mutex_unlock(&timeMutex[6]);
-
-//				TIMER_DECLARE(7);
-//				TIMER_BEGIN(7);
 				if(hitTime == 1){
 					threadCandList[candListIdx++] = candChunk;
 				}
-//				pthread_mutex_lock(&timeMutex[7]);
-//				TIMER_END(7, jcr.pushQueue_time);
-//				pthread_mutex_unlock(&timeMutex[7]);
-
 			}
-//			TIMER_DECLARE(9);
-//			TIMER_BEGIN(9);
 			resetCandList(threadCandList, &candListIdx);
-//			pthread_mutex_lock(&timeMutex[9]);
-//			TIMER_END(9, jcr.clearQueue_time);
-//			pthread_mutex_unlock(&timeMutex[9]);
 			pthread_mutex_lock(&timeMutex[10]);
 			TIMER_END(2, jcr.chooseMostSim_time);
 			pthread_mutex_unlock(&timeMutex[10]);
@@ -209,7 +172,6 @@ struct chunk* topK_match_similariting_MT(struct chunk* c, int suFeaNum){
 	TIMER_BEGIN(3);
 
 	g_hash_table_remove_all(existing_fea_tab);
-//	insert_sufeature(c, suFeaNum, commonSimiSufeatureTab);
 	insert_sufeatureHashList(c, suFeaNum, commonSimiSufeatureTab);
 	TIMER_END(3, jcr.insertFea_time);
 
