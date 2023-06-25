@@ -26,7 +26,8 @@ void ntransform_featuring(unsigned char* buf, int size, struct chunk* c);
 //#define HIGHDEDUP_FEATURE_MASK (0xffffffffffffffff)
 #define HIGHDEDUP_FEATURE_NUM 32
 //#define HIGHDEDUP_FEATURE_MASK (0xffff)
-#define HIGHDEDUP_FEATURE_MASK (0XFFFFFFFFFFFFFFFF)
+//#define HIGHDEDUP_FEATURE_MASK (0XFFFFFFFFFFFFFFFF)
+#define HIGHDEDUP_FEATURE_MASK (0XFFFFFFFF)
 void initGearMatrixFea();
 void gearhash_gear_init(int featureNumber);
 
