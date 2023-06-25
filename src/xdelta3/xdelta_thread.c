@@ -10,6 +10,7 @@
 
 static int64_t chunk_num;
 char* xdeltaBase;
+pthread_t xdelta_tid[XDELTA_THREAD_NUM];
 
 void (*recordDelta)(struct chunk *c1, struct chunk* c2, void* delta, int deltaSize);
 

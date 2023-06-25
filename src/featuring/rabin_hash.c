@@ -1,8 +1,8 @@
 #include "../destor.h"
 
-#define MSB64 0x8000000000000000LL
+#define FEARABINMS64 0x8000000000000000LL
 
-#define FINGERPRINT_PT  0xbfe6b8a5bf378d83LL
+#define FEARABINFINGERPRINT_PT  0xbfe6b8a5bf378d83LL
 
 #define SLIDE(m,fp,bufPos,buf) do{	\
 	    unsigned char om;   \
@@ -11,11 +11,11 @@
         bufPos = 0;				\
         om = buf[bufPos];		\
         buf[bufPos] = m;		 \
-		fp ^= U[om];	 \
-		x = fp >> shift;  \
+		fp ^= RABINFEAU[om];	 \
+		x = fp >> RABINFEAshift;  \
 		fp <<= 8;		   \
 		fp |= m;		  \
-		fp ^= T[x];	 \
+		fp ^= RABINFEAT[x];	 \
 }while(0)
 
 typedef unsigned int UINT32;
@@ -25,18 +25,18 @@ typedef unsigned long long int UINT64;
 enum {
 	size = 48
 };
-UINT64 fp;
-int bufpos;
-UINT64 U[256];
-unsigned char buf[size];
-int shift;
-UINT64 T[256];
-UINT64 poly;
+UINT64 RABINFEAfp;
+int RABINFEAbufpos;
+UINT64 RABINFEAU[256];
+unsigned char RABINFEAbuf[size];
+int RABINFEAshift;
+UINT64 RABINFEAT[256];
+UINT64 RABINFEApoly;
 
-size_t _last_pos;
-size_t _cur_pos;
+size_t RABINFEA_last_pos;
+size_t RABINFEA_cur_pos;
 
-unsigned int _num_chunks;
+unsigned int RABINFEA_num_chunks;
 
 const int maMatrix[12][2]={
 	{31, 6197},
@@ -97,10 +97,10 @@ UINT64 rabinhash_polymod(UINT64 nh, UINT64 nl, UINT64 d) {
 	d <<= 63 - k;
 
 	//printf ("polymod : d = %llu\n", d);
-	//printf ("polymod : MSB64 = %llu\n", MSB64);
+	//printf ("polymod : FEARABINMS64 = %llu\n", FEARABINMS64);
 
 	if (nh) {
-		if (nh & MSB64)
+		if (nh & FEARABINMS64)
 			nh ^= d;
 
 		//printf ("polymod : nh = %llu\n", nh);
@@ -166,17 +166,17 @@ void rabinhash_polymult(UINT64 *php, UINT64 *plp, UINT64 x, UINT64 y) {
 }
 
 UINT64 rabinhash_append8(UINT64 p, unsigned char m) {
-	return ((p << 8) | m) ^ T[p >> shift];
+	return ((p << 8) | m) ^ RABINFEAT[p >> RABINFEAshift];
 }
 
 UINT64 rabinhash_slide8(unsigned char m) {
 	unsigned char om;
 	//printf("this char is %c\n",m);
-	if (++bufpos >= size)
-		bufpos = 0;
-	om = buf[bufpos];
-	buf[bufpos] = m;
-	return fp = rabinhash_append8(fp ^ U[om], m);
+	if (++RABINFEAbufpos >= size)
+		RABINFEAbufpos = 0;
+	om = RABINFEAbuf[RABINFEAbufpos];
+	RABINFEAbuf[RABINFEAbufpos] = m;
+	return RABINFEAfp = rabinhash_append8(RABINFEAfp ^ RABINFEAU[om], m);
 }
 
 UINT64 rabinhash_polymmult(UINT64 x, UINT64 y, UINT64 d) {
@@ -196,30 +196,30 @@ void rabinhash_calcT(UINT64 poly) {
 	//printf ("rabinpoly::calcT ()\n");
 
 	int xshift = rabinhash_fls64(poly) - 1;
-	shift = xshift - 8;
+	RABINFEAshift = xshift - 8;
 	T1 = rabinhash_polymod(0, (long long int) (1) << xshift, poly);
 	for (j = 0; j < 256; j++) {
-		T[j] = rabinhash_polymmult(j, T1, poly) | ((UINT64) j << xshift);
+		RABINFEAT[j] = rabinhash_polymmult(j, T1, poly) | ((UINT64) j << xshift);
 
 		//printf ("rabinpoly::calcT tmp = %llu\n", polymmult (j, T1, poly));
-		//printf ("rabinpoly::calcT shift = %llu\n", ((UINT64) j << xshift));
+		//printf ("rabinpoly::calcT RABINFEAshift = %llu\n", ((UINT64) j << xshift));
 		//printf ("rabinpoly::calcT xshift = %d\n", xshift);
-		//printf ("rabinpoly::calcT T[%d] = %llu\n", j, T[j]);
+		//printf ("rabinpoly::calcT RABINFEAT[%d] = %llu\n", j, RABINFEAT[j]);
 
 	}
 
 	//printf ("rabinpoly::calcT xshift = %d\n", xshift);
 	//printf ("rabinpoly::calcT T1 = %llu\n", T1);
-	//printf ("rabinpoly::calcT T = {");
+	//printf ("rabinpoly::calcT RABINFEAT = {");
 	//for (i=0; i< 256; i++)
-	//printf ("\t%llu \n", T[i]);
+	//printf ("\t%llu \n", RABINFEAT[i]);
 	//printf ("}\n");
 
 }
 
 void rabinhash_rabinpoly_init(UINT64 p) {
-	poly = p;
-	rabinhash_calcT(poly);
+	RABINFEApoly = p;
+	rabinhash_calcT(RABINFEApoly);
 }
 
 void rabinhash_window_init(UINT64 poly) {
@@ -228,31 +228,31 @@ void rabinhash_window_init(UINT64 poly) {
 	UINT64 sizeshift;
 
 	rabinhash_rabinpoly_init(poly);
-	fp = 0;
-	bufpos = -1;
+	RABINFEAfp = 0;
+	RABINFEAbufpos = -1;
 	sizeshift = 1;
 	for (i = 1; i < size; i++)
 		sizeshift = rabinhash_append8(sizeshift, 0);
 	for (i = 0; i < 256; i++)
-		U[i] = rabinhash_polymmult(i, sizeshift, poly);
-	memset((char*) buf, 0, sizeof(buf));
+		RABINFEAU[i] = rabinhash_polymmult(i, sizeshift, poly);
+	memset((char*) RABINFEAbuf, 0, sizeof(RABINFEAbuf));
 }
 
 void rabinhash_windows_reset() {
-	fp = 0;
-	//memset((char*) buf,0,sizeof (buf));
+	RABINFEAfp = 0;
+	//memset((char*) RABINFEAbuf,0,sizeof (RABINFEAbuf));
 	//memset((char*) chunk,0,sizeof (chunk));
 }
 
-static int rabin_mask = 0;
+static int FEARABINrabin_mask = 0;
 
 void rabinhash_rabin_init() {
-	rabinhash_window_init(FINGERPRINT_PT);
-	_last_pos = 0;
-	_cur_pos = 0;
+	rabinhash_window_init(FEARABINFINGERPRINT_PT);
+	RABINFEA_last_pos = 0;
+	RABINFEA_cur_pos = 0;
 	rabinhash_windows_reset();
-	_num_chunks = 0;
-	rabin_mask = destor.chunk_avg_size - 1;
+	RABINFEA_num_chunks = 0;
+	FEARABINrabin_mask = destor.chunk_avg_size - 1;
 }
 
 void rabin_finesse(unsigned char *p, int n, feature* fea) {

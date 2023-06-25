@@ -8,6 +8,7 @@
 
 static pthread_t simi_t;
 static int64_t chunk_num;
+SyncQueue* simi_queue;
 
 static void (*similariting)(struct chunk* c);
 static void (*stopSimilariting)();

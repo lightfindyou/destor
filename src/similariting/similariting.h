@@ -25,7 +25,7 @@ void bruteforce_similariting(struct chunk* c);
 void fineness_insert_flatFea(struct chunk* c);
 void fineness_similariting_flatFea(struct chunk* c);
 
-GHashTable* ntransform_sufeature_tab;
+extern GHashTable* ntransform_sufeature_tab;
 void ntransform_similariting_init();
 void ntransform_similariting(struct chunk* c);
 
@@ -42,7 +42,7 @@ void highdedup_similariting_init();
 void highdedup_similariting(struct chunk* c);
 void highdedup_similariting_stop();
 
-GHashTable* odess_sufeature_tab;
+extern GHashTable* odess_sufeature_tab;
 void odess_similariting_init();
 void odess_similariting(struct chunk* c);
 void odess_similariting_flatFea(struct chunk* c);

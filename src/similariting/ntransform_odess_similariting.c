@@ -2,6 +2,9 @@
 #include "../destor.h"
 #include "similariting.h"
 
+GHashTable* odess_sufeature_tab;
+GHashTable* ntransform_sufeature_tab;
+
 void ntransform_similariting_init(){
 	ntransform_sufeature_tab = g_hash_table_new(g_int64_hash, g_chunk_feature_equal);
 	common_similariting_init();

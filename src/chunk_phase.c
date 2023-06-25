@@ -9,6 +9,7 @@
 
 static pthread_t chunk_t;
 static int64_t chunk_num;
+SyncQueue* chunk_queue;
 
 static int (*chunking)(unsigned char* buf, int size);
 

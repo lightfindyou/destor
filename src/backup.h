@@ -58,31 +58,31 @@ void stop_append_phase();
 
 #define READQUESIZE 10
 /* Output of read phase. */
-SyncQueue* read_queue;
+extern SyncQueue* read_queue;
 #define CHUNKQUESIZE 1000
 /* Output of chunk phase. */
-SyncQueue* chunk_queue;
+extern SyncQueue* chunk_queue;
 #define HASHQUESIZE 1000
 /* Output of hash phase. */
-SyncQueue* hash_queue;
+extern SyncQueue* hash_queue;
 /* Output of trace phase. */
-SyncQueue* trace_queue;
+extern SyncQueue* trace_queue;
 #define DEDUPQUESIZE 1000
 /* Output of dedup phase */
-SyncQueue* dedup_queue;
+extern SyncQueue* dedup_queue;
 #define FEAQUESIZE 1000
 /* Output of feature phase */
-SyncQueue* feature_queue;
+extern SyncQueue* feature_queue;
 #define SIMIQUESIZE 1000
 /* Output of simi phase */
-SyncQueue* simi_queue;
+extern SyncQueue* simi_queue;
 #define XDElTAQUESIZE 1000
 /* Output of xdelta phase */
-SyncQueue* xdelta_queue;
+extern SyncQueue* xdelta_queue;
 /* Output of rewrite phase. */
-SyncQueue* rewrite_queue;
+extern SyncQueue* rewrite_queue;
 
-GHashTable* fp_tab;
-pthread_mutex_t fp_tab_mutex;
+extern GHashTable* fp_tab;
+extern pthread_mutex_t fp_tab_mutex;
 
 #endif /* BACKUP_H_ */
