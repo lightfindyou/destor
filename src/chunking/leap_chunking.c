@@ -20923,10 +20923,10 @@ void leap_init(int chunkSize, int parIdx){
 
 }
 
-int leap_chunk_data(unsigned char *p, int n){
+struct chunk* leap_chunk_data(unsigned char *p, int n){
 
 	int targetPoint = destor.chunk_min_size;
-	if(targetPoint >= n) return n;
+	if(targetPoint >= n) return new_chunk(n);
 	int windowNum = 0;
 	int destWindowNum = CHECKWINNUM;	//The number of windows needs to be checked.
 
@@ -20942,5 +20942,5 @@ checkQualified:
 			goto checkQualified;
 		}
 	}
-	return targetPoint;
+	return new_chunk(targetPoint);
 }

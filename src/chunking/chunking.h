@@ -9,39 +9,42 @@
 
 void windows_reset();
 void chunkAlg_init();
-int rabin_chunk_data(unsigned char *p, int n);
-int normalized_rabin_chunk_data(unsigned char *p, int n);
+struct chunk* rabin_chunk_data(unsigned char *p, int n);
+struct chunk* normalized_rabin_chunk_data(unsigned char *p, int n);
 void rabinJump_init(int chunkSize);
-int rabinjump_chunk_data(unsigned char *p, int n);
+struct chunk* rabinjump_chunk_data(unsigned char *p, int n);
 
 void ae_init();
-int ae_chunk_data(unsigned char *p, int n);
-int sc_chunk_data(unsigned char *p, int n);
+struct chunk* ae_chunk_data(unsigned char *p, int n);
+struct chunk* sc_chunk_data(unsigned char *p, int n);
 
-int tttd_chunk_data(unsigned char *p, int n);
+struct chunk* tttd_chunk_data(unsigned char *p, int n);
 
 void fastcdc_init();
-int fastcdc_chunk_data(unsigned char *p, int n);
+struct chunk* fastcdc_chunk_data(unsigned char *p, int n);
 
 void gear_init();
-int gear_chunk_data(unsigned char *p, int n);
-int TTTD_gear_chunk_data(unsigned char *p, int n);
+struct chunk* gear_chunk_data(unsigned char *p, int n);
+struct chunk* TTTD_gear_chunk_data(unsigned char *p, int n);
 
 #if SENTEST
 void gearjump_init(int i);
 #else
 void gearjump_init();
 #endif	//SENTEST
-int gearjump_chunk_data(unsigned char *p, int n);
-int gearjumpTTTD_chunk_data(unsigned char *p, int n);
+struct chunk* gearjump_chunk_data(unsigned char *p, int n);
+struct chunk* gearjumpTTTD_chunk_data(unsigned char *p, int n);
 
 void normalized_gearjump_init(int mto);
-int normalized_gearjump_chunk_data(unsigned char *p, int n);
+struct chunk* normalized_gearjump_chunk_data(unsigned char *p, int n);
 
 void sc_init();
-int sc_chunk_data(unsigned char *p, int n);
+struct chunk* sc_chunk_data(unsigned char *p, int n);
 
 
 void leap_init(int chunkSize, int parIdx);
-int leap_chunk_data(unsigned char *p, int n);
+struct chunk* leap_chunk_data(unsigned char *p, int n);
+
+void highdedup_chunk_init();
+struct chunk* highdedup_chunk_data(unsigned char *p, int n);
 #endif

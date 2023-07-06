@@ -10,10 +10,11 @@
 static pthread_t chunk_t;
 static int64_t chunk_num;
 
-static int (*chunking)(unsigned char* buf, int size);
+static struct chunk* (*chunking)(unsigned char* buf, int size);
 
-static inline int fixed_chunk_data(unsigned char* buf, int size){
-	return destor.chunk_avg_size > size ? size : destor.chunk_avg_size;
+static inline struct chunk* fixed_chunk_data(unsigned char* buf, int size){
+	int chunkSize = destor.chunk_avg_size > size ? size : destor.chunk_avg_size;
+	return new_chunk(chunkSize);
 }
 
 /*
@@ -80,11 +81,11 @@ static void* chunk_thread(void *arg) {
 			TIMER_DECLARE(1);
 			TIMER_BEGIN(1);
 
-			int	chunk_size = chunking(leftbuf + leftoff, leftlen);
+			struct chunk *nc = chunking(leftbuf + leftoff, leftlen);
+			int	chunk_size = nc->size;
 
 			TIMER_END(1, jcr.chunk_time);
 
-			struct chunk *nc = new_chunk(chunk_size);
 			memcpy(nc->data, leftbuf + leftoff, chunk_size);
 			leftlen -= chunk_size;
 			leftoff += chunk_size;
@@ -132,65 +133,58 @@ static void* chunk_thread(void *arg) {
 //xzjin get file data from read_queue and hash, then, put into chunk_queue
 //xzjin only chunck, no dedup
 void start_chunk_phase() {
-
-	if (destor.chunk_algorithm == CHUNK_RABIN){
-		int pwr;
+	switch (destor.chunk_algorithm) {
+	int pwr;
+	case CHUNK_RABIN:
 		for (pwr = 0; destor.chunk_avg_size; pwr++) {
 			destor.chunk_avg_size >>= 1;
 		}
 		destor.chunk_avg_size = 1 << (pwr - 1);
-
 		assert(destor.chunk_avg_size >= destor.chunk_min_size);
 		assert(destor.chunk_avg_size <= destor.chunk_max_size);
 		assert(destor.chunk_max_size <= CONTAINER_SIZE - CONTAINER_META_SIZE);
-
 		chunkAlg_init();
 		chunking = rabin_chunk_data;
-	}else if(destor.chunk_algorithm == CHUNK_NORMALIZED_RABIN){
-		int pwr;
+		break;
+	case CHUNK_NORMALIZED_RABIN:
 		for (pwr = 0; destor.chunk_avg_size; pwr++) {
 			destor.chunk_avg_size >>= 1;
 		}
 		destor.chunk_avg_size = 1 << (pwr - 1);
-
 		assert(destor.chunk_avg_size >= destor.chunk_min_size);
 		assert(destor.chunk_avg_size <= destor.chunk_max_size);
 		assert(destor.chunk_max_size <= CONTAINER_SIZE - CONTAINER_META_SIZE);
-
 		chunkAlg_init();
 		chunking = normalized_rabin_chunk_data;
-	}else if(destor.chunk_algorithm == CHUNK_RABIN_JUMP){
-		int pwr;
+		break;
+	case CHUNK_RABIN_JUMP:
 		for (pwr = 0; destor.chunk_avg_size; pwr++) {
 			destor.chunk_avg_size >>= 1;
 		}
 		destor.chunk_avg_size = 1 << (pwr - 1);
-
 		assert(destor.chunk_avg_size >= destor.chunk_min_size);
 		assert(destor.chunk_avg_size <= destor.chunk_max_size);
 		assert(destor.chunk_max_size <= CONTAINER_SIZE - CONTAINER_META_SIZE);
-
 		rabinJump_init(destor.chunk_avg_size);
 		chunking = rabinjump_chunk_data;
-	}else if(destor.chunk_algorithm == CHUNK_TTTD){
-		int pwr;
+		break;
+	case CHUNK_TTTD:
 		for (pwr = 0; destor.chunk_avg_size; pwr++) {
 			destor.chunk_avg_size >>= 1;
 		}
 		destor.chunk_avg_size = 1 << (pwr - 1);
-
 		assert(destor.chunk_avg_size >= destor.chunk_min_size);
 		assert(destor.chunk_avg_size <= destor.chunk_max_size);
 		assert(destor.chunk_max_size <= CONTAINER_SIZE - CONTAINER_META_SIZE);
-
 		chunkAlg_init();
 		chunking = tttd_chunk_data;
-	}else if(destor.chunk_algorithm == CHUNK_FIXED){
+		break;
+	case CHUNK_FIXED:
 		assert(destor.chunk_avg_size <= CONTAINER_SIZE - CONTAINER_META_SIZE);
-
 		destor.chunk_max_size = destor.chunk_avg_size;
 		chunking = fixed_chunk_data;
-	}else if(destor.chunk_algorithm == CHUNK_FILE){
+		break;
+	case CHUNK_FILE:
 		/*
 		 * approximate file-level deduplication
 		 * It splits the stream according to file boundaries.
@@ -201,23 +195,24 @@ void start_chunk_phase() {
 		destor.chunk_avg_size = CONTAINER_SIZE - CONTAINER_META_SIZE;
 		destor.chunk_max_size = CONTAINER_SIZE - CONTAINER_META_SIZE;
 		chunking = fixed_chunk_data;
-	}else if(destor.chunk_algorithm == CHUNK_AE){
+		break;
+	case CHUNK_AE:
 		assert(destor.chunk_avg_size <= destor.chunk_max_size);
 		assert(destor.chunk_max_size <= CONTAINER_SIZE - CONTAINER_META_SIZE);
-
-		chunking = ae_chunk_data;
 		ae_init();
-	} else if(destor.chunk_algorithm == CHUNK_FASTCDC){
+		chunking = ae_chunk_data;
+		break;
+	case CHUNK_FASTCDC:
 		assert(destor.chunk_avg_size <= destor.chunk_max_size);
 		assert(destor.chunk_max_size <= CONTAINER_SIZE - CONTAINER_META_SIZE);
-
-		chunking = fastcdc_chunk_data;
 		fastcdc_init(destor.chunk_avg_size);
-	} else if(destor.chunk_algorithm == CHUNK_SC){
-		chunking = sc_chunk_data;
+		chunking = fastcdc_chunk_data;
+		break;
+	case CHUNK_SC:
 		sc_init();
-	} else if(destor.chunk_algorithm == CHUNK_GEARJUMP){
-		chunking = gearjump_chunk_data;
+		chunking = sc_chunk_data;
+		break;
+	case CHUNK_GEARJUMP:
 #if SENTEST
 		if(destor.jumpOnes){
 			gearjump_init(destor.jumpOnes);
@@ -227,24 +222,36 @@ void start_chunk_phase() {
 #else
 		gearjump_init();
 #endif //SENTEST
-	} else if(destor.chunk_algorithm == CHUNK_JCTTTD){
+		chunking = gearjump_chunk_data;
+		break;
+	case CHUNK_JCTTTD:
 		gearjump_init(destor.jumpOnes);
 		chunking = gearjumpTTTD_chunk_data;
-	} else if(destor.chunk_algorithm == CHUNK_LEAP){
+		break;
+	case CHUNK_LEAP:
 		leap_init(destor.chunk_avg_size, 0);
 		chunking = leap_chunk_data;
-	} else if(destor.chunk_algorithm == CHUNK_GEAR){
+		break;
+	case CHUNK_GEAR:
 		gear_init(destor.chunk_avg_size, 0);
 		chunking = gear_chunk_data;
-	} else if(destor.chunk_algorithm == CHUNK_TTTDGEAR){
+		break;
+	case CHUNK_TTTDGEAR:
 		gear_init(destor.chunk_avg_size, 0);
 		chunking = TTTD_gear_chunk_data;
-	} else if(destor.chunk_algorithm == CHUNK_NORMALIZED_GEARJUMP){
+		break;
+	case CHUNK_NORMALIZED_GEARJUMP:
 		normalized_gearjump_init(destor.jumpOnes);
 		chunking = normalized_gearjump_chunk_data;
-	} else{
+		break;
+	case CHUNK_HIGHDEDUP:
+		highdedup_chunk_init();
+		chunking = highdedup_chunk_data;
+		break;
+	default:
 		NOTICE("Invalid chunking algorithm");
 		exit(1);
+		break;
 	}
 
 	chunk_queue = sync_queue_new(CHUNKQUESIZE);

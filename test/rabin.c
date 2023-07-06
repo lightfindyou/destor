@@ -287,7 +287,7 @@ void rabinJump_init(int chunkSize) {
 
 
 /* The standard rabin chunking */
-int rabin_chunk_data(unsigned char *p, int n) {
+struct chunk* rabin_chunk_data(unsigned char *p, int n) {
 
 	UINT64 fp = 0;
 	int i = 1, bufPos = -1;
@@ -296,7 +296,7 @@ int rabin_chunk_data(unsigned char *p, int n) {
 	memset((char*) buf, 0, 128);
 
 	if (n <= chunkMin)
-		return n;
+		return new_chunk(n);
 	else
 		i = chunkMin;
 
@@ -324,7 +324,7 @@ int rabin_chunk_data(unsigned char *p, int n) {
 			break;
 		i++;
 	}
-	return i;
+	return new_chunk(i);
 }
 
 int rabinjump_chunk_data(unsigned char *p, int n) {
@@ -373,7 +373,7 @@ int rabinjump_chunk_data(unsigned char *p, int n) {
  * We use a larger avg chunk size when the current size is small,
  * and a smaller avg chunk size when the current size is large.
  * */
-int normalized_rabin_chunk_data(unsigned char *p, int n) {
+struct chunk* normalized_rabin_chunk_data(unsigned char *p, int n) {
 
 	UINT64 fp = 0;
 	int i = 1, bufPos = -1;
@@ -382,7 +382,7 @@ int normalized_rabin_chunk_data(unsigned char *p, int n) {
 	memset((char*) buf, 0, 128);
 
 	if (n <= chunkMin)
-		return n;
+		return new_chunk(n);
 	else
 		i = chunkMin;
 
@@ -404,7 +404,7 @@ int normalized_rabin_chunk_data(unsigned char *p, int n) {
 		}
 
 	}
-	return i;
+	return new_chunk(i);
 }
 
 /*

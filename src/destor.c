@@ -48,6 +48,7 @@ char* chunkAlgStr[] = {
 	"NORMALIZED_GEARJUMP",
 	"TTTDGEAR",
 	"JCTTTD",
+	"HIGHDEDUP(Gear)",
 	"algNum"
 };
 

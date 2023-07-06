@@ -9,6 +9,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include "../destor.h"
+#include "../featuring/featuring.h"
 
 #define SymbolCount 256
 #define DigistLength 16
@@ -17,6 +18,7 @@
 #define MinChunkSizeOffset 2
 
 uint64_t g_gear_matrix[SymbolCount];
+uint64_t gearSubchunkMask;
 uint32_t g_min_fastcdc_chunk_size;
 uint32_t g_max_fastcdc_chunk_size;
 uint32_t g_expect_fastcdc_chunk_size;
@@ -95,7 +97,7 @@ void fastcdc_init(){
 }
 
 
-int fastcdc_chunk_data(unsigned char *p, int n){
+struct chunk* fastcdc_chunk_data(unsigned char *p, int n){
 
     uint64_t fingerprint=0;
     //uint64_t digest __attribute__((unused));
@@ -105,7 +107,7 @@ int fastcdc_chunk_data(unsigned char *p, int n){
     //return n;
 
     if(n<=g_min_fastcdc_chunk_size){ //the minimal  subChunk Size.
-        return n;
+        return new_chunk(n);
     }
 
     if(n > g_max_fastcdc_chunk_size){
@@ -117,7 +119,7 @@ int fastcdc_chunk_data(unsigned char *p, int n){
     while(i<Mid){
         fingerprint = (fingerprint<<1) + (g_gear_matrix[p[i]]);
         if ((!(fingerprint & MaskS /*0x0000d90f03530000*/))) { //AVERAGE*2, *4, *8
-            return i;
+            return new_chunk(i);
         }
         i++;
     }
@@ -125,12 +127,12 @@ int fastcdc_chunk_data(unsigned char *p, int n){
     while(i<n){
         fingerprint = (fingerprint<<1) + (g_gear_matrix[p[i]]);
         if ((!(fingerprint & MaskL /*0x0000d90003530000*/))) { //Average/2, /4, /8
-            return i;
+            return new_chunk(i);
         }
         i++;
     }
     //printf("\r\n==chunking FINISH!\r\n");
-    return i;
+    return new_chunk(i);
 }
 
 uint64_t Mask;
@@ -163,14 +165,20 @@ void gear_init(){
     printf("\nMask:  %16lx\n", Mask);
 }
 
-int gear_chunk_data(unsigned char *p, int n){
+void highdedup_chunk_init(){
+    gear_init();
+    int subChunkIndex = log2(destor.chunk_avg_size/destor.featureNum);
+    gearSubchunkMask = g_condition_mask[subChunkIndex];
+}
+
+struct chunk* gear_chunk_data(unsigned char *p, int n){
 
     uint64_t fingerprint=0;
     int i=0;
     int minSize = destor.chunk_min_size;
 
 	if (n <= minSize)
-		return n;
+		return new_chunk(n);
 #if !CHUNKMIN 
 	else
 		i = minSize;
@@ -181,19 +189,60 @@ int gear_chunk_data(unsigned char *p, int n){
         fingerprint = (fingerprint<<1) + (g_gear_matrix[p[i]]);
         i++;
 
-        if( G_UNLIKELY(!(fingerprint & Mask)) ){ return i; }
+        if( G_UNLIKELY(!(fingerprint & Mask)) ){
+            return new_chunk(i);
+        }
     }
-    return n;
+    return new_chunk(n);
 }
 
-int TTTD_gear_chunk_data(unsigned char *p, int n){
+struct chunk* highdedup_chunk_data(unsigned char *p, int n){
+
+    uint64_t fingerprint=0;
+    int i=0;
+    int feaNum = 0;
+    struct chunk* ret = new_chunk(0);
+    feature* fea = ret->fea;
+
+    n = n<destor.chunk_max_size?n:destor.chunk_max_size;
+
+    while(i < n){
+        fingerprint = (fingerprint<<1) + (g_gear_matrix[p[i]]);
+        i++;
+
+        if( G_UNLIKELY(!(fingerprint & Mask)) ){
+            goto retPoint;
+        }
+
+        if(G_UNLIKELY(feaNum >= HIGHDEDUP_FEATURE_NUM)){continue;}
+        feature tmp = fingerprint & HIGHDEDUP_FEATURE_MASK;
+        if(tmp > fea[feaNum]){
+            fea[feaNum] = tmp;
+        }
+
+        if(!(fingerprint & gearSubchunkMask)){
+            feaNum++;
+        }
+    }
+
+retPoint:
+    ret->feaNum = feaNum + 1;
+    if(ret->feaNum > HIGHDEDUP_FEATURE_NUM){
+        ret->feaNum = HIGHDEDUP_FEATURE_NUM;
+    }
+    ret->size = i;
+    ret->data = malloc(i);
+    return ret;
+}
+
+struct chunk* TTTD_gear_chunk_data(unsigned char *p, int n){
 
     uint64_t fingerprint=0;
     int i=0, m = 0;
     int minSize = destor.chunk_min_size;
 
 	if (n <= minSize)
-		return n;
+		return new_chunk(n);
 #if !CHUNKMIN 
 	else
 		i = minSize;
@@ -206,16 +255,16 @@ int TTTD_gear_chunk_data(unsigned char *p, int n){
 
         if( G_UNLIKELY(!(fingerprint & back_mask_TTTD)) ){
             if(!(fingerprint & Mask)){
-                return i;
+                return new_chunk(i);
             }
             m = i;
         }
     }
 
 	if (m != 0)
-		return m;
+		return new_chunk(m);
 	else
-		return i;
+		return new_chunk(i);
 }
 
 uint32_t gearjumpChunkSize;
@@ -276,14 +325,14 @@ void gearjump_init(){
 }
 
 #define CHUNKMIN 0
-int gearjump_chunk_data(unsigned char *p, int n){
+struct chunk* gearjump_chunk_data(unsigned char *p, int n){
 
     uint64_t fingerprint=0;
     int i=0;
     int minSize = destor.chunk_min_size;
 
 	if (n <= minSize)
-		return n;
+		return new_chunk(n);
 #if !CHUNKMIN 
 	else
 		i = minSize;
@@ -302,7 +351,7 @@ int gearjump_chunk_data(unsigned char *p, int n){
                     continue;
                 }
 #endif  //MINJUMP 
-                return i;
+                return new_chunk(i);
             } else {
                 fingerprint = 0;
                 //TODO xzjin here need to set the fingerprint to 0 ?
@@ -311,17 +360,18 @@ int gearjump_chunk_data(unsigned char *p, int n){
         }
     }
 
-    return i<n?i:n;
+    i = i<n?i:n;
+    return new_chunk(i);
 }
 
-int gearjumpTTTD_chunk_data(unsigned char *p, int n){
+struct chunk* gearjumpTTTD_chunk_data(unsigned char *p, int n){
 
     uint64_t fingerprint=0;
     int i=0, m = 0;
     int minSize = destor.chunk_min_size;
 
 	if (n <= minSize)
-		return n;
+		return new_chunk(n);
 	else
 		i =  minSize;
     unsigned long end = n < destor.chunk_max_size? n:destor.chunk_max_size;
@@ -333,7 +383,7 @@ int gearjumpTTTD_chunk_data(unsigned char *p, int n){
         if(__glibc_unlikely(!(fingerprint & jumpMask)) ){
 
             if ((!(fingerprint & Mask))) { //AVERAGE*2, *4, *8
-                return i;
+                return new_chunk(i);
             } 
             m = i;
             fingerprint=0;
@@ -343,9 +393,10 @@ int gearjumpTTTD_chunk_data(unsigned char *p, int n){
     }
 
     if(m != 0){
-        return m;
+        return new_chunk(m);
     }
-    return i<end?i:end;
+    i = i<end?i:end;
+    return new_chunk(i);
 }
 
 uint64_t largeMask;
@@ -403,7 +454,7 @@ void normalized_gearjump_init(int mto){
     printf(" jumpLen:%d\t    largeJumpLen:%d\n\n", jumpLen, largeJumpLen);
 }
 
-int normalized_gearjump_chunk_data(unsigned char *p, int n){
+struct chunk* normalized_gearjump_chunk_data(unsigned char *p, int n){
 
     uint64_t fingerprint=0;
     int i=0;
@@ -411,7 +462,7 @@ int normalized_gearjump_chunk_data(unsigned char *p, int n){
     int middle = destor.chunk_avg_size<n?destor.chunk_avg_size:n;
 
 	if (n <= minSize)
-		return n;
+		return new_chunk(n);
 #if !CHUNKMIN 
 	else
 		i = minSize;
@@ -424,7 +475,7 @@ int normalized_gearjump_chunk_data(unsigned char *p, int n){
 
         if( G_UNLIKELY(!(fingerprint & largeJumpMask)) ){
             if ((!(fingerprint & largeMask))) { //AVERAGE*2, *4, *8
-                return i;
+                return new_chunk(i);
             } else {
                 fingerprint = 0;
                 i += largeJumpLen;
@@ -438,7 +489,7 @@ int normalized_gearjump_chunk_data(unsigned char *p, int n){
 
         if( G_UNLIKELY(!(fingerprint & jumpMask)) ){
             if ((!(fingerprint & Mask))) { //AVERAGE*2, *4, *8
-                return i;
+                return new_chunk(i);
             } else {
                 fingerprint = 0;
                 i += jumpLen;
@@ -446,5 +497,6 @@ int normalized_gearjump_chunk_data(unsigned char *p, int n){
         }
     }
 
-    return i<n?i:n;
+    i = i<n?i:n;
+    return new_chunk(i);
 }

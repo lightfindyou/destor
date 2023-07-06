@@ -211,10 +211,22 @@ void do_backup(char *path) {
            jcr.data_size * 1000000 / jcr.lookupFea_time/ 1024 / 1024);
     printf("chooseMostSim_time : %.3f s, %.2f MB/s\n", jcr.chooseMostSim_time/ 1000000,
            jcr.data_size * 1000000 / jcr.chooseMostSim_time/ 1024 / 1024);
-    printf("insertFea_time     : %.3f s, %.2f MB/s\n\n", jcr.insertFea_time/ 1000000,
+    printf("insertFea_time     : %.3f s, %.2f MB/s\n", jcr.insertFea_time/ 1000000,
            jcr.data_size * 1000000 / jcr.insertFea_time/ 1024 / 1024);
+    printf("checkHash_time     : %.3f s, %.2f MB/s\n", jcr.checkHashTable/ 1000000,
+           jcr.data_size * 1000000 / jcr.checkHashTable/ 1024 / 1024);
+    printf("checkSkip_time     : %.3f s, %.2f MB/s\n", jcr.checkSkipFeature/ 1000000,
+           jcr.data_size * 1000000 / jcr.checkSkipFeature/ 1024 / 1024);
+    printf("comparHit_time     : %.3f s, %.2f MB/s\n\n", jcr.compareHitTime/ 1000000,
+           jcr.data_size * 1000000 / jcr.compareHitTime/ 1024 / 1024);
+    printf("updateHit_time     : %.3f s, %.2f MB/s\n", jcr.updateHitTime/ 1000000,
+           jcr.data_size * 1000000 / jcr.updateHitTime/ 1024 / 1024);
+    printf("updateSimiTime     : %.3f s, %.2f MB/s\n", jcr.updateSimiChunk/ 1000000,
+           jcr.data_size * 1000000 / jcr.updateSimiChunk/ 1024 / 1024);
+    printf("appendCandTime     : %.3f s, %.2f MB/s\n", jcr.appendCandChunk/ 1000000,
+           jcr.data_size * 1000000 / jcr.appendCandChunk/ 1024 / 1024);
 
-    
+ 
     printf("getIter_time       : %.3f s, %.2f MB/s\n", jcr.getIter_time/ 1000000,
            jcr.data_size * 1000000 / jcr.getIter_time/ 1024 / 1024);
     printf("getQueue_time      : %.3f s, %.2f MB/s\n", jcr.getQueue_time/ 1000000,

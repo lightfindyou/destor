@@ -71,6 +71,12 @@ struct jcr{
 	double lookupFea_time;
 	double chooseMostSim_time;
 	double insertFea_time;
+	double checkHashTable;
+	double checkSkipFeature;
+	double compareHitTime;
+	double updateHitTime;
+	double updateSimiChunk;
+	double appendCandChunk;
 
 	double read_recipe_time;
 	double read_chunk_time;

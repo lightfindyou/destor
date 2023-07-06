@@ -40,7 +40,7 @@ void ae_init(){
 }
 
 /** n is the size of string p. */
-int ae_chunk_data(unsigned char *p, int n) {
+struct chunk* ae_chunk_data(unsigned char *p, int n) {
 	/*
 	 * curr points to the current position;
 	 * max points to the position of max value;
@@ -50,7 +50,7 @@ int ae_chunk_data(unsigned char *p, int n) {
 	uint64_t maxValue = (*((uint64_t *)max));
 
 	if (n <= window_size + 8)
-		return n;
+		return new_chunk(n);
 
 	for (; curr <= end; curr++) {
 		int comp_res = ae_memcmp(curr, max);
@@ -81,9 +81,9 @@ int ae_chunk_data(unsigned char *p, int n) {
 			continue;
 		}
 		if (curr == max + window_size || curr == p + destor.chunk_max_size)
-			return curr - p;
+			return new_chunk(curr - p);
 	}
-	return n;
+	return new_chunk(n);
 }
 
 #define ae_memcmp(x, y) \
@@ -110,7 +110,7 @@ void sc_init() {
 
 /*Sequencial Content compare*/
 /** n is the size of string p. */
-int sc_chunk_data(unsigned char *p, int n) {
+struct chunk* sc_chunk_data(unsigned char *p, int n) {
 	/*
 	 * curr points to the current position;
 	 * end points to the end of buffer.
@@ -119,7 +119,7 @@ int sc_chunk_data(unsigned char *p, int n) {
 	int curBiggerLen = 0;
 
 	if (n <= expectedBiggerLen)
-		return n;
+		return new_chunk(n);
 
 	for (; curr <= end; curr++) {
 //		{
@@ -134,10 +134,10 @@ int sc_chunk_data(unsigned char *p, int n) {
 		if (comp_res > 0) {
 			curBiggerLen++;
 			if(curBiggerLen == expectedBiggerLen) {
-				return (curr - p - 1);
+				return new_chunk(curr - p - 1);
 			}
 		}
 		curBiggerLen = 0;
 	}
-	return n;
+	return new_chunk(n);
 }

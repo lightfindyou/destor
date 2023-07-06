@@ -407,6 +407,10 @@ void load_config_from_string(sds config) {
 		sdsfreesplitres(argv, argc);
 	}
 	sdsfreesplitres(lines, totlines);
+
+	if(destor.similarity_algorithm == SIMILARITY_HIGHDEDUP){
+		destor.chunk_algorithm = CHUNK_HIGHDEDUP;
+	}
 	return;
 
 	loaderr: fprintf(stderr, "\n*** FATAL CONFIG FILE ERROR in destor ***\n");

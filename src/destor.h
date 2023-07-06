@@ -81,6 +81,7 @@
 #define CHUNK_NORMALIZED_GEARJUMP 12
 #define CHUNK_TTTDGEAR 13
 #define CHUNK_JCTTTD 14
+#define CHUNK_HIGHDEDUP 15
 
 extern char* chunkAlgStr[];
 

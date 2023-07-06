@@ -251,7 +251,7 @@ void chunkAlg_init() {
 }
 
 /* The standard rabin chunking */
-int rabin_chunk_data(unsigned char *p, int n) {
+struct chunk* rabin_chunk_data(unsigned char *p, int n) {
 
 	UINT64 f_break = 0;
 	UINT64 count = 0;
@@ -265,7 +265,7 @@ int rabin_chunk_data(unsigned char *p, int n) {
 	memset((char*) buf, 0, 128);
 
 	if (n <= destor.chunk_min_size)
-		return n;
+		return new_chunk(n);
 	else
 		i = destor.chunk_min_size;
 
@@ -277,7 +277,7 @@ int rabin_chunk_data(unsigned char *p, int n) {
 			break;
 		i++;
 	}
-	return i;
+	return new_chunk(i);
 }
 
 /*
@@ -285,7 +285,7 @@ int rabin_chunk_data(unsigned char *p, int n) {
  * We use a larger avg chunk size when the current size is small,
  * and a smaller avg chunk size when the current size is large.
  * */
-int normalized_rabin_chunk_data(unsigned char *p, int n) {
+struct chunk* normalized_rabin_chunk_data(unsigned char *p, int n) {
 
 	UINT64 f_break = 0;
 	UINT64 count = 0;
@@ -299,7 +299,7 @@ int normalized_rabin_chunk_data(unsigned char *p, int n) {
 	memset((char*) buf, 0, 128);
 
 	if (n <= destor.chunk_min_size)
-		return n;
+		return new_chunk(n);
 	else
 		i = destor.chunk_min_size;
 
@@ -321,7 +321,7 @@ int normalized_rabin_chunk_data(unsigned char *p, int n) {
 		}
 
 	}
-	return i;
+	return new_chunk(i);
 }
 
 /*
@@ -329,7 +329,7 @@ int normalized_rabin_chunk_data(unsigned char *p, int n) {
  * See their paper:
  * 	A Framework for Analyzing and Improving Content-Based Chunking Algorithms
  */
-int tttd_chunk_data(unsigned char *p, int n) {
+struct chunk* tttd_chunk_data(unsigned char *p, int n) {
 
 	UINT64 f_break = 0;
 	UINT64 count = 0;
@@ -343,7 +343,7 @@ int tttd_chunk_data(unsigned char *p, int n) {
 	memset((char*) buf, 0, 128);
 
 	if (n <= destor.chunk_min_size)
-		return n;
+		return new_chunk(n);
 	else
 		i = destor.chunk_min_size;
 
@@ -354,16 +354,16 @@ int tttd_chunk_data(unsigned char *p, int n) {
 		SLIDE(p[i - 1], fingerprint, bufPos, buf);
 		if ((fingerprint &  back_mask) == BREAKMARK_VALUE) {
 			if ((fingerprint & rabin_mask) == BREAKMARK_VALUE)
-				return i;
+				return new_chunk(i);
 			m = i;
 		}
 
 		i++;
 	}
 	if (m != 0)
-		return m;
+		return new_chunk(m);
 	else
-		return i;
+		return new_chunk(i);
 }
 
 void rabinJump_init(int chunkSize) {
@@ -389,7 +389,7 @@ void rabinJump_init(int chunkSize) {
     printf("jumpLen:%d\n\n", jumpLen);
 }
 
-int rabinjump_chunk_data(unsigned char *p, int n) {
+struct chunk* rabinjump_chunk_data(unsigned char *p, int n) {
 
 //	printf("p:%p\n", p);
 	UINT64 fp = 0;
@@ -400,7 +400,7 @@ int rabinjump_chunk_data(unsigned char *p, int n) {
 	memset((char*) buf, 0, 128);
 
 	if (n <= chunkMin)
-		return n;
+		return new_chunk(n);
 	else
 		i = chunkMin;
 
@@ -427,5 +427,6 @@ int rabinjump_chunk_data(unsigned char *p, int n) {
         }
 	}
 //	printf("fp: %llx, chunk length: %d\n", fp, i);
-    return i<n?i:n;
+    i = i<n?i:n;
+	return new_chunk(i);
 }
