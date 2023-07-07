@@ -16,6 +16,8 @@ static pthread_t feature_t;
 static int64_t chunk_num;
 static int64_t segment_num;
 
+SyncQueue* dedup_queue;
+
 struct {
 	/* g_mutex_init() is unnecessary if in static storage. */
 	pthread_mutex_t mutex;

@@ -32,6 +32,10 @@
 
 typedef char* charptr;
 
+extern FILE *debug_fd;
+#define DEBUG_FD debug_fd
+//#define DEBUG_FD stderr
+
 #define _nvp_debug_handoff(x) \
 { \
 	sleep(1); \
@@ -59,19 +63,14 @@ void printMem(void* mem, int lineNr);
 #else
 	#define MSG(format, ...)
 #endif
-#define ERROR(format, ...) do{PRINTFUNC(PRINT_FD, "\033[01;31mERROR\e[m (F:%s L:%d): " , __func__ , __LINE__); PRINTFUNC(PRINT_FD,  format, ##__VA_ARGS__); _nv_error_count++; if(SPIN_ON_ERROR){ _nvp_debug_handoff(); } }while(0)
+#define ERROR(format, ...) do{PRINTFUNC(PRINT_FD, "\033[01;31mERROR\e[m (F:%s L:%d): " , __func__ , __LINE__); PRINTFUNC(PRINT_FD,  format, ##__VA_ARGS__); if(SPIN_ON_ERROR){ _nvp_debug_handoff(); } }while(0)
 
-FILE *debug_fd;
-#define DEBUG_FD debug_fd
-//#define DEBUG_FD stderr
 
 #if PRINT_DEBUG_FILE
 #define DEBUG_FILE(format, ...) do {PRINTFUNC(DEBUG_FD, "DEBUG (F:%s L:%d):" , __func__ ,__LINE__); PRINTFUNC(DEBUG_FD, format, ##__VA_ARGS__); fflush(DEBUG_FD); }while(0)
 #else
 #define DEBUG_FILE(format, ...) do{}while(0)
 #endif
-
-int _nv_error_count;
 
 #if SHOW_DEBUG
 	#define DEBUG(format, ...)   do{PRINTFUNC(PRINT_FD, "\033[01;33mDEBUG (\e[m\033[01;35mF:%s L:%d\e[m\033[01;32m):\e[m", __func__ , __LINE__); PRINTFUNC(PRINT_FD, format, ##__VA_ARGS__); fflush(PRINT_FD); } while(0)

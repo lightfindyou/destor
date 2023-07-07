@@ -8,6 +8,8 @@
 static pthread_t feature_t;
 static int64_t chunk_num;
 
+SyncQueue* feature_queue;
+
 static void (*featuring)(unsigned char* buf, int size, struct chunk* c);
 
 void *feature_thread(void *arg) {

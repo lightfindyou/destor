@@ -8,6 +8,7 @@
 
 static pthread_t filter_t;
 static int64_t chunk_num;
+SyncQueue* rewrite_queue;
 
 struct{
 	/* accessed in dedup phase */

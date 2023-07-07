@@ -2,6 +2,9 @@
 #include "jcr.h"
 #include "backup.h"
 
+SyncQueue* read_queue;
+SyncQueue* trace_queue;
+
 void hash2code(unsigned char hash[20], char code[40]) {
 	int i, j, b;
 	unsigned char a, c;

@@ -7,6 +7,8 @@
 #include "../jcr.h"
 #include "../backup.h"
 
+GHashTable* fp_tab;
+pthread_mutex_t fp_tab_mutex;
 struct index_overhead index_overhead;
 
 struct index_buffer index_buffer;

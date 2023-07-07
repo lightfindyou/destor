@@ -4,7 +4,6 @@
 #include "jcr.h"
 #include "storage/containerstore.h"
 #include "utils/sync_queue.h"
-#include "xdelta3/xdelta_thread.h"
 
 /* defined in index.c */
 extern struct {

@@ -8,11 +8,11 @@
 #include "xdelta3/xdelta_thread.h"
 
 #define XDELTA_THREAD_NUM 12
-pthread_t xdelta_tid[XDELTA_THREAD_NUM];
 
 static pthread_t simi_t;
 static int64_t chunk_num;
 pthread_mutex_t xdeltaTimeMutex;
+SyncQueue* xdelta_queue;
 
 void start_xdelta_phase() {
 	if (pthread_mutex_init(&xdeltaTimeMutex, 0)){

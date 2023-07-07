@@ -4,6 +4,7 @@
 
 static pthread_t hash_t;
 static int64_t chunk_num;
+SyncQueue* hash_queue;
 
 static void* sha1_thread(void* arg) {
 	printf("hash thread         tid: %d\n", gettid());
