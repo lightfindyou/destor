@@ -1,10 +1,10 @@
 bin_PROGRAMS=destor
 destor_SOURCES=
-destor_LDADD=src/libdestor.a src/index/libindex.a src/xdelta3/libxdelta.a src/storage/libstorage.a src/utils/libutils.a src/recipe/librecipe.a src/chunking/libchunk.a src/fsl/libfsl.a src/featuring/libfeature.a src/similariting/libsimilar.a
-# src/featuring/deepsketch/libdeepsketchModel.a src/similariting/deepsketch/libdeepsketchANN.a src/similariting/deepsketch/NGT/libngtstatic.a
+# Dummy C++ source to cause C++ linking.
+nodist_EXTRA_destor_SOURCES = dummy.cxx
+destor_LDADD=src/libdestor.a src/index/libindex.a src/xdelta3/libxdelta.a src/storage/libstorage.a src/utils/libutils.a src/recipe/librecipe.a src/chunking/libchunk.a src/fsl/libfsl.a src/featuring/libfeature.a src/similariting/libsimilar.a src/featuring/deepsketch/libdeepsketchfeature.a
 
-SUBDIRS=src src/index src/recipe src/storage src/utils src/chunking src/fsl src/featuring src/similariting src/xdelta3
-# src/featuring/deepsketch/ src/similariting/deepsketch/ src/similariting/deepsketch/NGT/
+SUBDIRS=src src/index src/recipe src/storage src/utils src/chunking src/fsl src/featuring src/featuring/deepsketch/ src/similariting src/xdelta3
 
 LIBS=-lpthread -lcrypto -lglib -lxxhash -lm
 

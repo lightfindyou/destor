@@ -6,6 +6,7 @@
 #define FEATURE_H_
 
 #include "../destor.h"
+#include "deepsketch/deepsketch_featuring.h"
 
 #define MAX_FEANUM 32
 

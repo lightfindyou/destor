@@ -10,7 +10,7 @@ AM_INIT_AUTOMAKE
 AC_PROG_CXX
 AC_PROG_CC
 CFLAGS="-g3 -O2 -Wall -ggdb"
-CXXFLAGS="-D_GLIBCXX_USE_CXX11_ABI=1 -I/home/xzjin/.local/lib/python3.8/site-packages/torch/include/"
+CXXFLAGS="-ggdb -O2 -Wall -D_GLIBCXX_USE_CXX11_ABI=1 -I/home/xzjin/.local/lib/python3.8/site-packages/torch/include/"
 #-D_GLIBCXX_USE_CXX11_ABI=0
 
 # Checks for libraries.
@@ -74,6 +74,7 @@ AC_CONFIG_FILES([Makefile
         src/storage/Makefile
         src/chunking/Makefile
         src/featuring/Makefile
+        src/featuring/deepsketch/Makefile
         src/similariting/Makefile
         src/xdelta3/Makefile
         src/fsl/Makefile])

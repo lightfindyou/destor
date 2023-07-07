@@ -5246,7 +5246,7 @@ fi
 
 
 CFLAGS="-g3 -O2 -Wall -ggdb"
-CXXFLAGS="-D_GLIBCXX_USE_CXX11_ABI=1 -I/home/xzjin/.local/lib/python3.8/site-packages/torch/include/"
+CXXFLAGS="-ggdb -O2 -Wall -D_GLIBCXX_USE_CXX11_ABI=1 -I/home/xzjin/.local/lib/python3.8/site-packages/torch/include/"
 #-D_GLIBCXX_USE_CXX11_ABI=0
 
 # Checks for libraries.
@@ -5917,7 +5917,7 @@ fi
 #        src/similariting/deepsketch/Makefile
 #        src/similariting/deepsketch/NGT/Makefile
 
-ac_config_files="$ac_config_files Makefile src/Makefile src/utils/Makefile src/index/Makefile src/recipe/Makefile src/storage/Makefile src/chunking/Makefile src/featuring/Makefile src/similariting/Makefile src/xdelta3/Makefile src/fsl/Makefile"
+ac_config_files="$ac_config_files Makefile src/Makefile src/utils/Makefile src/index/Makefile src/recipe/Makefile src/storage/Makefile src/chunking/Makefile src/featuring/Makefile src/featuring/deepsketch/Makefile src/similariting/Makefile src/xdelta3/Makefile src/fsl/Makefile"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -6668,6 +6668,7 @@ do
     "src/storage/Makefile") CONFIG_FILES="$CONFIG_FILES src/storage/Makefile" ;;
     "src/chunking/Makefile") CONFIG_FILES="$CONFIG_FILES src/chunking/Makefile" ;;
     "src/featuring/Makefile") CONFIG_FILES="$CONFIG_FILES src/featuring/Makefile" ;;
+    "src/featuring/deepsketch/Makefile") CONFIG_FILES="$CONFIG_FILES src/featuring/deepsketch/Makefile" ;;
     "src/similariting/Makefile") CONFIG_FILES="$CONFIG_FILES src/similariting/Makefile" ;;
     "src/xdelta3/Makefile") CONFIG_FILES="$CONFIG_FILES src/xdelta3/Makefile" ;;
     "src/fsl/Makefile") CONFIG_FILES="$CONFIG_FILES src/fsl/Makefile" ;;
