@@ -10,7 +10,8 @@ AM_INIT_AUTOMAKE
 AC_PROG_CXX
 AC_PROG_CC
 CFLAGS="-g3 -O2 -Wall -ggdb"
-CXXFLAGS="-ggdb -O2 -Wall -D_GLIBCXX_USE_CXX11_ABI=1 -I/home/xzjin/.local/lib/python3.8/site-packages/torch/include/"
+CXXFLAGS="-ggdb -O2 -Wall -D_GLIBCXX_USE_CXX11_ABI=0 -I/home/xzjin/libtorch_pre/include -I/home/xzjin/libtorch_pre/include/torch/csrc/api/include -L/home/xzjin/libtorch_pre/lib -lpthread -lcrypto -lglib -lxxhash -lm -lc10 -ltorch -ltorch_cpu"
+#LIBS=-lpthread -lcrypto -lglib -lxxhash -lm
 #-D_GLIBCXX_USE_CXX11_ABI=0
 
 # Checks for libraries.
@@ -43,6 +44,11 @@ AC_CHECK_HEADERS([openssl/sha.h], [found_sha_h=yes],[found_sha_h=no])
     if test "$found_sha_h" = "no"; then
     AC_MSG_ERROR([*** Working sha.h header not found ***])
     fi
+#AC_CHECK_HEADERS([torch/script.h], [found_torchScript_h=yes],[found_torchScript_h=no])
+#    if test "$found_torchScript_h" = "no"; then
+#    AC_MSG_ERROR([*** Working torch/script.h header not found ***])
+#    fi
+
 #AC_CHECK_HEADERS([mysql/mysql.h], [found_mysql_h=yes],[found_mysql_h=no])
     #if test "$found_mysql_h" = "no"; then
     #AC_MSG_ERROR([*** Working mysql/mysql.h header not found ***])
