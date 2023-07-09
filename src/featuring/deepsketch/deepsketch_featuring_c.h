@@ -1,7 +1,7 @@
 #ifndef __DEEPSKETCH_FEATURING_C_
 #define __DEEPSKETCH_FEATURING_C_
 
-#include "../utils/sync_queue.h"
+#include "../../utils/sync_queue.h"
 #ifdef __cplusplus
 extern "C"{
 #endif
@@ -11,7 +11,7 @@ extern "C"{
 
 void deepsketch_featuring_init(char* modelPath);
 int deepsketch_featuring(unsigned char* buf, int size, struct chunk* c);
-SyncQueue* feature_temp_queue;
+extern SyncQueue* feature_temp_queue;
 
 #ifdef __cplusplus
 }

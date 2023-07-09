@@ -2,5 +2,7 @@
 #include "../destor.h"
 #include "featuring.h"
 
-void bruteforce_featuring(unsigned char* buf, int size, struct chunk* c){
+int bruteforce_featuring(unsigned char* buf, int size, struct chunk* c){
+
+    return 1;
 }

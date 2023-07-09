@@ -2,7 +2,7 @@
 #include "../destor.h"
 #include "featuring.h"
 
-void odess_featuring(unsigned char* buf, int size, struct chunk* c){
+int odess_featuring(unsigned char* buf, int size, struct chunk* c){
 	feature fea[ODESS_FEATURE_NUM];
 	sufeature* superfeature = c->fea;
 	memset(fea, 0, sizeof(feature)*ODESS_FEATURE_NUM);
@@ -18,12 +18,16 @@ void odess_featuring(unsigned char* buf, int size, struct chunk* c){
 		superfeature[i] = XXH64(temp, sizeof(feature) * ODESS_FEATURE_NUM / ODESS_SF_NUM, 0);
 	}
 	c->feaNum = ODESS_SF_NUM;
+
+	return 1;
 }
 
-void odess_featuring_flatFea(unsigned char* buf, int size, struct chunk* c){
+int odess_featuring_flatFea(unsigned char* buf, int size, struct chunk* c){
 	feature* fea = c->fea;
 	memset(fea, 0, sizeof(feature)*ODESS_FEATURE_NUM);
 
 	gear_odess(buf, size, fea, ODESS_FEATURE_NUM);
 	c->feaNum = ODESS_FEATURE_NUM;
+
+	return 1;
 }

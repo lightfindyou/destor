@@ -3,7 +3,7 @@
 #include "../similariting/similariting.h"
 #include "../destor.h"
 
-void highdedup_featuring(unsigned char* buf, int size, struct chunk* c){
+int highdedup_featuring(unsigned char* buf, int size, struct chunk* c){
 
 	sufeature* superfeature = c->fea;
 	memset(superfeature, 0x0, sizeof(sufeature)*HIGHDEDUP_FEATURE_NUM);
@@ -32,13 +32,17 @@ void highdedup_featuring(unsigned char* buf, int size, struct chunk* c){
 		}
 
 	}
+
+	return 1;
 }
 
-void highdedup_featuring_fsc(unsigned char* buf, int size, struct chunk* c){
+int highdedup_featuring_fsc(unsigned char* buf, int size, struct chunk* c){
 
 	sufeature* superfeature = c->fea;
 	memset(superfeature, 0x0, sizeof(sufeature)*HIGHDEDUP_FEATURE_NUM);
 
 	c->feaNum = highdedup_32fea_16B_FSC(buf, size, superfeature,
 				 HIGHDEDUP_FEATURE_NUM);
+
+	return 1;
 }

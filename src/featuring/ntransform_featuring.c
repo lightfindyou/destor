@@ -2,7 +2,7 @@
 #include "../destor.h"
 #include "featuring.h"
 
-void ntransform_featuring(unsigned char* buf, int size, struct chunk* c){
+int ntransform_featuring(unsigned char* buf, int size, struct chunk* c){
 	feature fea[NTRANSFORM_FEATURE_NUM];
 	sufeature* superfeature = c->fea;
 	memset(fea, 0, sizeof(feature)*NTRANSFORM_FEATURE_NUM);
@@ -19,4 +19,6 @@ void ntransform_featuring(unsigned char* buf, int size, struct chunk* c){
 		superfeature[i] = XXH64(temp, sizeof(feature) * NTRANSFORM_FEATURE_NUM / NTRANSFORM_SF_NUM, 0);
 	}
 	c->feaNum = NTRANSFORM_SF_NUM;
+
+	return 1;
 }

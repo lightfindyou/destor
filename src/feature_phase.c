@@ -9,8 +9,9 @@ static pthread_t feature_t;
 static int64_t chunk_num;
 
 SyncQueue* feature_queue;
+SyncQueue* feature_temp_queue;
 
-static void (*featuring)(unsigned char* buf, int size, struct chunk* c);
+static int (*featuring)(unsigned char* buf, int size, struct chunk* c);
 
 void *feature_thread(void *arg) {
 	printf("feature thread         tid: %d\n", gettid());
@@ -36,7 +37,7 @@ void *feature_thread(void *arg) {
 		TIMER_DECLARE(1);
 		TIMER_BEGIN(1);
 		/*calculate features*/
-		featuring(c->data, c->size, c);
+		int featuringRet = featuring(c->data, c->size, c);
 		jcr.totalFeaNum += c->feaNum;
 		TIMER_END(1, jcr.fea_time);
 
@@ -44,7 +45,13 @@ void *feature_thread(void *arg) {
 		VERBOSE("Feature phase: %ldth chunk featured by %s", chunk_num++, c->fea);
 
 		//TODO maybe use a stack here to temporarily store
-		sync_queue_push(feature_queue, c);
+		if(featuring == deepsketch_featuring){
+			for(int i = 0; i < featuringRet; i++){
+				sync_queue_push(feature_queue, sync_queue_pop(feature_temp_queue));
+			}
+		}else{
+			sync_queue_push(feature_queue, c);
+		}
 	}
 
 	printf("feature over!\n");

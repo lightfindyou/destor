@@ -11,6 +11,7 @@ extern "C" void deepsketch_featuring_init(char *modelPath) {
 
 extern "C" int deepsketch_featuring(unsigned char *buf, int size,
                                      struct chunk *c) {
+    c->feaNum = 1;
     sync_queue_push(feature_temp_queue, c);
     /**On success, write fetures into chunks and push chunks and return 1;
      * On false, return 0;
