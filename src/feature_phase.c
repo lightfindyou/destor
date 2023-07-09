@@ -43,6 +43,7 @@ void *feature_thread(void *arg) {
 		//TODO xzjin out of boundary fix
 		VERBOSE("Feature phase: %ldth chunk featured by %s", chunk_num++, c->fea);
 
+		//TODO maybe use a stack here to temporarily store
 		sync_queue_push(feature_queue, c);
 	}
 
@@ -89,6 +90,7 @@ void start_feature_phase() {
 	}
 
 	feature_queue = sync_queue_new(FEAQUESIZE);
+	feature_temp_queue = sync_queue_new(BATCH_SIZE * 3);
 
 	pthread_create(&feature_t, NULL, feature_thread, NULL);
 }

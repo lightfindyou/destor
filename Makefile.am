@@ -6,6 +6,6 @@ destor_LDADD=src/libdestor.a src/index/libindex.a src/xdelta3/libxdelta.a src/st
 
 SUBDIRS=src src/index src/recipe src/storage src/utils src/chunking src/fsl src/featuring src/featuring/deepsketch/ src/similariting src/xdelta3
 
-#LIBS=-lpthread -lcrypto -lglib -lxxhash -lm
+LIBS=-lpthread -lcrypto -lglib -lxxhash -lm -lc10 -ltorch -ltorch_cpu
 
 # -ltorch -lnvrtc -lc10 -lcudnn -lcuda -lcudart -lcublas -lcurand -lcusolver

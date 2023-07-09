@@ -2,6 +2,11 @@
 #define SYNC_QUEUE_H_
 
 #include <stdlib.h>
+
+#ifdef __cplusplus
+extern "C"{
+#endif
+
 #include <pthread.h>
 #include "queue.h"
 
@@ -23,5 +28,9 @@ int sync_queue_size(SyncQueue* s_queue);
 void* sync_queue_find(SyncQueue* s_queue, int (*hit)(void*, void*), void* data,
 		void* (*dup)(void*));
 void* sync_queue_get_top(SyncQueue* s_queue);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

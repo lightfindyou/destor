@@ -6,7 +6,7 @@
 #define FEATURE_H_
 
 #include "../destor.h"
-#include "deepsketch/deepsketch_featuring.h"
+#include "deepsketch/deepsketch_featuring_c.h"
 
 #define MAX_FEANUM 32
 
@@ -47,10 +47,6 @@ void bruteforce_featuring(unsigned char* buf, int size, struct chunk* c);
 void gear_odess(unsigned char *p, int n, feature* fea, int fetureNum);
 void odess_featuring(unsigned char* buf, int size, struct chunk* c);
 void odess_featuring_flatFea(unsigned char* buf, int size, struct chunk* c);
-
-
-void deepsketch_featuring_init(char* modelPath);
-void deepsketch_featuring(unsigned char* buf, int size, struct chunk* c);
 
 typedef unsigned char fineANN_t;
 #define FINEANN_FEATURE_BITS 191

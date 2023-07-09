@@ -8,6 +8,10 @@
 #ifndef QUEUE_H_
 #define QUEUE_H_
 
+#ifdef __cplusplus
+extern "C"{
+#endif
+
 typedef struct queue_ele_tag {
 	struct queue_ele_tag *next;
 	void *data;
@@ -32,5 +36,9 @@ void queue_foreach(Queue *queue, void (*func)(void *data, void *user_data),
 void* queue_get_n(Queue *queue, int n);
 void * queue_top(Queue *queue);
 void* queue_find(Queue* queue, int (*hit)(void*, void*), void* data);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* QUEUE_H_ */

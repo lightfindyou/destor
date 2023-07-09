@@ -2,68 +2,49 @@
 #include <iostream>
 
 #include "deepsketch_featuring.h"
+#include "deepsketch_featuring_c.h"
 #include "../../destor.h"
 
-typedef std::bitset<HASH_SIZE> MYHASH;
-
-extern "C" void deepsketch_featuring_init(char *modelPath) {}
-
-extern "C" void deepsketch_featuring(unsigned char *buf, int size,
-                                     struct chunk *c) {
-    std::cout << "calling c++ functions " << std::endl;
+extern "C" void deepsketch_featuring_init(char *modelPath) {
+    network = new NetworkHash(TEMP_QUEUE_SIZE, modelPath);
 }
 
-class NetworkHash {
-   private:
-    int BATCH_SIZE;
-    torch::jit::script::Module module;
-    float *data;
-    bool *memout;
-    int *index;
-    int cnt;
-
-   public:
-    NetworkHash(int BATCH_SIZE, char *module_name) {
-        this->BATCH_SIZE = BATCH_SIZE;
-        this->module = torch::jit::load(module_name);
-        this->module.to(at::kCUDA);
-        this->module.eval();
-        this->data = new float[BATCH_SIZE * BLOCK_SIZE * 2];
-        this->memout = new bool[BATCH_SIZE * HASH_SIZE];
-        this->index = new int[BATCH_SIZE];
-        this->cnt = 0;
+extern "C" int deepsketch_featuring(unsigned char *buf, int size,
+                                     struct chunk *c) {
+    sync_queue_push(feature_temp_queue, c);
+    /**On success, write fetures into chunks and push chunks and return 1;
+     * On false, return 0;
+     * */
+    if(network->push((char*)buf, size, c)){
+        //TODO write fetures into chunks
+        return network->request();
+    }else{
+        return 0;
     }
-    ~NetworkHash() {
-        delete[] this->data;
-        delete[] this->memout;
-        delete[] this->index;
-    }
-    bool push(char *ptr, int size, int label);
-    std::vector<std::pair<MYHASH, int>> request();
-};
 
-bool NetworkHash::push(char *ptr, int size, int label) {
+}
+
+bool NetworkHash::push(char *ptr, int size, struct chunk* c) {
     if (cnt == 0) {
-        memset(this->data, 0, sizeof(float) * BATCH_SIZE * BLOCK_SIZE * 2);
+        memset(this->data, 0, sizeof(float) * batch_size * BLOCK_SIZE * 2);
     }
     for (int i = 0; i < size; ++i) {
         data[cnt * BLOCK_SIZE * 2 + i] =
             ((int)(unsigned char)(ptr[i]) - 128) / 128.0;
     }
-    index[cnt++] = label;
+    index[cnt++] = c;
 
-    if (cnt == BATCH_SIZE)
+    if (cnt == batch_size)
         return true;
     else
         return false;
 }
 
 // This function get the hash value into ret pairs
-std::vector<std::pair<MYHASH, int>> NetworkHash::request() {
-    if (cnt == 0) return std::vector<std::pair<MYHASH, int>>();
+int NetworkHash::request() {
+    if (cnt == 0) return 0;
 
-    std::vector<std::pair<MYHASH, int>> ret(cnt);
-
+    int ret = cnt;
     std::vector<torch::jit::IValue> inputs;
     torch::Tensor t =
         torch::from_blob(data, {cnt, BLOCK_SIZE * 2}).to(torch::kCUDA);
@@ -74,15 +55,19 @@ std::vector<std::pair<MYHASH, int>> NetworkHash::request() {
 
     // change into 0 or 1
     torch::Tensor comp = output.ge(0.0);
-    memcpy(memout, comp.cpu().data_ptr<bool>(), cnt * HASH_SIZE);
+    memcpy(memout, comp.cpu().data_ptr<bool>(), cnt * DEEPSKETCH_HASH_SIZE);
 
-    bool *ptr = this->memout;
-
+    uint64_t* featureArray = (uint64_t*)this->memout;
+//    bool *ptr = this->memout;
     for (int i = 0; i < cnt; ++i) {
-        for (int j = 0; j < HASH_SIZE; ++j) {
-            if (ptr[HASH_SIZE * i + j]) ret[i].first.flip(j);
-        }
-        ret[i].second = index[i];
+        //The corrcopoding i of feature and index means the feature is sequence
+        //for (int j = 0; j < DEEPSKETCH_HASH_SIZE; ++j) {
+        //    if (ptr[DEEPSKETCH_HASH_SIZE * i + j]) ret[i].first.flip(j);
+        //}
+        //ret[i].second = index[i];
+        struct chunk* c = index[i];
+        memcpy(c->fea, &featureArray[DEEPSKETCH_HASH_SIZE/sizeof(uint64_t)*i],
+                     DEEPSKETCH_HASH_SIZE/sizeof(uint64_t));
     }
 
     cnt = 0;

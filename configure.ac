@@ -10,7 +10,8 @@ AM_INIT_AUTOMAKE
 AC_PROG_CXX
 AC_PROG_CC
 CFLAGS="-g3 -O2 -Wall -ggdb"
-CXXFLAGS="-ggdb -O2 -Wall -D_GLIBCXX_USE_CXX11_ABI=0 -I/home/xzjin/libtorch_pre/include -I/home/xzjin/libtorch_pre/include/torch/csrc/api/include -L/home/xzjin/libtorch_pre/lib -lpthread -lcrypto -lglib -lxxhash -lm -lc10 -ltorch -ltorch_cpu"
+CXXFLAGS="-ggdb -O2 -Wall -D_GLIBCXX_USE_CXX11_ABI=0 -I/home/xzjin/libtorch_pre/include -I/home/xzjin/libtorch_pre/include/torch/csrc/api/include -L/home/xzjin/libtorch_pre/lib"
+#" -lpthread -lcrypto -lglib -lxxhash -lm -lc10 -ltorch -ltorch_cpu"
 #LIBS=-lpthread -lcrypto -lglib -lxxhash -lm
 #-D_GLIBCXX_USE_CXX11_ABI=0
 

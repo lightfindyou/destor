@@ -30,6 +30,10 @@
 #include <glib.h>
 #include <getopt.h>
 
+#ifdef __cplusplus
+extern "C"{
+#endif
+
 #include "utils/sds.h"
 #include "debug.h"
 
@@ -410,5 +414,10 @@ void hash2code(unsigned char hash[20], char code[40]);
 #define WARNING(fmt, arg...) destor_log(DESTOR_WARNING, fmt, ##arg);
 
 void destor_log(int level, const char *fmt, ...);
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif /* DESTOR_H_ */
