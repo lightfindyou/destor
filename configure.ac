@@ -84,5 +84,7 @@ AC_CONFIG_FILES([Makefile
         src/featuring/deepsketch/Makefile
         src/similariting/Makefile
         src/xdelta3/Makefile
+        src/similariting/deepsketch/Makefile
+        src/similariting/deepsketch/NGT/Makefile
         src/fsl/Makefile])
 AC_OUTPUT

@@ -181,6 +181,8 @@ void load_config_from_string(sds config) {
 				destor.curStatus = STATUS_CHUNK;
 //				destor.curStatus = STATUS_READ;
 			}
+		} else if (strcasecmp(argv[0], "deepsketchANNThreshold") == 0 && argc == 2) {
+			destor.deepsketchANNThreshold = atoi(argv[1]);
 		} else if (strcasecmp(argv[0], "compressSelf") == 0 && argc == 2) {
 			destor.compressSelf = atoi(argv[1]);
 		} else if (strcasecmp(argv[0], "simiCandLimit") == 0 && argc == 2) {

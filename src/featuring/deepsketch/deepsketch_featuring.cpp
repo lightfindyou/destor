@@ -5,6 +5,8 @@
 #include "deepsketch_featuring_c.h"
 #include "../../destor.h"
 
+NetworkHash* network;
+
 extern "C" void deepsketch_featuring_init(char *modelPath) {
     network = new NetworkHash(TEMP_QUEUE_SIZE, modelPath);
 }
@@ -27,10 +29,10 @@ extern "C" int deepsketch_featuring(unsigned char *buf, int size,
 
 bool NetworkHash::push(char *ptr, int size, struct chunk* c) {
     if (cnt == 0) {
-        memset(this->data, 0, sizeof(float) * batch_size * BLOCK_SIZE * 2);
+        memset(this->data, 0, sizeof(float) * batch_size * DEEPSKETCH_BLOCK_SIZE * 2);
     }
     for (int i = 0; i < size; ++i) {
-        data[cnt * BLOCK_SIZE * 2 + i] =
+        data[cnt * DEEPSKETCH_BLOCK_SIZE * 2 + i] =
             ((int)(unsigned char)(ptr[i]) - 128) / 128.0;
     }
     index[cnt++] = c;
@@ -48,7 +50,7 @@ int NetworkHash::request() {
     int ret = cnt;
     std::vector<torch::jit::IValue> inputs;
     torch::Tensor t =
-        torch::from_blob(data, {cnt, BLOCK_SIZE * 2}).to(torch::kCUDA);
+        torch::from_blob(data, {cnt, DEEPSKETCH_BLOCK_SIZE * 2}).to(torch::kCUDA);
     inputs.push_back(t);
 
     // it seems here calculates the hash value

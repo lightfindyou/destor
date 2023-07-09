@@ -355,6 +355,7 @@ struct destor {
 	volatile int32_t curStatus;
 	int simiCandLimit;
 	int compressSelf;
+	int deepsketchANNThreshold;
 };
 
 extern struct destor destor;

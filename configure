@@ -5924,7 +5924,7 @@ fi
 #        src/similariting/deepsketch/Makefile
 #        src/similariting/deepsketch/NGT/Makefile
 
-ac_config_files="$ac_config_files Makefile src/Makefile src/utils/Makefile src/index/Makefile src/recipe/Makefile src/storage/Makefile src/chunking/Makefile src/featuring/Makefile src/featuring/deepsketch/Makefile src/similariting/Makefile src/xdelta3/Makefile src/fsl/Makefile"
+ac_config_files="$ac_config_files Makefile src/Makefile src/utils/Makefile src/index/Makefile src/recipe/Makefile src/storage/Makefile src/chunking/Makefile src/featuring/Makefile src/featuring/deepsketch/Makefile src/similariting/Makefile src/xdelta3/Makefile src/similariting/deepsketch/Makefile src/similariting/deepsketch/NGT/Makefile src/fsl/Makefile"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -6678,6 +6678,8 @@ do
     "src/featuring/deepsketch/Makefile") CONFIG_FILES="$CONFIG_FILES src/featuring/deepsketch/Makefile" ;;
     "src/similariting/Makefile") CONFIG_FILES="$CONFIG_FILES src/similariting/Makefile" ;;
     "src/xdelta3/Makefile") CONFIG_FILES="$CONFIG_FILES src/xdelta3/Makefile" ;;
+    "src/similariting/deepsketch/Makefile") CONFIG_FILES="$CONFIG_FILES src/similariting/deepsketch/Makefile" ;;
+    "src/similariting/deepsketch/NGT/Makefile") CONFIG_FILES="$CONFIG_FILES src/similariting/deepsketch/NGT/Makefile" ;;
     "src/fsl/Makefile") CONFIG_FILES="$CONFIG_FILES src/fsl/Makefile" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;

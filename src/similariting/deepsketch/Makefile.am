@@ -1,0 +1,2 @@
+noinst_LIBRARIES=libsimilardeepsketch.a
+libsimilardeepsketch_a_SOURCES=deepsketch_similariting.cpp

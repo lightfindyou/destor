@@ -7,6 +7,8 @@ extern "C"{
 #endif
 
 #define BATCH_SIZE 256
+#define DEEPSKETCH_HASH_SIZE 128
+#define DEEPSKETCH_BLOCK_SIZE 4096
 #define TEMP_QUEUE_SIZE BATCH_SIZE*3
 
 void deepsketch_featuring_init(char* modelPath);
