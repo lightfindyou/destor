@@ -126,7 +126,7 @@ static void top_segment_select(GHashTable* features) {
 	g_hash_table_destroy(similar_segments);
 }
 
-extern struct{
+struct{
 	/* accessed in dedup phase */
 	struct container *container_buffer;
 	/* In order to facilitate sampling in container,

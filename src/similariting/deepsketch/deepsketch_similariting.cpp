@@ -6,31 +6,32 @@
 #include "deepsketch_similariting_c.h"
 
 std::string indexPath = "ngtindex";
-NGT::Property property;
 ANN* ann;
 
 extern "C" void deepsketch_similariting_init() {
-    property.dimension = DEEPSKETCH_HASH_SIZE / 8;
-    property.objectType = NGT::ObjectSpace::ObjectType::Uint8;
-    property.distanceType =
+    NGT::Property init_property;
+    init_property.dimension = DEEPSKETCH_HASH_SIZE / 8;
+    init_property.objectType = NGT::ObjectSpace::ObjectType::Uint8;
+    init_property.distanceType =
         NGT::Index::Property::DistanceType::DistanceTypeHamming;
-    NGT::Index::create(indexPath, property);
-    NGT::Index index(indexPath);
+    NGT::Index::create(indexPath, init_property);
+    NGT::Index init_index(indexPath);
     ann =
-        new ANN(20, 128, 16, destor.deepsketchANNThreshold, &property, &index);
+        new ANN(20, 128, 16, destor.deepsketchANNThreshold, &init_property, &init_index);
 }
 
 /** return base chunk fingerprint if similary chunk is found
  *  else return 0
  */
 extern "C" void deepsketch_similariting(struct chunk* c) {
-    MYHASH fea = (MYHASH)c->fea;
+    MYHASH* fea = (MYHASH*)c->fea;
+    std::cout << "simi phase" << *fea << std::endl;
     struct chunk* ret = NULL;
-    ret = ann->request(fea);
+    ret = ann->request(*fea);
     if(ret){
         g_queue_push_tail(c->basechunk, ret);
     }
-	ann->insert(fea, c);
+	ann->insert(*fea, c);
     
     return;
 }

@@ -400,7 +400,8 @@ void load_config_from_string(sds config) {
 			destor.backup_retention_time = atoi(argv[1]);
 		} else if (strcasecmp(argv[0], "model-path") == 0
 				&& argc == 2) {
-			memcpy(destor.modelPath, argv[1], PATHLEN);
+//			memcpy(destor.modelPath, argv[1], PATHLEN);
+			strncpy(destor.modelPath, argv[1], PATHLEN);
 			printf("model path: %s\n", destor.modelPath);
 		} else {
 			err = "Bad directive or wrong number of arguments";

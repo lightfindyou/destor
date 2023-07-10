@@ -11,6 +11,10 @@ extern "C" void deepsketch_featuring_init(char *modelPath) {
     network = new NetworkHash(TEMP_QUEUE_SIZE, modelPath);
 }
 
+extern "C" int deepsketch_featuring_stop() {
+    return network->request();
+}
+
 extern "C" int deepsketch_featuring(unsigned char *buf, int size,
                                      struct chunk *c) {
     c->feaNum = 1;
@@ -66,18 +70,16 @@ int NetworkHash::request() {
     for (int i = 0; i < cnt; ++i) {
         //The corrcopoding i of feature and index means the feature is sequence
         struct chunk* c = index[i];
-        MYHASH fea = (MYHASH)c->fea;
+        MYHASH* fea = (MYHASH*)c->fea;
         for (int j = 0; j < DEEPSKETCH_HASH_SIZE; ++j) {
             if (boolFeature[DEEPSKETCH_HASH_SIZE * i + j]){
-                fea.flip(j);
+                fea->flip(j);
             }
         }
-//        struct chunk* c = index[i];
-//        unsigned char* fea = (unsigned char*)c->fea;
-//        for(int j = 0; j < DEEPSKETCH_HASH_SIZE/8; j++){
-//            setFeature(&boolFeature[idx], &fea[j]);
-//            idx += 8;
-//        }
+
+//        std::cout << "deepsketch fea phase:"<<i<<"th : "<< *fea << std::endl;
+//        MYHASH* feaAgain = (MYHASH*)c->fea;
+//        std::cout << "deepsketch fea phase:"<<i<<"th : "<< *feaAgain << std::endl;
     }
 
     cnt = 0;

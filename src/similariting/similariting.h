@@ -7,6 +7,7 @@
 
 #include "../destor.h"
 #include "../featuring/featuring.h"
+#include "./deepsketch/deepsketch_similariting_c.h"
 
 #define INITCHUNKLISTSIZE 50
 struct _chunkList {
@@ -75,17 +76,5 @@ extern GHashTable* cand_tab;
 extern GHashTable* existing_fea_tab;
 extern GHashTable* commonSimiSufeatureTab;
 extern GAsyncQueue* candQueue;
-
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
-void deepsketch_ANN_init();
-void deepsketch_ANN_similariting(struct chunk* c);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

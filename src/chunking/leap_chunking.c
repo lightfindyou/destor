@@ -20847,11 +20847,9 @@ int EF[5][255];
 int hgIdx = 0;
 int interval = 90;
 
-int inline isWindowsQualified(unsigned char *p, int targetPoint, int windowNum){
+inline int isWindowsQualified(unsigned char *, int , int ) __attribute__((always_inline));
+inline int isWindowsQualified(unsigned char *p, int targetPoint, int windowNum){
 	int index = targetPoint - windowNum;
-//	if(!(EF[0][p[index]]^EF[1][p[index-42]]^EF[2][p[index-84]]^EF[3][p[index-126]]^EF[4][p[index-168]])){
-//		return 0;
-//	}
 
     if(!(EF[0][p[index]]^EF[1][p[index-interval]]^EF[2][p[index-interval*2]]^EF[3][p[index-interval*3]]^EF[4][p[index-interval*4]])){
 		return 0;

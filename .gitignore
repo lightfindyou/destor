@@ -31,3 +31,7 @@ configure
 config.guess
 aclocal.m4
 **backup**
+ngtindex/grp
+ngtindex/obj
+ngtindex/prf
+ngtindex/tre

@@ -25,6 +25,12 @@ void *feature_thread(void *arg) {
 		if (c == NULL) {
 			sync_queue_term(feature_queue);
 //			jcr.status = JCR_STATUS_DONE;
+			if(featuring == deepsketch_featuring){
+				int featuringRet = deepsketch_featuring_stop();
+				for(int i = 0; i < featuringRet; i++){
+					sync_queue_push(feature_queue, sync_queue_pop(feature_temp_queue));
+				}
+			}
 			break;
 		}
 

@@ -10,7 +10,7 @@ static pthread_t filter_t;
 static int64_t chunk_num;
 SyncQueue* rewrite_queue;
 
-struct{
+extern struct{
 	/* accessed in dedup phase */
 	struct container *container_buffer;
 	/* In order to facilitate sampling in container,

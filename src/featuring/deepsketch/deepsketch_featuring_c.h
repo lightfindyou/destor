@@ -13,6 +13,7 @@ extern "C"{
 
 void deepsketch_featuring_init(char* modelPath);
 int deepsketch_featuring(unsigned char* buf, int size, struct chunk* c);
+int deepsketch_featuring_stop();
 extern SyncQueue* feature_temp_queue;
 
 #ifdef __cplusplus
