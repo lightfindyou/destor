@@ -60,8 +60,9 @@ int NetworkHash::request() {
     torch::Tensor comp = output.ge(0.0);
     memcpy(memout, comp.cpu().data_ptr<bool>(), cnt * DEEPSKETCH_HASH_SIZE);
 
-    uint64_t* featureArray = (uint64_t*)this->memout;
-//    bool *ptr = this->memout;
+//    uint64_t* featureArray = (uint64_t*)this->memout;
+    bool *boolFeature = this->memout;
+    int idx = 0;
     for (int i = 0; i < cnt; ++i) {
         //The corrcopoding i of feature and index means the feature is sequence
         //for (int j = 0; j < DEEPSKETCH_HASH_SIZE; ++j) {
@@ -69,10 +70,25 @@ int NetworkHash::request() {
         //}
         //ret[i].second = index[i];
         struct chunk* c = index[i];
-        memcpy(c->fea, &featureArray[DEEPSKETCH_HASH_SIZE/sizeof(uint64_t)*i],
-                     DEEPSKETCH_HASH_SIZE/sizeof(uint64_t));
+        unsigned char* fea = (unsigned char*)c->fea;
+        for(int j = 0; j < DEEPSKETCH_HASH_SIZE/8; j++){
+            setFeature(&boolFeature[idx], &fea[j]);
+            idx += 8;
+        }
     }
 
     cnt = 0;
     return ret;
+}
+
+void NetworkHash::setFeature(bool* boolArray, unsigned char* fea) {
+    unsigned char mask = 0x80;
+
+    for(int i=0; i<8; i++){
+        if(boolArray[i]){
+            *fea |= mask;
+        }
+        mask >= 1;
+    }
+
 }

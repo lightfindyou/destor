@@ -6,6 +6,7 @@
 #include "../../destor.h"
 
 typedef std::bitset<DEEPSKETCH_HASH_SIZE> MYHASH;
+typedef unsigned char deepsketchFeaUchar[DEEPSKETCH_HASH_SIZE/8];
 
 class NetworkHash {
    private:
@@ -34,6 +35,7 @@ class NetworkHash {
     }
     bool push(char *ptr, int size, struct chunk* c);
     int request();
+    void setFeature(bool* boolArray, unsigned char* fea);
 };
 
 extern NetworkHash* network;

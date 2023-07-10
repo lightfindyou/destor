@@ -1,50 +1,56 @@
+#include "deepsketch_similariting.h"
+
 #include <iostream>
+
 #include "../../featuring/deepsketch/deepsketch_featuring_c.h"
 #include "deepsketch_similariting_c.h"
-#include "deepsketch_similariting.h"
 
 std::string indexPath = "ngtindex";
 NGT::Property property;
 ANN* ann;
 
-extern "C" void deepsketch_similariting_init(){
+extern "C" void deepsketch_similariting_init() {
     property.dimension = DEEPSKETCH_HASH_SIZE / 8;
     property.objectType = NGT::ObjectSpace::ObjectType::Uint8;
-    property.distanceType = NGT::Index::Property::DistanceType::DistanceTypeHamming;
+    property.distanceType =
+        NGT::Index::Property::DistanceType::DistanceTypeHamming;
     NGT::Index::create(indexPath, property);
     NGT::Index index(indexPath);
-    ann = new ANN(20, 128, 16, destor.deepsketchANNThreshold, &property, &index);
-
+    ann =
+        new ANN(20, 128, 16, destor.deepsketchANNThreshold, &property, &index);
 }
 
 /** return base chunk fingerprint if similary chunk is found
  *  else return 0
-*/
-extern "C" void deepsketch_similariting(struct chunk* c){
-
-	return;
+ */
+extern "C" void deepsketch_similariting(struct chunk* c) {
+    MYHASH fea = 
+    dcomp_ann_ref = ann.request(fea);
+	ann.insert(fea, c);
+    
+    return;
 }
 
 // search the nearest point in ANN
-int ANN::request(MYHASH h) {
+struct chunk* ANN::request(MYHASH h) {
     int dist = 999;
-    int ret = -1;
+    struct chunk* ret = NULL;
 
     // scan list
-    for (int i = linear.size() - 1; i >= 0; --i) {
-        int nowdist = (linear[i] ^ h).count();  // hammin distance
+    for (int i = feaCache.size() - 1; i >= 0; --i) {
+        int nowdist = (feaCache[i] ^ h).count();  // hammin distance
         if (dist > nowdist) {
             dist = nowdist;
-            ret = hashtable[linear[i]].back();
+            ret = fea2ChunkTable[feaCache[i]].back();
         }
     }
 
     std::vector<uint8_t> query;
-    for (int i = 0; i < property->dimension;
-         ++i) {  // change the serached hash into uint array
-        query.push_back(
-            (uint8_t)((h << (DEEPSKETCH_HASH_SIZE - 8 * i - 8)) >> (DEEPSKETCH_HASH_SIZE - 8))
-                .to_ulong());
+    for (int i = 0; i < property->dimension; ++i) {
+        //Change the serached hash into uint array
+        query.push_back((uint8_t)((h << (DEEPSKETCH_HASH_SIZE - 8 * i - 8)) >>
+                                  (DEEPSKETCH_HASH_SIZE - 8))
+                            .to_ulong());
     }
 
     NGT::SearchQuery sc(query);
@@ -68,17 +74,16 @@ int ANN::request(MYHASH h) {
             for (int j = 0; j < objectSpace.getDimension(); ++j) {
                 for (int k = 0; k < 8; ++k) {
                     if (object[j] & (1 << k)) {
-                        now.flip(8 * j +
-                                 k);  // copy the hash code into MYHASH now
+                        //Copy the hash code into MYHASH now
+                        now.flip(8 * j + k);
                     }
                 }
             }
             dist = nowdist;
-            ret = hashtable[now].back();
-        } else if (dist ==
-                   nowdist) { /** found same result,
-                                                      choose the one with bigger
-                                 index, but why use bigger index? */
+            ret = fea2ChunkTable[now].back();
+        } else if (dist == nowdist) { /** found same result,
+                                        choose the one with bigger
+                                        index, but why use bigger index? */
             MYHASH now;
 
             NGT::ObjectSpace& objectSpace = index->getObjectSpace();
@@ -91,7 +96,7 @@ int ANN::request(MYHASH h) {
                     }
                 }
             }
-            int nowindex = hashtable[now].back();
+            struct chunk* nowindex = fea2ChunkTable[now].back();
 
             if (nowindex > ret) ret = nowindex;
         }
@@ -100,31 +105,30 @@ int ANN::request(MYHASH h) {
     if (dist <= THRESHOLD)
         return ret;
     else
-        return -1;
+        return NULL;
 }
 
-void ANN::insert(MYHASH h, int label) {
-    if (hashtable.count(h)) {
-        hashtable[h].push_back(label);
-        return;
-    }
+void ANN::insert(MYHASH h, struct chunk* c) {
+    //For each unique chunk, push back the c
+    fea2ChunkTable[h].push_back(c);
+    if (fea2ChunkTable.count(h)) { return; }
 
-    hashtable[h].push_back(label);
-    linear.push_back(h);
+    feaCache.push_back(h);
 
-    if (linear.size() == LINEAR_SIZE) {
-        for (int i = 0; i < linear.size(); ++i) {
+    if (feaCache.size() == FEACACHE_SIZE) {
+        for (int i = 0; i < feaCache.size(); ++i) {
             std::vector<uint8_t> query;
             for (int j = 0; j < property->dimension; ++j) {
-                query.push_back(
-                    (uint8_t)((linear[i] << (DEEPSKETCH_HASH_SIZE - 8 * j - 8)) >>
-                              (DEEPSKETCH_HASH_SIZE - 8))
-                        .to_ulong());
+                //Get the lowest j 8bit into ulong
+                query.push_back((uint8_t)((feaCache[i] << (DEEPSKETCH_HASH_SIZE -
+                                                         8 * j - 8)) >>
+                                          (DEEPSKETCH_HASH_SIZE - 8))
+                                    .to_ulong());
             }
             index->append(query);
         }
         index->createIndex(NUM_THREAD);
 
-        linear.clear();
+        feaCache.clear();
     }
 }
