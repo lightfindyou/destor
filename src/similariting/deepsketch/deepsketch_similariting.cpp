@@ -24,9 +24,13 @@ extern "C" void deepsketch_similariting_init() {
  *  else return 0
  */
 extern "C" void deepsketch_similariting(struct chunk* c) {
-    MYHASH fea = 
-    dcomp_ann_ref = ann.request(fea);
-	ann.insert(fea, c);
+    MYHASH fea = (MYHASH)c->fea;
+    struct chunk* ret = NULL;
+    ret = ann->request(fea);
+    if(ret){
+        g_queue_push_tail(c->basechunk, ret);
+    }
+	ann->insert(fea, c);
     
     return;
 }
@@ -81,9 +85,8 @@ struct chunk* ANN::request(MYHASH h) {
             }
             dist = nowdist;
             ret = fea2ChunkTable[now].back();
-        } else if (dist == nowdist) { /** found same result,
-                                        choose the one with bigger
-                                        index, but why use bigger index? */
+        } else if (dist == nowdist) { /** found same result, choose the
+                                         newer one, but why use newer one? */
             MYHASH now;
 
             NGT::ObjectSpace& objectSpace = index->getObjectSpace();

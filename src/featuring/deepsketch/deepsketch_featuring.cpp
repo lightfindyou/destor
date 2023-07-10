@@ -65,16 +65,19 @@ int NetworkHash::request() {
     int idx = 0;
     for (int i = 0; i < cnt; ++i) {
         //The corrcopoding i of feature and index means the feature is sequence
-        //for (int j = 0; j < DEEPSKETCH_HASH_SIZE; ++j) {
-        //    if (ptr[DEEPSKETCH_HASH_SIZE * i + j]) ret[i].first.flip(j);
-        //}
-        //ret[i].second = index[i];
         struct chunk* c = index[i];
-        unsigned char* fea = (unsigned char*)c->fea;
-        for(int j = 0; j < DEEPSKETCH_HASH_SIZE/8; j++){
-            setFeature(&boolFeature[idx], &fea[j]);
-            idx += 8;
+        MYHASH fea = (MYHASH)c->fea;
+        for (int j = 0; j < DEEPSKETCH_HASH_SIZE; ++j) {
+            if (boolFeature[DEEPSKETCH_HASH_SIZE * i + j]){
+                fea.flip(j);
+            }
         }
+//        struct chunk* c = index[i];
+//        unsigned char* fea = (unsigned char*)c->fea;
+//        for(int j = 0; j < DEEPSKETCH_HASH_SIZE/8; j++){
+//            setFeature(&boolFeature[idx], &fea[j]);
+//            idx += 8;
+//        }
     }
 
     cnt = 0;
