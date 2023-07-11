@@ -1,2 +1,2 @@
 noinst_LIBRARIES=libsimilardeepsketch.a
-libsimilardeepsketch_a_SOURCES=deepsketch_similariting.cpp
+libsimilardeepsketch_a_SOURCES=deepsketch_similariting_NGT.cpp

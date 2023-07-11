@@ -7,8 +7,11 @@
 extern "C"{
 #endif
 
-void deepsketch_similariting_init();
-void deepsketch_similariting(struct chunk* c);
+void deepsketch_similariting_NGT_init();
+void deepsketch_similariting_NGT(struct chunk* c);
+
+void deepsketch_similariting_hnsw_init();
+void deepsketch_similariting_hnsw(struct chunk* c);
 
 #ifdef __cplusplus
 }

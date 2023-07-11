@@ -5,15 +5,15 @@
 #include "../../featuring/deepsketch/deepsketch_featuring_c.h"
 #include "deepsketch_similariting_c.h"
 
-std::string indexPath = "ngtindex";
 ANN* ann;
 
-extern "C" void deepsketch_similariting_init() {
+extern "C" void deepsketch_similariting_NGT_init() {
     NGT::Property init_property;
     init_property.dimension = DEEPSKETCH_HASH_SIZE / 8;
     init_property.objectType = NGT::ObjectSpace::ObjectType::Uint8;
     init_property.distanceType =
         NGT::Index::Property::DistanceType::DistanceTypeHamming;
+    std::string indexPath = "/home/xzjin/destorTest_highdedup/ngtindex";
     NGT::Index::create(indexPath, init_property);
     NGT::Index init_index(indexPath);
     ann =
@@ -23,7 +23,7 @@ extern "C" void deepsketch_similariting_init() {
 /** return base chunk fingerprint if similary chunk is found
  *  else return 0
  */
-extern "C" void deepsketch_similariting(struct chunk* c) {
+extern "C" void deepsketch_similariting_NGT(struct chunk* c) {
     MYHASH* fea = (MYHASH*)c->fea;
     std::cout << "simi phase" << *fea << std::endl;
     struct chunk* ret = NULL;
@@ -59,24 +59,24 @@ struct chunk* ANN::request(MYHASH h) {
     }
 
     NGT::SearchQuery sc(query);
-    NGT::ObjectDistances objects;
-    sc.setResults(&objects);
+    NGT::ObjectDistances distances;
+    sc.setResults(&distances);
     sc.setSize(this->ANN_SEARCH_CNT);
     sc.setEpsilon(0.2);
+    std::cout<< "Calling search subrouting." << std::endl;
 
     index->search(sc);  // here search the result
     // process the search result
-    for (int i = 0; i < objects.size(); ++i) {  // what is the size of object?
-                                                // 0?
-        int nowdist = objects[i].distance;
+    for (unsigned int i = 0; i < distances.size(); ++i) {  
+        int nowdist = distances[i].distance;
 
         if (dist > nowdist) {  // find better result
             MYHASH now;
 
             NGT::ObjectSpace& objectSpace = index->getObjectSpace();
             uint8_t* object =
-                static_cast<uint8_t*>(objectSpace.getObject(objects[i].id));
-            for (int j = 0; j < objectSpace.getDimension(); ++j) {
+                static_cast<uint8_t*>(objectSpace.getObject(distances[i].id));
+            for (unsigned int j = 0; j < objectSpace.getDimension(); ++j) {
                 for (int k = 0; k < 8; ++k) {
                     if (object[j] & (1 << k)) {
                         //Copy the hash code into MYHASH now
@@ -92,8 +92,8 @@ struct chunk* ANN::request(MYHASH h) {
 
             NGT::ObjectSpace& objectSpace = index->getObjectSpace();
             uint8_t* object =
-                static_cast<uint8_t*>(objectSpace.getObject(objects[i].id));
-            for (int j = 0; j < objectSpace.getDimension(); ++j) {
+                static_cast<uint8_t*>(objectSpace.getObject(distances[i].id));
+            for (unsigned int j = 0; j < objectSpace.getDimension(); ++j) {
                 for (int k = 0; k < 8; ++k) {
                     if (object[j] & (1 << k)) {
                         now.flip(8 * j + k);
@@ -119,8 +119,8 @@ void ANN::insert(MYHASH h, struct chunk* c) {
 
     feaCache.push_back(h);
 
-    if (feaCache.size() == FEACACHE_SIZE) {
-        for (int i = 0; i < feaCache.size(); ++i) {
+    if (feaCache.size() == (unsigned int)FEACACHE_SIZE) {
+        for (unsigned int i = 0; i < feaCache.size(); ++i) {
             std::vector<uint8_t> query;
             for (int j = 0; j < property->dimension; ++j) {
                 //Get the lowest j 8bit into ulong

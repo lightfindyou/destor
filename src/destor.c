@@ -117,8 +117,7 @@ void destor_start() {
 
 	/* Init */
 	memset(&destor, 0, sizeof(struct destor));
-//	destor.working_directory = sdsnew("/home/xzjin/destorTest");
-	destor.working_directory = sdsnew("/pmem/dedupDir");
+	destor.working_directory = sdsnew("/home/xzjin/destorTest");
 	destor.simulation_level = SIMULATION_NO;
     destor.trace_format = TRACE_DESTOR;
 	destor.verbosity = DESTOR_WARNING;

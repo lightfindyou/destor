@@ -70,16 +70,21 @@ int NetworkHash::request() {
     for (int i = 0; i < cnt; ++i) {
         //The corrcopoding i of feature and index means the feature is sequence
         struct chunk* c = index[i];
-        MYHASH* fea = (MYHASH*)c->fea;
-        for (int j = 0; j < DEEPSKETCH_HASH_SIZE; ++j) {
-            if (boolFeature[DEEPSKETCH_HASH_SIZE * i + j]){
-                fea->flip(j);
-            }
-        }
-
+//        MYHASH* fea = (MYHASH*)c->fea;
+//        for (int j = 0; j < DEEPSKETCH_HASH_SIZE; ++j) {
+//            if (boolFeature[DEEPSKETCH_HASH_SIZE * i + j]){
+//                fea->flip(j);
+//            }
+//        }
 //        std::cout << "deepsketch fea phase:"<<i<<"th : "<< *fea << std::endl;
 //        MYHASH* feaAgain = (MYHASH*)c->fea;
 //        std::cout << "deepsketch fea phase:"<<i<<"th : "<< *feaAgain << std::endl;
+
+        unsigned char* fea = (unsigned char*)c->fea;
+        for(int j = 0; j < DEEPSKETCH_HASH_SIZE/8; j++){
+            setFeature(&boolFeature[idx], &fea[j]);
+            idx += 8;
+        }
     }
 
     cnt = 0;
