@@ -565,7 +565,6 @@ class Index {
     }
     virtual void search(NGT::SearchContainer &sc) { getIndex().search(sc); }
     virtual void search(NGT::SearchQuery &sc) {
-        std::cout<< "call here 568" <<std::endl;   
          getIndex().search(sc);
     }
     virtual void search(NGT::SearchContainer &sc, ObjectDistances &seeds) {
@@ -889,7 +888,6 @@ class GraphIndex : public Index, public NeighborhoodGraph {
     }
 
     void search(NGT::SearchQuery &searchQuery) {
-        std::cout<< "call here 892" <<std::endl;   
         Object *query = Index::allocateObject(searchQuery.getQuery(),
                                               searchQuery.getQueryType());
         try {
@@ -1817,7 +1815,6 @@ class GraphAndTreeIndex : public GraphIndex, public DVPTree {
     }
 
     void search(NGT::SearchQuery &searchQuery) {
-        std::cout<< "call here 1820" <<std::endl;   
         Object *query = Index::allocateObject(searchQuery.getQuery(),
                                               searchQuery.getQueryType());
         try {
