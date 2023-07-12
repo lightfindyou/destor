@@ -6,18 +6,20 @@
 #include "deepsketch_similariting_c.h"
 
 ANN* ann;
+NGT::Index* init_index;
+NGT::Property* init_property;
 
 extern "C" void deepsketch_similariting_NGT_init() {
-    NGT::Property init_property;
-    init_property.dimension = DEEPSKETCH_HASH_SIZE / 8;
-    init_property.objectType = NGT::ObjectSpace::ObjectType::Uint8;
-    init_property.distanceType =
+    init_property = new NGT::Property();
+    init_property->dimension = DEEPSKETCH_HASH_SIZE / 8;
+    init_property->objectType = NGT::ObjectSpace::ObjectType::Uint8;
+    init_property->distanceType =
         NGT::Index::Property::DistanceType::DistanceTypeHamming;
     std::string indexPath = "/home/xzjin/destorTest_highdedup/ngtindex";
-    NGT::Index::create(indexPath, init_property);
-    NGT::Index init_index(indexPath);
+    NGT::Index::create(indexPath, *init_property);
+    init_index = new NGT::Index(indexPath);
     ann =
-        new ANN(20, 128, 16, destor.deepsketchANNThreshold, &init_property, &init_index);
+        new ANN(20, 128, 16, destor.deepsketchANNThreshold, init_property, init_index);
 }
 
 /** return base chunk fingerprint if similary chunk is found
