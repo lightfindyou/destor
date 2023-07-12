@@ -98,7 +98,7 @@ void NetworkHash::setFeature(bool* boolArray, unsigned char* fea) {
         if(boolArray[i]){
             *fea |= mask;
         }
-        mask >= 1;
+        mask >>= 1;
     }
 
 }

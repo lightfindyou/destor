@@ -102,16 +102,19 @@ void do_backup(char *path) {
 //        usleep(1000000);
         switchStatus();
 
+        float processedGB = (float)jcr.data_size/1024/1024/1024;
         /*time_t now = time(NULL);*/
         fprintf(stderr,
-                "job %" PRId32 ", %" PRId64 " bytes, %" PRId32
+                "job %" PRId32 ", %" PRId64 " bytes (%.4f GB), %" PRId32
                 " chunks, %d files, %" PRId64 " bytes processed\r",
-                jcr.id, jcr.data_size, jcr.chunk_num, jcr.file_num, jcr.cur_porcessed_size);
+                jcr.id, jcr.data_size, processedGB, jcr.chunk_num, jcr.file_num, jcr.cur_porcessed_size);
     } while (jcr.status == JCR_STATUS_RUNNING || jcr.status != JCR_STATUS_DONE);
+
+    float processedGB = (float)jcr.data_size/1024/1024/1024;
     fprintf(stderr,
-            "job %" PRId32 ", %" PRId64 " bytes, %" PRId32
+            "job %" PRId32 ", %" PRId64 " bytes (%.4f GB), %" PRId32
             " chunks, %d files processed\n",
-            jcr.id, jcr.data_size, jcr.chunk_num, jcr.file_num);
+            jcr.id, jcr.data_size, processedGB, jcr.chunk_num, jcr.file_num);
 
     if (destor.simulation_level == SIMULATION_ALL) {
         stop_read_trace_phase();

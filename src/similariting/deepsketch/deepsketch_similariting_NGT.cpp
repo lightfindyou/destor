@@ -27,7 +27,7 @@ extern "C" void deepsketch_similariting_NGT_init() {
  */
 extern "C" void deepsketch_similariting_NGT(struct chunk* c) {
     MYHASH* fea = (MYHASH*)c->fea;
-    std::cout << "simi phase" << *fea << std::endl;
+//    std::cout << "simi phase: " << *fea << std::endl;
     struct chunk* ret = NULL;
     ret = ann->request(*fea);
     if(ret){
@@ -65,7 +65,6 @@ struct chunk* ANN::request(MYHASH h) {
     sc.setResults(&distances);
     sc.setSize(this->ANN_SEARCH_CNT);
     sc.setEpsilon(0.2);
-    std::cout<< "Calling search subrouting." << std::endl;
 
     index->search(sc);  // here search the result
     // process the search result
@@ -116,9 +115,13 @@ struct chunk* ANN::request(MYHASH h) {
 
 void ANN::insert(MYHASH h, struct chunk* c) {
     //For each unique chunk, push back the c
-    fea2ChunkTable[h].push_back(c);
-    if (fea2ChunkTable.count(h)) { return; }
+    if (fea2ChunkTable.count(h)) {
+        fea2ChunkTable[h].push_back(c);
+//        std::cout<<"existing hash: "<<std::hex<<h<<std::endl;    
+        return;
+    }
 
+    fea2ChunkTable[h].push_back(c);
     feaCache.push_back(h);
 
     if (feaCache.size() == (unsigned int)FEACACHE_SIZE) {

@@ -37,6 +37,15 @@ void stop_read_trace_phase();
  */
 void start_dedup_phase();
 void stop_dedup_phase();
+
+void start_feature_phase();
+void stop_feature_phase();
+
+void start_simi_phase();
+void stop_simi_phase();
+
+void start_xdelta_phase();
+void stop_xdelta_phase();
 /*
  * Fragmented chunks are marked CHUNK_SPARSE, CHUNK_OUT_OF_ORDER or CHUNK_NOT_IN_CACHE.
  */
