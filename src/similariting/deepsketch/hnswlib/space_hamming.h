@@ -5,13 +5,13 @@ namespace hnswlib {
 
 static float
 Hamming(const void *pVect1v, const void *pVect2v, const void *qty_ptr) {
-    unsigned char *pVect1 = (unsigned char *) pVect1v;
-    unsigned char *pVect2 = (unsigned char *) pVect2v;
+    unsigned long long *pVect1 = (unsigned long long *) pVect1v;
+    unsigned long long *pVect2 = (unsigned long long *) pVect2v;
     size_t qty = *((size_t *) qty_ptr);
 
     float res = 0;
     for (size_t i = 0; i < qty; i++) {
-        unsigned int t = (*pVect1) ^ (*pVect2);
+        unsigned long long t = (*pVect1) ^ (*pVect2);
         pVect1++;
         pVect2++;
         res += __builtin_popcount(t);

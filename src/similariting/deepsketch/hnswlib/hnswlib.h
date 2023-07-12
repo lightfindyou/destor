@@ -114,7 +114,7 @@ static bool AVX512Capable() {
 
 namespace hnswlib {
 //typedef size_t labeltype;
-typedef void* labeltype;
+typedef unsigned long long labeltype;
 
 // This can be extended to store state for filtering (e.g. from a std::set)
 class BaseFilterFunctor {

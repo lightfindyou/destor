@@ -75,8 +75,12 @@ void start_simi_phase() {
 		similariting = ntransform_similariting;
 		stopSimilariting = voidStopSimilariting;
 	}else if(destor.similarity_algorithm == SIMILARITY_DEEPSKETCH){
-		deepsketch_similariting_init();
-		similariting = deepsketch_similariting;
+//		deepsketch_similariting_init();
+//		similariting = deepsketch_similariting;
+//		stopSimilariting = voidStopSimilariting;
+
+		deepsketch_similariting_hnsw_init();
+		similariting = deepsketch_similariting_hnsw;
 		stopSimilariting = voidStopSimilariting;
 	}else if(destor.similarity_algorithm == SIMILARITY_FINENESS){
 		fineness_similariting_init();
