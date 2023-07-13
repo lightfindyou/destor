@@ -60,7 +60,7 @@ void *feature_thread(void *arg) {
 		}
 	}
 
-	printf("feature over!\n");
+//	printf("feature over!\n");
 	return NULL;
 }
 

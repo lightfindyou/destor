@@ -42,7 +42,7 @@ static void* sha1_thread(void* arg) {
 		sync_queue_push(hash_queue, c);
 	}
 
-	printf("hash over!\n");
+//	printf("hash over!\n");
 	return NULL;
 }
 

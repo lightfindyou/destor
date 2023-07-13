@@ -59,7 +59,7 @@ void *simi_thread(void *arg) {
 		sync_queue_push(simi_queue, c);
 	}
 
-	printf("simi over!\n");
+//	printf("simi over!\n");
 	return NULL;
 }
 
@@ -78,7 +78,7 @@ void start_simi_phase() {
 
 		deepsketch_similariting_NGT_init();
 		similariting = deepsketch_similariting_NGT;
-		stopSimilariting = voidStopSimilariting;
+		stopSimilariting = deepsketch_similariting_NGT_stop;
 
 //		deepsketch_similariting_hnsw_init();
 //		similariting = deepsketch_similariting_hnsw;

@@ -126,7 +126,7 @@ static void* chunk_thread(void *arg) {
     jcr.status = JCR_STATUS_DONE;
 #endif	//NODEDUP
 
-	printf("chunk over!\n");
+//	printf("chunk over!\n");
 	return NULL;
 }
 

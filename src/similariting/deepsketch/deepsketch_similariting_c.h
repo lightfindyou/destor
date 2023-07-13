@@ -9,6 +9,7 @@ extern "C"{
 
 void deepsketch_similariting_NGT_init();
 void deepsketch_similariting_NGT(struct chunk* c);
+void deepsketch_similariting_NGT_stop();
 
 void deepsketch_similariting_hnsw_init();
 void deepsketch_similariting_hnsw(struct chunk* c);

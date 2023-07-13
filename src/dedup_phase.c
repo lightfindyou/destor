@@ -114,7 +114,7 @@ void *dedup_thread(void *arg) {
 
 	sync_queue_term(dedup_queue);
 
-	printf("dedup over!\n");
+//	printf("dedup over!\n");
 	return NULL;
 }
 

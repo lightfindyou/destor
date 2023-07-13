@@ -1,6 +1,7 @@
 #include "deepsketch_similariting.h"
 
 #include <iostream>
+#include <stdio.h>
 
 #include "../../featuring/deepsketch/deepsketch_featuring_c.h"
 #include "deepsketch_similariting_c.h"
@@ -8,6 +9,7 @@
 ANN* ann;
 NGT::Index* init_index_NGT;
 NGT::Property* init_property;
+std::string indexPathNGT = "/home/xzjin/destorTest_highdedup/ngtindex";
 
 extern "C" void deepsketch_similariting_NGT_init() {
     init_property = new NGT::Property();
@@ -15,9 +17,8 @@ extern "C" void deepsketch_similariting_NGT_init() {
     init_property->objectType = NGT::ObjectSpace::ObjectType::Uint8;
     init_property->distanceType =
         NGT::Index::Property::DistanceType::DistanceTypeHamming;
-    std::string indexPath = "/home/xzjin/destorTest_highdedup/ngtindex";
-    NGT::Index::create(indexPath, *init_property);
-    init_index_NGT = new NGT::Index(indexPath);
+    NGT::Index::create(indexPathNGT, *init_property);
+    init_index_NGT = new NGT::Index(indexPathNGT);
     ann =
         new ANN(20, 128, 16, destor.deepsketchANNThreshold, init_property, init_index_NGT);
 }
@@ -36,6 +37,25 @@ extern "C" void deepsketch_similariting_NGT(struct chunk* c) {
 	ann->insert(*fea, c);
     
     return;
+}
+
+extern "C" void deepsketch_similariting_NGT_stop() {
+    std::string tmp = indexPathNGT+"/grp";
+    if(remove(tmp.data())){
+        std::cout<<"remove file FAILED: "<<tmp<<std::endl;
+    }
+    tmp = indexPathNGT+"/obj";
+    if(remove(tmp.data())){
+        std::cout<<"remove file FAILED: "<<tmp<<std::endl;
+    }
+    tmp = indexPathNGT+"/prf";
+    if(remove(tmp.data())){
+        std::cout<<"remove file FAILED: "<<tmp<<std::endl;
+    }
+    tmp = indexPathNGT+"/tre";
+    if(remove(tmp.data())){
+        std::cout<<"remove file FAILED: "<<tmp<<std::endl;
+    }
 }
 
 // search the nearest point in ANN
