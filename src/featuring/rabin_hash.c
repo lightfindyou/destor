@@ -269,7 +269,7 @@ void rabin_finesse(unsigned char *p, int n, feature* fea) {
 		if (fp > curfp){ curfp = fp; }
 		i++;
 	}
-	*fea = curfp;
+	*fea = (curfp & destor.featureLenMask);
 //	memcpy(fea, &curfp, sizeof(feature));
 	return;
 }
@@ -290,7 +290,7 @@ void rabin_ntransform(unsigned char *p, int n, feature* fea, int featureNum) {
 		for(int j = 0; j< featureNum; j++){
 			s = (fp*maMatrix[j][0] + maMatrix[j][1]);
 			if(s>fea[j]){
-				fea[j] = s;
+				fea[j] = (s & destor.featureLenMask);
 			}
 		}
 		i++;

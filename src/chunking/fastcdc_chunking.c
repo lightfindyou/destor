@@ -217,7 +217,7 @@ struct chunk* highdedup_chunk_data(unsigned char *p, int n){
         if(G_UNLIKELY(feaNum >= HIGHDEDUP_FEATURE_NUM)){continue;}
         feature tmp = fingerprint & HIGHDEDUP_FEATURE_MASK;
         if(tmp > fea[feaNum]){
-            fea[feaNum] = tmp;
+            fea[feaNum] = (tmp & destor.featureLenMask);
         }
 
         if(!(fingerprint & gearSubchunkMask)){
