@@ -74,7 +74,7 @@ void *xdelta_thread(void *arg) {
 				compressSize = LZ4_compress_default(c->data, compressOut,
 							 c->size, 4*destor.chunk_max_size);
 
-				if(deltaSize < compressSize){
+				if(deltaSize <= compressSize){
 					if(deltaSize < ((c->size)*(destor.compThreshold))){
 						recordDelta(c, firstBase, deltaOut, deltaSize);
 						//NOTE: do not change origin data, it will be used by following xdelta
