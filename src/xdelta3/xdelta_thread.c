@@ -5,6 +5,7 @@
 #include "../storage/containerstore.h"
 #include "../similariting/similariting.h"
 #include "../xdelta3/xdelta3.h"
+#include "../xdelta3/lz4.h"
 #include "../xdelta3/xdelta_thread.h"
 #include "recordDelta.h"
 
@@ -29,6 +30,7 @@ void init_xdelta_thread(int recDeltaInfo){
 #pragma GCC optimize ("O0")
 void *xdelta_thread(void *arg) {
 	char deltaOut[4*destor.chunk_max_size];
+	char compressOut[4*destor.chunk_max_size];
 //	printf("size of deltaOut: %lx\n", 2*destor.chunk_max_size);
 	while (1) {
 		if((destor.curStatus & STATUS_XDELTA) == 0){
@@ -53,6 +55,7 @@ void *xdelta_thread(void *arg) {
 			TIMER_DECLARE(1);
 			TIMER_BEGIN(1);
 			int deltaSize;
+			int compressSize;
 			if(CHECK_CHUNK(c, CHUNK_SIMILAR)){	//chunk may be xdeltaed
 				int refSize = 0;
 				struct chunk* firstBase;
@@ -68,30 +71,36 @@ void *xdelta_thread(void *arg) {
 					}
 				}
 				deltaSize = xdelta3_compress(c->data, c->size, xdeltaBase, refSize, deltaOut, 1);
-				if(deltaSize < ((c->size)*(destor.compThreshold))){
-					recordDelta(c, firstBase, deltaOut, deltaSize);
-					//NOTE: do not change origin data, it will be used by following xdelta
-//					memcpy(c->data, deltaOut, deltaSize);
-					int32_t ori_size = c->size;
-//					c->size = deltaSize;
-//					printf("c->size: %d, delta size: %d\n", c->size, deltaSize);
-					assert(c->size);
+				compressSize = LZ4_compress_default(c->data, compressOut,
+							 c->size, 4*destor.chunk_max_size);
 
-					if (pthread_mutex_lock(&jcrMutex) != 0) {
-						puts("failed to lock jcrMutex!");
-						return;
+				if(deltaSize < compressSize){
+					if(deltaSize < ((c->size)*(destor.compThreshold))){
+						recordDelta(c, firstBase, deltaOut, deltaSize);
+						//NOTE: do not change origin data, it will be used by following xdelta
+						int32_t ori_size = c->size;
+						assert(c->size);
+	
+						if (pthread_mutex_lock(&jcrMutex) != 0) {
+							puts("failed to lock jcrMutex!");
+							return;
+						}
+						jcr.total_xdelta_compressed_chunk++;
+						jcr.total_xdelta_size += deltaSize;
+						jcr.total_xdelta_saved_size += ori_size - deltaSize;
+					}else{
+						if (pthread_mutex_lock(&jcrMutex) != 0) {
+							puts("failed to lock jcrMutex!");
+							return NULL;
+						}
 					}
-					jcr.total_xdelta_compressed_chunk++;
-					jcr.total_xdelta_size += deltaSize;
-					jcr.total_xdelta_saved_size += ori_size - deltaSize;
+					jcr.total_xdelta_chunk++;
+					jcr.total_size_after_dedup += deltaSize;		//the size of chunk after xdelta
 				}else{
-					if (pthread_mutex_lock(&jcrMutex) != 0) {
-						puts("failed to lock jcrMutex!");
-						return NULL;
-					}
+					int32_t ori_size = c->size;
+					jcr.total_lz4_compressed_chunk++;
+					jcr.total_lz4_saved_size += ori_size - deltaSize;
 				}
-				jcr.total_xdelta_chunk++;
-				jcr.total_size_after_dedup += deltaSize;		//the size of chunk after xdelta
 			}else{				//chunk unable to be xdeltaed
 				if (pthread_mutex_lock(&jcrMutex) != 0) {
 					puts("failed to lock jcrMutex!");

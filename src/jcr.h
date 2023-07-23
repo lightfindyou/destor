@@ -50,6 +50,8 @@ struct jcr{
 	int64_t total_xdelta_saved_size;
 	int64_t total_size_after_dedup;
 	int64_t cur_porcessed_size;
+	int64_t total_lz4_compressed_chunk;
+	int64_t total_lz4_saved_size;
 
 	struct backupVersion* bv;
 
