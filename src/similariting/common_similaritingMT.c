@@ -92,7 +92,7 @@ void* thread_topK_match_similariting_MT(void *idp){
 		if(cl){
 			int listLen = cl->length;
 			struct chunk** candList = cl->list;
-			jcr.candNum += listLen;
+			jcr.candNum += listLen;		//Number of chunks that share same feature with existing chunk
 			int iterBeginPos = 0>(listLen-destor.simiCandLimit)?0:(listLen-destor.simiCandLimit);
 
 //			TIMER_DECLARE(6);

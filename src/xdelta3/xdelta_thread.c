@@ -59,8 +59,8 @@ void *xdelta_thread(void *arg) {
 			if(CHECK_CHUNK(c, CHUNK_SIMILAR)){	//chunk may be xdeltaed
 				int refSize = 0;
 				struct chunk* firstBase;
-				if(c->basechunk && g_queue_get_length(c->basechunk)){	//NOT self compress chunk
-					int refNum = g_queue_get_length(c->basechunk);
+				int refNum = g_queue_get_length(c->basechunk);
+				if(c->basechunk && refNum){	//NOT self compress chunk
 					VERBOSE("Similariting phase: %ldth chunk similar with %d chunks", chunk_num++, refNum);
 					firstBase = g_queue_peek_head(c->basechunk);
 					for(int i = 0; i < refNum; i++){
@@ -74,7 +74,7 @@ void *xdelta_thread(void *arg) {
 				compressSize = LZ4_compress_default(c->data, compressOut,
 							 c->size, 4*destor.chunk_max_size);
 
-				if(deltaSize <= compressSize){
+				if(deltaSize <= compressSize){		//Delta is more efficient than lz4
 					if(deltaSize < ((c->size)*(destor.compThreshold))){
 						recordDelta(c, firstBase, deltaOut, deltaSize);
 						//NOTE: do not change origin data, it will be used by following xdelta
@@ -96,7 +96,11 @@ void *xdelta_thread(void *arg) {
 					}
 					jcr.total_xdelta_chunk++;
 					jcr.total_size_after_dedup += deltaSize;		//the size of chunk after xdelta
-				}else{
+				}else{		//Delta is less efficient than lz4
+					if (pthread_mutex_lock(&jcrMutex) != 0) {
+						puts("failed to lock jcrMutex!");
+						return;
+					}
 					int32_t ori_size = c->size;
 					jcr.total_lz4_compressed_chunk++;
 					jcr.total_lz4_saved_size += ori_size - deltaSize;

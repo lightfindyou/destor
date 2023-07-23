@@ -44,8 +44,10 @@ void *simi_thread(void *arg) {
 			TIMER_END(1, jcr.seaFea_time);
 			jcr.featuredChunks++;
 
-			if(g_queue_get_length(c->basechunk)){
+			int baseChunkNum = g_queue_get_length(c->basechunk);
+			if(baseChunkNum){
 				jcr.similarChunks++;
+				jcr.tatal_base_chunk_num += baseChunkNum;
 //				struct chunk* basec = c->basechunk;
 //				printf("simi_phase Chunk similar with %p\n", basec);
 //				printf("which similar with %p\n", basec->basechunk);

@@ -165,6 +165,8 @@ void do_backup(char *path) {
     printf("lz4 compresse ratio: %.4f \n",
            jcr.total_lz4_saved_size != 0 ? (jcr.total_lz4_saved_size)*100 /
                                     (double)(jcr.data_size):0);
+
+    printf("total base chunk number: %" PRId64 "\n", jcr.tatal_base_chunk_num);
     printf("xdelta chunks: %" PRId64 " xdelta compressed chunks: %" PRId64 "\n",
            jcr.total_xdelta_chunk, jcr.total_xdelta_compressed_chunk);
     printf("xdelta saved bytes: %" PRId64 "\n", jcr.total_xdelta_saved_size);

@@ -52,6 +52,7 @@ struct jcr{
 	int64_t cur_porcessed_size;
 	int64_t total_lz4_compressed_chunk;
 	int64_t total_lz4_saved_size;
+	int64_t tatal_base_chunk_num;
 
 	struct backupVersion* bv;
 
