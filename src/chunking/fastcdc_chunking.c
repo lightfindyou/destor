@@ -196,6 +196,20 @@ struct chunk* gear_chunk_data(unsigned char *p, int n){
     return new_chunk(n);
 }
 
+int all0Fea(struct chunk* c){
+    if(c->feaNum < 10){
+        return 0;
+    }
+
+    for(int i = 0; i<c->feaNum; i++){
+        if(c->fea[i] != 0){
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
 struct chunk* highdedup_chunk_data(unsigned char *p, int n){
 
     uint64_t fingerprint=0;
@@ -215,7 +229,8 @@ struct chunk* highdedup_chunk_data(unsigned char *p, int n){
         }
 
         if(G_UNLIKELY(feaNum >= HIGHDEDUP_FEATURE_NUM)){continue;}
-        feature tmp = fingerprint & HIGHDEDUP_FEATURE_MASK;
+//        feature tmp = fingerprint & HIGHDEDUP_FEATURE_MASK;
+        feature tmp = fingerprint;
         if(tmp > fea[feaNum]){
             fea[feaNum] = (tmp & destor.featureLenMask);
         }
@@ -231,6 +246,10 @@ retPoint:
         ret->feaNum = HIGHDEDUP_FEATURE_NUM;
     }
     ret->size = i;
+    if(all0Fea(ret)){
+        printf("chunk %p %d 0 features.\n", ret, ret->feaNum);
+        printf("chunk.\n");
+    }
     ret->data = malloc(i);
     return ret;
 }

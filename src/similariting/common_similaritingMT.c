@@ -12,6 +12,7 @@ pthread_mutex_t timeMutex[11];
 pthread_rwlock_t mainThreadRWLock = PTHREAD_RWLOCK_INITIALIZER;
 static pthread_t simi_t[MAX_FEANUM];
 int curMaxHitTime = 0;
+int skipFeaNum = 0;
 int threadIdx[MAX_FEANUM];
 volatile short threadNeedExecute[MAX_FEANUM];
 volatile int executeOverThreadNum = 0;
@@ -51,6 +52,20 @@ void addAndTestCounter(){
 	}
 }
 
+int allFeatureExisting(struct chunk* c){
+	int i = 0;
+	for(; i<c->feaNum; i++){
+		gpointer skipFeature = g_hash_table_lookup(existing_fea_tab, &(c->fea[i]));
+		if(skipFeature == NULL){
+			printf("feature %d not contained in table.\n");
+			return 0;
+		}
+	}
+	printf("All %d-%d-%d feature contained in table.\n",
+			 c->feaNum, i, g_hash_table_size(existing_fea_tab));
+	return 1;
+}
+
 void* thread_topK_match_similariting_MT(void *idp){
 	int threadId = *(int*)idp;
 	struct chunk** threadCandList = &threadCandListHead[threadId*destor.simiCandLimit];
@@ -79,6 +94,7 @@ void* thread_topK_match_similariting_MT(void *idp){
 		gpointer skipFeature = g_hash_table_lookup(existing_fea_tab, &(simiFeature[threadId]));
 //		TIMER_END(5, jcr.checkSkipFeature);
 		if(skipFeature){
+			skipFeaNum++;
 			goto skipFeaSearch;
 		}
 
@@ -152,6 +168,7 @@ struct chunk* topK_match_similariting_MT(struct chunk* c, int suFeaNum){
 		executeOverThreadNum = 0;
 		simiSearchRet = NULL;
 		curMaxHitTime = 0;
+		skipFeaNum = 0;
 
 		memset((short *)threadNeedExecute, 1, sizeof(short)*simiFeatureNum);
 		if(G_UNLIKELY(pthread_rwlock_unlock(&mainThreadRWLock))){
@@ -168,6 +185,8 @@ struct chunk* topK_match_similariting_MT(struct chunk* c, int suFeaNum){
 		}
 
 		if(simiSearchRet == NULL) {
+			printf("skipped feature num and chunk feature number: %d-%d\n",
+					 skipFeaNum, c->feaNum);
 			//the unlock outside the loop while act
 			break; 
 		}
@@ -175,7 +194,7 @@ struct chunk* topK_match_similariting_MT(struct chunk* c, int suFeaNum){
 		g_queue_push_tail(c->basechunk, simiSearchRet);
 		//insert feature to hash table
 		insertFeaToTab(existing_fea_tab, simiSearchRet);
-
+		allFeatureExisting(c);
 	}
 
 	if(G_UNLIKELY(pthread_rwlock_unlock(&mainThreadRWLock))){
