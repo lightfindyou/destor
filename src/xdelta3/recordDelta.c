@@ -33,3 +33,21 @@ void recordChunkAndDelta(struct chunk *compressed, struct chunk* ref, void* delt
         fclose(file);
     }
 }
+
+
+FILE* deltaFile;
+void recordSimilatiry_init(){
+    char deltaPath[256];
+    sprintf(deltaPath, "%s/%s", destor.deltaPath, featureAlgStr[destor.feature_algorithm]);
+    printf("delta path: %s\n", deltaPath);
+    deltaFile = createFile(deltaPath);
+}
+
+void recordSimilatiry_close(){
+    fclose(deltaFile);
+}
+
+void recordSimilatiry(struct chunk *compressed, struct chunk* ref, void* delta, int deltaSize){
+    double similarity = ((double)deltaSize)/compressed->size;
+    fprintf(deltaFile, "%.4f\n", similarity);
+}

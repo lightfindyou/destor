@@ -16,12 +16,22 @@ pthread_t xdelta_tid[XDELTA_THREAD_NUM];
 void (*recordDelta)(struct chunk *c1, struct chunk* c2, void* delta, int deltaSize);
 
 void init_xdelta_thread(int recDeltaInfo){
-	if(recDeltaInfo){
-		printf("record delta info: true.\n");
-		recordDelta = recordChunkAndDelta;
-	}else{
+	if(recDeltaInfo == REC_NULL){
 		printf("record delta info: false.\n");
 		recordDelta = recordNULL;
+	}else if(recDeltaInfo == REC_CHUNK_DELTA){
+		printf("record delta info: true.\n");
+		recordDelta = recordChunkAndDelta;
+	}else if(recDeltaInfo == REC_SIMILARITY){
+		printf("record delta info: true.\n");
+		recordDelta = recordSimilatiry;
+		recordSimilatiry_init();
+	}
+}
+
+void stop_xdelta_thread(){
+	if( recordDelta == recordSimilatiry){
+		recordSimilatiry_close();
 	}
 }
 

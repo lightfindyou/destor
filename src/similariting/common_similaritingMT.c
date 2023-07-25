@@ -132,7 +132,7 @@ void* thread_topK_match_similariting_MT(void *idp){
 
 //				TIMER_DECLARE(9);
 //				TIMER_BEGIN(9);
-				threadCandList[candListIdx++] = candChunk;
+//				threadCandList[candListIdx++] = candChunk;
 //				TIMER_END(9, jcr.appendCandChunk);
 			}
 //			TIMER_END(6, jcr.compareHitTime);

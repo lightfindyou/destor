@@ -31,6 +31,7 @@ void stop_xdelta_phase() {
 		pthread_join(xdelta_tid[i], NULL);
 	}
 	free(xdeltaBase);
+	stop_xdelta_thread();
 	pthread_mutex_destroy(&xdeltaTimeMutex);
 	NOTICE("xdelta phase stops successfully: %d chunks", chunk_num);
 }

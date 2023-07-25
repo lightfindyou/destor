@@ -12,4 +12,8 @@
 void recordNULL(struct chunk *c1, struct chunk* c2, void* delta, int deltaSize);
 void recordChunkAndDelta(struct chunk *compressed, struct chunk* ref, void* delta, int deltaSize);
 
+void recordSimilatiry_init();
+void recordSimilatiry_close();
+void recordSimilatiry(struct chunk *compressed, struct chunk* ref, void* delta, int deltaSize);
+
 #endif  //RECORD_DELTA_H_

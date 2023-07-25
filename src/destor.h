@@ -66,6 +66,11 @@ extern "C"{
 #define SIMULATION_APPEND 2
 #define SIMULATION_ALL 3
 
+/**Record delta info*/
+#define REC_NULL 0
+#define REC_CHUNK_DELTA 1
+#define REC_SIMILARITY 2
+
 /* trace format */
 #define TRACE_DESTOR 0
 #define TRACE_FSL 1

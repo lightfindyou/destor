@@ -124,7 +124,13 @@ void load_config_from_string(sds config) {
 		} else if (strcasecmp(argv[0], "xdelta-threshold") == 0 && argc == 2) {
 			destor.compThreshold = atof(argv[1]);
 		} else if (strcasecmp(argv[0], "store-delta") == 0 && argc == 2) {
-			destor.storeDelta = atoi(argv[1]);
+			if (atoi(argv[1]) == 0) {
+				destor.storeDelta = REC_NULL;
+			} else if (strcasecmp(argv[1], "all") == 0) {
+				destor.storeDelta = REC_CHUNK_DELTA;
+			} else if (strcasecmp(argv[1], "similarity") == 0) {
+				destor.storeDelta = REC_SIMILARITY;
+			}
 		} else if (strcasecmp(argv[0], "delta-path") == 0 && argc == 2) {
 			destor.deltaPath = sdsnew(argv[1]);
 		} else if (strcasecmp(argv[0], "feature-len") == 0 && argc == 2) {
