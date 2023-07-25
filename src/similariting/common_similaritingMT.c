@@ -61,8 +61,8 @@ int allFeatureExisting(struct chunk* c){
 			return 0;
 		}
 	}
-	printf("All %d-%d-%d feature contained in table.\n",
-			 c->feaNum, i, g_hash_table_size(existing_fea_tab));
+//	printf("All %d-%d-%d feature contained in table.\n",
+//			 c->feaNum, i, g_hash_table_size(existing_fea_tab));
 	return 1;
 }
 
@@ -185,8 +185,8 @@ struct chunk* topK_match_similariting_MT(struct chunk* c, int suFeaNum){
 		}
 
 		if(simiSearchRet == NULL) {
-			printf("skipped feature num and chunk feature number: %d-%d\n",
-					 skipFeaNum, c->feaNum);
+//			printf("skipped feature num and chunk feature number: %d-%d\n",
+//					 skipFeaNum, c->feaNum);
 			//the unlock outside the loop while act
 			break; 
 		}
@@ -194,7 +194,7 @@ struct chunk* topK_match_similariting_MT(struct chunk* c, int suFeaNum){
 		g_queue_push_tail(c->basechunk, simiSearchRet);
 		//insert feature to hash table
 		insertFeaToTab(existing_fea_tab, simiSearchRet);
-		allFeatureExisting(c);
+//		allFeatureExisting(c);
 	}
 
 	if(G_UNLIKELY(pthread_rwlock_unlock(&mainThreadRWLock))){

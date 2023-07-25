@@ -246,10 +246,10 @@ retPoint:
         ret->feaNum = HIGHDEDUP_FEATURE_NUM;
     }
     ret->size = i;
-    if(all0Fea(ret)){
-        printf("chunk %p %d 0 features.\n", ret, ret->feaNum);
-        printf("chunk.\n");
-    }
+//    if(all0Fea(ret)){
+//        printf("chunk %p %d 0 features.\n", ret, ret->feaNum);
+//        printf("chunk.\n");
+//    }
     ret->data = malloc(i);
     return ret;
 }
