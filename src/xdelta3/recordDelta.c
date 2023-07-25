@@ -49,5 +49,6 @@ void recordSimilatiry_close(){
 
 void recordSimilatiry(struct chunk *compressed, struct chunk* ref, void* delta, int deltaSize){
     double similarity = ((double)deltaSize)/compressed->size;
+    similarity = 100-100*similarity;
     fprintf(deltaFile, "%.4f\n", similarity);
 }
