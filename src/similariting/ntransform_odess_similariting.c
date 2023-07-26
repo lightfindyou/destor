@@ -36,5 +36,5 @@ void odess_similariting_flatFea(struct chunk* c){
 }
 
 void finesse_similariting(struct chunk* c){
-	first_match_similariting(c, FINESSE_SF_NUM, odess_sufeature_tab);
+	first_match_similariting(c, FINESSE_SF_NUM, finesse_sufeature_tab);
 }
