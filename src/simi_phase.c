@@ -86,8 +86,8 @@ void start_simi_phase() {
 //		similariting = deepsketch_similariting_hnsw;
 //		stopSimilariting = voidStopSimilariting;
 	}else if(destor.similarity_algorithm == SIMILARITY_FINENESS){
-		fineness_similariting_init();
-		similariting = fineness_similariting;
+		finesse_similariting_init();
+		similariting = finesse_similariting;
 		stopSimilariting = voidStopSimilariting;
 	}else if(destor.similarity_algorithm == SIMILARITY_HIGHDEDUP){
 		highdedup_similariting_init();
@@ -98,8 +98,8 @@ void start_simi_phase() {
 		similariting = odess_similariting;
 		stopSimilariting = voidStopSimilariting;
 	}else if(destor.similarity_algorithm == SIMILARITY_FINENESS_FLATFEA){
-		fineness_similariting_init();
-		similariting = fineness_similariting_flatFea;
+		finesse_similariting_init();
+		similariting = finesse_similariting_flatFea;
 		stopSimilariting = voidStopSimilariting;
 	}else if(destor.similarity_algorithm == SIMILARITY_BRUTEFORCE){
 		bruteforce_similariting_init();

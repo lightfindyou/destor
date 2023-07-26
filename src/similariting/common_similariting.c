@@ -110,9 +110,10 @@ struct chunk* first_match_similariting(struct chunk* c, int suFeaNum, GHashTable
 
 	for (int i = 0; i < suFeaNum; i++) {
 		GSequence *tq = g_hash_table_lookup(sufea_tab, &(c->fea[i]));
-		if(tq){
+		jcr.candNum += g_sequence_get_length(tq);
+		if(tq && !ret){
 			ret = (struct chunk*)g_sequence_get(g_sequence_get_begin_iter(tq));
-			goto retPoint;
+//			goto retPoint;
 		}
 	}
 

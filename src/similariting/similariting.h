@@ -8,6 +8,7 @@
 #include "../destor.h"
 #include "../featuring/featuring.h"
 #include "./deepsketch/deepsketch_similariting_c.h"
+extern GHashTable* finesse_sufeature_tab;
 
 #define INITCHUNKLISTSIZE 50
 struct _chunkList {
@@ -18,13 +19,13 @@ struct _chunkList {
 
 typedef struct _chunkList chunkList;
 
-void fineness_similariting_init();
-void fineness_similariting(struct chunk* c);
+void finesse_similariting_init();
+void finesse_similariting(struct chunk* c);
 
 void bruteforce_similariting(struct chunk* c);
 
-void fineness_insert_flatFea(struct chunk* c);
-void fineness_similariting_flatFea(struct chunk* c);
+void finesse_insert_flatFea(struct chunk* c);
+void finesse_similariting_flatFea(struct chunk* c);
 
 extern GHashTable* ntransform_sufeature_tab;
 void ntransform_similariting_init();
