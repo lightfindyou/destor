@@ -7,7 +7,7 @@ int featureLength = 0;
 void  recordFeatureToFile_init(int feaNum, int feaLen){
     char featurePath[256];
     sprintf(featurePath, "%s/%s.feature", destor.recordPath, featureAlgStr[destor.feature_algorithm]);
-    printf("delta path: %s\n", featurePath);
+    printf("feature path: %s\n", featurePath);
     featureFile = createFile(featurePath);
     featureNumber = feaNum;
     featureNumber = feaLen;

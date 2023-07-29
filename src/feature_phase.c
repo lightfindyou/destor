@@ -119,6 +119,7 @@ void start_feature_phase() {
 	feature_temp_queue = sync_queue_new(BATCH_SIZE * 3);
 
 	if(destor.store_feature){
+		recordFeatureToFile_init(featureNum, featureLength);
 		recordFeature = recordFeatureToFile;
 		stopRecordFeature = stopRecordFeatureToFile;
 	}else{
