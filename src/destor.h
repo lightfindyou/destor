@@ -259,7 +259,7 @@ extern char* featureAlgStr[];
 
 struct destor {
 	sds working_directory;
-	sds deltaPath;
+	sds recordPath;
 	int storeDelta;
 	int simulation_level;
     int trace_format;
@@ -360,6 +360,7 @@ struct destor {
 	volatile int32_t curStatus;
 	int simiCandLimit;
 	int compressSelf;
+	int store_feature;
 	int deepsketchANNThreshold;
 };
 

@@ -11,6 +11,9 @@ static int64_t chunk_num;
 SyncQueue* feature_queue;
 SyncQueue* feature_temp_queue;
 
+
+void (*recordFeature)(struct chunk *c);
+void (*stopRecordFeature)();
 static int (*featuring)(unsigned char* buf, int size, struct chunk* c);
 
 void *feature_thread(void *arg) {
@@ -25,10 +28,13 @@ void *feature_thread(void *arg) {
 		if (c == NULL) {
 			sync_queue_term(feature_queue);
 //			jcr.status = JCR_STATUS_DONE;
+			//Get the last chunks out for deepsketch
 			if(featuring == deepsketch_featuring){
 				int featuringRet = deepsketch_featuring_stop();
 				for(int i = 0; i < featuringRet; i++){
-					sync_queue_push(feature_queue, sync_queue_pop(feature_temp_queue));
+					struct chunk *c = sync_queue_pop(feature_temp_queue);
+					sync_queue_push(feature_queue, c);
+					recordFeature(c);
 				}
 			}
 			break;
@@ -53,10 +59,13 @@ void *feature_thread(void *arg) {
 		//TODO maybe use a stack here to temporarily store
 		if(featuring == deepsketch_featuring){
 			for(int i = 0; i < featuringRet; i++){
-				sync_queue_push(feature_queue, sync_queue_pop(feature_temp_queue));
+				struct chunk *c = sync_queue_pop(feature_temp_queue);
+				sync_queue_push(feature_queue, c);
+				recordFeature(c);
 			}
 		}else{
 			sync_queue_push(feature_queue, c);
+			recordFeature(c);
 		}
 	}
 
@@ -65,6 +74,8 @@ void *feature_thread(void *arg) {
 }
 
 void start_feature_phase() {
+	int featureNum = 0;
+	int featureLength = destor.featureLen;
 
 	if (destor.feature_algorithm == FEAUTRE_NTRANSFORM){
 		rabinhash_rabin_init();
@@ -72,6 +83,8 @@ void start_feature_phase() {
 	}else if(destor.feature_algorithm == FEAUTRE_DEEPSKETCH){
 		deepsketch_featuring_init(destor.modelPath);
 		featuring = deepsketch_featuring;
+		featureNum = 1;
+		featureLength = 128;
 	}else if(destor.feature_algorithm == FEAUTRE_FINENESS){
 		rabinhash_rabin_init();
 		featuring = finesse_featuring;
@@ -105,11 +118,20 @@ void start_feature_phase() {
 	feature_queue = sync_queue_new(FEAQUESIZE);
 	feature_temp_queue = sync_queue_new(BATCH_SIZE * 3);
 
+	if(destor.store_feature){
+		recordFeature = recordFeatureToFile;
+		stopRecordFeature = stopRecordFeatureToFile;
+	}else{
+		recordFeature = NULL;
+		stopRecordFeature = NULL;
+	}
+
 	pthread_create(&feature_t, NULL, feature_thread, NULL);
 }
 
 void stop_feature_phase() {
     SETSTATUS(STATUS_FEATURE);
 	pthread_join(feature_t, NULL);
+	stopRecordFeature();
 	NOTICE("feature phase stops successfully: %d chunks", chunk_num);
 }

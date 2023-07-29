@@ -104,10 +104,16 @@ void do_backup(char *path) {
 
         float processedGB = (float)jcr.data_size/1024/1024/1024;
         /*time_t now = time(NULL);*/
-        fprintf(stderr,
-                "job %" PRId32 ", %" PRId64 " bytes (%.4f GB), %" PRId32
-                " chunks, %d files, %" PRId64 " bytes processed\r",
-                jcr.id, jcr.data_size, processedGB, jcr.chunk_num, jcr.file_num, jcr.cur_porcessed_size);
+//        fprintf(stderr,
+//                "job %" PRId32 ", %" PRId64 " bytes (%.4f GB), %" PRId32
+//                " chunks, %d files, %" PRId64 " bytes processed\r",
+//                jcr.id, jcr.data_size, processedGB, jcr.chunk_num, jcr.file_num, jcr.cur_porcessed_size);
+
+    printf("read: %.3f chunk: %.3f hash: %.3f dedup: %.3f"
+           "featu: %.3f seaFe: %.3f xdelt: %.3f\r",
+              jcr.read_time / 1000000, jcr.chunk_time / 1000000, jcr.hash_time / 1000000,
+              jcr.dedup_time / 1000000, jcr.fea_time / 1000000, jcr.seaFea_time / 1000000,
+              jcr.xdelta_time / 1000000);
     } while (jcr.status == JCR_STATUS_RUNNING || jcr.status != JCR_STATUS_DONE);
 
     float processedGB = (float)jcr.data_size/1024/1024/1024;

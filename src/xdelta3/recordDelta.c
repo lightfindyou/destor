@@ -11,9 +11,9 @@ void recordChunkAndDelta(struct chunk *compressed, struct chunk* ref, void* delt
     char deltaPath[256];
     FILE* file;
 
-    sprintf(chunkCompressedPath, "%s/%04d", destor.deltaPath, compressed->chunkID);
-    sprintf(chunkRefPath, "%s/%04d", destor.deltaPath, ref->chunkID);
-    sprintf(deltaPath, "%s/%04d-%04d.delta", destor.deltaPath, compressed->chunkID, ref->chunkID);
+    sprintf(chunkCompressedPath, "%s/%04d", destor.recordPath, compressed->chunkID);
+    sprintf(chunkRefPath, "%s/%04d", destor.recordPath, ref->chunkID);
+    sprintf(deltaPath, "%s/%04d-%04d.delta", destor.recordPath, compressed->chunkID, ref->chunkID);
 
     if(!isFileExists(chunkCompressedPath)){
         file = createFile(chunkCompressedPath);
@@ -35,20 +35,20 @@ void recordChunkAndDelta(struct chunk *compressed, struct chunk* ref, void* delt
 }
 
 
-FILE* deltaFile;
+FILE* featureFile;
 void recordSimilatiry_init(){
     char deltaPath[256];
-    sprintf(deltaPath, "%s/%s", destor.deltaPath, featureAlgStr[destor.feature_algorithm]);
+    sprintf(deltaPath, "%s/%s.delta", destor.recordPath, featureAlgStr[destor.feature_algorithm]);
     printf("delta path: %s\n", deltaPath);
-    deltaFile = createFile(deltaPath);
+    featureFile = createFile(deltaPath);
 }
 
 void recordSimilatiry_close(){
-    fclose(deltaFile);
+    fclose(featureFile);
 }
 
 void recordSimilatiry(struct chunk *compressed, struct chunk* ref, void* delta, int deltaSize){
     double similarity = ((double)deltaSize)/compressed->size;
     similarity = 100-100*similarity;
-    fprintf(deltaFile, "%.4f\n", similarity);
+    fprintf(featureFile, "%.4f\n", similarity);
 }

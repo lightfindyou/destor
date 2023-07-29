@@ -121,6 +121,8 @@ void load_config_from_string(sds config) {
 			}
 		} else if (strcasecmp(argv[0], "feature-num") == 0 && argc == 2) {
 			destor.featureNum = atoi(argv[1]);
+		} else if (strcasecmp(argv[0], "store-feature") == 0 && argc == 2) {
+			destor.store_feature = atoi(argv[1]);
 		} else if (strcasecmp(argv[0], "xdelta-threshold") == 0 && argc == 2) {
 			destor.compThreshold = atof(argv[1]);
 		} else if (strcasecmp(argv[0], "store-delta") == 0 && argc == 2) {
@@ -137,8 +139,8 @@ void load_config_from_string(sds config) {
 				err = "Invalid store-delta";
 				goto loaderr;
 			}
-		} else if (strcasecmp(argv[0], "delta-path") == 0 && argc == 2) {
-			destor.deltaPath = sdsnew(argv[1]);
+		} else if (strcasecmp(argv[0], "record-path") == 0 && argc == 2) {
+			destor.recordPath = sdsnew(argv[1]);
 		} else if (strcasecmp(argv[0], "feature-len") == 0 && argc == 2) {
 			destor.featureLen = atoi(argv[1]);
 			int shiftLen = sizeof(destor.featureLenMask)*8 - destor.featureLen;
