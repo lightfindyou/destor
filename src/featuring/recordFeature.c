@@ -12,7 +12,7 @@ void  recordFeatureToFile_init(int feaNum, int feaLen){
     featureFile = createFile(featurePath);
     printf("feature file: %p\n", featureFile);
     featureNumber = feaNum;
-    featureNumber = feaLen;
+    featureLength = feaLen;
 }
 
 void recordFeatureToFile(struct chunk *c){
