@@ -84,7 +84,7 @@ void start_feature_phase() {
 		deepsketch_featuring_init(destor.modelPath);
 		featuring = deepsketch_featuring;
 		featureNum = 1;
-		featureLength = 128;
+		featureLength = 128/8;
 	}else if(destor.feature_algorithm == FEAUTRE_FINENESS){
 		rabinhash_rabin_init();
 		featuring = finesse_featuring;

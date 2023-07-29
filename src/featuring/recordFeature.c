@@ -1,6 +1,7 @@
 #include "recordFeature.h"
+#include "../storage/storageCommon.h"
 
-FILE* featureFile;
+FILE* featureFile = NULL;
 int featureNumber = 0;
 int featureLength = 0;
 
@@ -9,14 +10,19 @@ void  recordFeatureToFile_init(int feaNum, int feaLen){
     sprintf(featurePath, "%s/%s.feature", destor.recordPath, featureAlgStr[destor.feature_algorithm]);
     printf("feature path: %s\n", featurePath);
     featureFile = createFile(featurePath);
+    printf("feature file: %p\n", featureFile);
     featureNumber = feaNum;
     featureNumber = feaLen;
 }
 
 void recordFeatureToFile(struct chunk *c){
     fwrite(c->fea, featureLength, featureNumber, featureFile);
+    fprintf(featureFile, "\n");
 }
 
 void stopRecordFeatureToFile(){
-    fclose(featureFile);
+    if(fclose(featureFile)){
+        int err = errno;
+        printf("close feature file error: %s\n", strerror(errno));
+    }
 }

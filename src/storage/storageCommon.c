@@ -15,6 +15,8 @@ FILE* createFile(const char* path){
     if(!fp){
         printf("create file %s error: %s\n", path, strerror(errno));
         exit(-1);
+    }else{
+        printf("create file: %p\n", fp);
     }
 
     return fp;
