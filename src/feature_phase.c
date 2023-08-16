@@ -123,8 +123,8 @@ void start_feature_phase() {
 		recordFeature = recordFeatureToFile;
 		stopRecordFeature = stopRecordFeatureToFile;
 	}else{
-		recordFeature = NULL;
-		stopRecordFeature = NULL;
+		recordFeature = recordFeatureToNULL;
+		stopRecordFeature = stopRecordFeatureToNULL;
 	}
 
 	pthread_create(&feature_t, NULL, feature_thread, NULL);

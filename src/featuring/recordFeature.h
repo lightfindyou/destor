@@ -7,4 +7,7 @@ void  recordFeatureToFile_init(int feaNum, int feaLen);
 void recordFeatureToFile(struct chunk *c);
 void stopRecordFeatureToFile();
 
+void recordFeatureToNULL(struct chunk *c);
+void stopRecordFeatureToNULL();
+
 #endif  //__RECORD_FEATURE__

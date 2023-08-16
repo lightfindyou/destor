@@ -26,3 +26,9 @@ void stopRecordFeatureToFile(){
         printf("close feature file error: %s\n", strerror(errno));
     }
 }
+
+void recordFeatureToNULL(struct chunk *c){
+}
+
+void stopRecordFeatureToNULL(){
+}
