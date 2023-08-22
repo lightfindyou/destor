@@ -221,17 +221,24 @@ void start_chunk_phase() {
 		if(destor.jumpOnes){
 			gearjump_init(destor.jumpOnes);
 		}else{
-			gearjump_init(log2(destor.chunk_avg_size) - 2);
+//			gearjump_init(log2(destor.chunk_avg_size) - 2);
+			gearjump_init(1);
 		}
 #else
 		gearjump_init();
 #endif //SENTEST
+	} else if(destor.chunk_algorithm == CHUNK_JCTTTD){
+		gearjump_init(destor.jumpOnes);
+		chunking = gearjumpTTTD_chunk_data;
 	} else if(destor.chunk_algorithm == CHUNK_LEAP){
 		leap_init(destor.chunk_avg_size, 0);
 		chunking = leap_chunk_data;
 	} else if(destor.chunk_algorithm == CHUNK_GEAR){
 		gear_init(destor.chunk_avg_size, 0);
 		chunking = gear_chunk_data;
+	} else if(destor.chunk_algorithm == CHUNK_TTTDGEAR){
+		gear_init(destor.chunk_avg_size, 0);
+		chunking = TTTD_gear_chunk_data;
 	} else if(destor.chunk_algorithm == CHUNK_NORMALIZED_GEARJUMP){
 		normalized_gearjump_init(destor.jumpOnes);
 		chunking = normalized_gearjump_chunk_data;

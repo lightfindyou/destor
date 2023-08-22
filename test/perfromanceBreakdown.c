@@ -1,4 +1,6 @@
 #include <assert.h>
+#include <fcntl.h>
+#include <glib.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -6,9 +8,12 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <sys/syscall.h>
 #include "chunking.h"
 #include "speedTestor.h"
+#include "xxhash.h"
+
 
 extern char *optarg;
 extern int optind, opterr, optopt;
@@ -25,7 +30,8 @@ pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 void* duplicateData;
 int sizeCate;
 int* sizeDist;
-int (*chunking)(unsigned char *p, int n);
+
+unsigned long startTime, endTime;
 
 enum chunkMethod { 	gear,
 					rabin,
@@ -42,6 +48,11 @@ enum chunkMethod { 	gear,
 					TTTDGear,
 					algNum
 				};
+
+int (*chunking)(unsigned char *p, int n);
+void fingerprinting(enum chunkMethod cM, int chunkNum);
+void indexing(enum chunkMethod cM, int chunkNum);
+void writing(enum chunkMethod cM, int chunkNum);
 
 char* chunkString[] = {
 	"gear",
@@ -61,14 +72,36 @@ char* chunkString[] = {
 };
 
 double chunkTime[algNum] = {0};
+double hashingTime[algNum] = {0};
+double indexingTime[algNum] = {0};
+double readingTime[algNum] = {0};
+double writingTime[algNum] = {0};
+unsigned long dupSize[algNum] = {0};
 int inited[algNum] = {0};
+GHashTable* tableList[algNum] = {0};
 unsigned long chunkDis[algNum][65] = {0};
+
+gboolean g_feature_equal(char* a, char* b){
+	return !memcmp(a, b, sizeof(unsigned long long));
+}
+
+int fd;
 
 static inline unsigned long time_nsec(void) {
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
     return ts.tv_sec * (unsigned long)(1000000000) + ts.tv_nsec;
 }
+
+struct chunk{
+	unsigned char* c;
+	unsigned long size;
+	unsigned long long fp;
+	unsigned char unique;
+};
+
+#define CHUNKNUM 101
+struct chunk chunkList[CHUNKNUM];
 
 void* getChunkData(){
 	void* p = malloc(SIZE);
@@ -84,12 +117,14 @@ void* getChunkData(){
 
 void chunkData(void* data, unsigned long dataSize, unsigned long* chunksNum,
 							 enum chunkMethod cM, int leapParIdx){
-	unsigned long start, end;
 	void *head = data;
 	void *tail = data + dataSize;
+	memset(chunkList, 0, sizeof(struct chunk)*CHUNKNUM);
+
 	switch (cM) {
 	case JC:
 		if(!inited[JC]){
+			tableList[JC] = g_hash_table_new(g_int64_hash, g_int64_equal);
 			gearjump_init(chunkSize, mto);
 			inited[JC] = 1;
 		}
@@ -115,6 +150,7 @@ void chunkData(void* data, unsigned long dataSize, unsigned long* chunksNum,
 	
 	case rabin:
 		if(!inited[rabin]){
+			tableList[rabin] = g_hash_table_new(g_int64_hash, g_int64_equal);
 			chunkAlg_init(chunkSize);
 			inited[rabin] = 1;
 		}
@@ -131,6 +167,7 @@ void chunkData(void* data, unsigned long dataSize, unsigned long* chunksNum,
 
 	case gear:
 		if(!inited[gear]){
+			tableList[gear] = g_hash_table_new(g_int64_hash, g_int64_equal);
 			gear_init(chunkSize);
 			inited[gear] = 1;
 		}
@@ -147,6 +184,7 @@ void chunkData(void* data, unsigned long dataSize, unsigned long* chunksNum,
 
 	case leap:
 		if(!inited[leap]){
+			tableList[leap] = g_hash_table_new(g_int64_hash, g_int64_equal);
 			leap_init(chunkSize, leapParIdx);
 			inited[leap] = 1;
 		}
@@ -163,6 +201,7 @@ void chunkData(void* data, unsigned long dataSize, unsigned long* chunksNum,
 
 	case TTTD:
 		if(!inited[TTTD]){
+			tableList[TTTD] = g_hash_table_new(g_int64_hash, g_int64_equal);
 			chunkAlg_init(chunkSize);
 			inited[TTTD] = 1;
 		}
@@ -171,6 +210,7 @@ void chunkData(void* data, unsigned long dataSize, unsigned long* chunksNum,
 
 	case AE:
 		if(!inited[AE]){
+			tableList[AE] = g_hash_table_new(g_int64_hash, g_int64_equal);
 			ae_init(chunkSize);
 			inited[AE] = 1;
 		}
@@ -179,6 +219,7 @@ void chunkData(void* data, unsigned long dataSize, unsigned long* chunksNum,
 
 	case fastCDC:
 		if(!inited[fastCDC]){
+			tableList[fastCDC] = g_hash_table_new(g_int64_hash, g_int64_equal);
 			fastcdc_init(chunkSize);
 			inited[fastCDC] = 1;
 		}
@@ -197,12 +238,16 @@ void chunkData(void* data, unsigned long dataSize, unsigned long* chunksNum,
 		break;
 	}
 
-	start = time_nsec();
-	for(; (unsigned long)head < (unsigned long)tail;){
+chunking:
+	startTime = time_nsec();
+	int curChunkNum = 0;
+	for(; (unsigned long)head < (unsigned long)tail && curChunkNum < 100; curChunkNum++){
 		int len = chunking(head, (int)((unsigned long)tail - (unsigned long)head ));
 //		printf("chunk size:%d\n", len);
 //		edge[*chunksNum] = head + len;
 //		head = edge[*chunksNum];
+		chunkList[curChunkNum].c = head;
+		chunkList[curChunkNum].size = len;
 		head = head + len;
 		(*chunksNum)++;
 #if countChunkDis 
@@ -214,10 +259,57 @@ void chunkData(void* data, unsigned long dataSize, unsigned long* chunksNum,
 		}
 #endif //countChunkDis 
 	}
-	end = time_nsec();
-	chunkTime[cM] += ((double)end-start)/1000000;
+	endTime = time_nsec();
+	chunkTime[cM] += ((double)endTime-startTime)/1000000;
+	fingerprinting(cM, curChunkNum);
+	indexing(cM, curChunkNum);
+	writing(cM, curChunkNum);
+	if((unsigned long)head < (unsigned long)tail){
+		goto chunking;
+	}
 //	printf("chunkTime:%f\n", chunkTime[cM]);
 	return;
+}
+
+void fingerprinting(enum chunkMethod cM, int chunkNum){
+
+	startTime = time_nsec();
+	for (int i = 0; i < chunkNum; i++){
+		chunkList[i].fp = XXH64(chunkList[i].c, chunkList[i].size, 0);
+	}
+
+	endTime = time_nsec();
+	hashingTime[cM] += ((double)endTime-startTime)/1000000;
+}
+
+void indexing(enum chunkMethod cM, int chunkNum){
+
+	GHashTable* table = tableList[cM];
+	startTime = time_nsec();
+	unsigned long * reduandancySize = &dupSize[cM];
+	for (int i = 0; i < chunkNum; i++){
+		if(g_hash_table_contains(table, &(chunkList[i].fp))){
+			*reduandancySize += chunkList[i].size;
+		}else{
+			unsigned long long * fingerprint = malloc(sizeof(unsigned long long));
+			assert(fingerprint);
+			*fingerprint = chunkList[i].fp;
+			g_hash_table_insert(table, fingerprint, NULL);
+		}
+	}
+	endTime = time_nsec();
+	indexingTime[cM] += ((double)endTime-startTime)/1000000;
+}
+
+void writing(enum chunkMethod cM, int chunkNum){
+
+	startTime = time_nsec();
+	unsigned long * reduandancySize = &dupSize[cM];
+	for (int i = 0; i < chunkNum; i++){
+		write(fd, chunkList[i].c, chunkList[i].size);
+	}
+	endTime = time_nsec();
+	writingTime[cM] += ((double)endTime-startTime)/1000000;
 }
 
 void help(){
@@ -245,6 +337,10 @@ int main(int argc, char **argv){
 			\rDeduplication dir:%s\n \
 			\rChunk size: %d\n",
 			chunkString[chunkAlg], dedupDir, chunkSize);
+
+	remove("dedup.output");
+	fd = open("dedup.output", O_WRONLY | O_APPEND | O_CREAT, "00666");
+	assert(fd);
 
 	sizeCate = (chunkSize*2.5)/1024;
 	sizeDist = calloc(sizeCate, sizeof(int));
@@ -275,22 +371,27 @@ int main(int argc, char **argv){
 	procEnd = time_nsec();
 	procTime = ((double)procEnd-procStart)/1000000;
 
-	for(int i=0; i< algNum; i++){
-		if(!chunkTime[i]) continue;
+	printChunkName(chunkAlg);
+	printf("\rChunking time: %.2f ms, \x1B[32mcpu utilization: %.2f\x1B[37m\n \
+			\rProcrss time: %.2f ms \n \
+			\rProcrss length: %.2f MB \n \
+			\r\x1B[32mChunking throughput %.2f MB/s\x1B[37m\n \
+			\rSystem throughput %.2f MB/s\n \
+			\rAverage chunk size:%7ld bytes\n",
+		  chunkTime[chunkAlg], chunkTime[chunkAlg]/procTime, procTime,
+		  processedLen_MB,
+		  processedLen_MB*1000/chunkTime[chunkAlg],
+		  processedLen_MB*1000/procTime,
+		  processedLen_B/chunksNum[chunkAlg]);
+	printf("\r chunkTime %.2f ms\n \
+			\r hashTime %.2f ms\n \
+			\r indexTime %.2f ms\n \
+			\r writeTime %.2f ms\n",
+			chunkTime[chunkAlg],
+			hashingTime[chunkAlg],
+			indexingTime[chunkAlg],
+			writingTime[chunkAlg]);
 
-		printChunkName(i);
-		printf("\rChunking time: %.2f ms, \x1B[32mcpu utilization: %.2f\x1B[37m\n \
-				\rProcrss time: %.2f ms \n \
-				\rProcrss length: %.2f MB \n \
-				\r\x1B[32mChunking throughput %.2f MB/s\x1B[37m\n \
-				\rSystem throughput %.2f MB/s\n \
-				\rAverage chunk size:%7ld bytes\n",
-			  chunkTime[i], chunkTime[i]/procTime, procTime,
-			  processedLen_MB,
-			  processedLen_MB*1000/chunkTime[i],
-			  processedLen_MB*1000/procTime,
-			  processedLen_B/chunksNum[i]);
-	}
 	printSizeDist();
 	
 	printf("Over.\n");
@@ -363,6 +464,8 @@ void printSizeDist(){
 
 int parsePar(int argc, char **argv){
 	int opt, parIdx=1;
+
+
 	opt = getopt(argc, argv, "d:c:p:a:m:");
 	do{
 		switch (opt) {

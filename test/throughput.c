@@ -18,7 +18,7 @@ extern int optind, opterr, optopt;
 pid_t chunkingTid;
 int chunkSize = 4096;
 int chunkAlg;
-int mto = 1;
+int mto = 0;
 char* dedupDir = "/home/xzjin/gcc_part1/";
 pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
@@ -82,11 +82,8 @@ void* getChunkData(){
 	return p;
 }
 
-void chunkData(void* data, unsigned long dataSize, unsigned long* chunksNum,
-							 enum chunkMethod cM, int leapParIdx){
-	unsigned long start, end;
-	void *head = data;
-	void *tail = data + dataSize;
+void initAlg(enum chunkMethod cM, int leapParIdx){
+
 	switch (cM) {
 	case JC:
 		if(!inited[JC]){
@@ -196,6 +193,14 @@ void chunkData(void* data, unsigned long dataSize, unsigned long* chunksNum,
 	default:
 		break;
 	}
+}
+
+void chunkData(void* data, unsigned long dataSize, unsigned long* chunksNum,
+							 enum chunkMethod cM, int leapParIdx){
+	unsigned long start, end;
+	void *head = data;
+	void *tail = data + dataSize;
+	initAlg(cM, leapParIdx);
 
 	start = time_nsec();
 	for(; (unsigned long)head < (unsigned long)tail;){
@@ -263,7 +268,9 @@ int main(int argc, char **argv){
 		processedLen_MB += ((double)dupDataSize/1024/1024);
 		processedLen_B += dupDataSize;
 		if(readOver){ dupDataSize = curReadDataLen;}
-		chunkData(duplicateData, dupDataSize, &chunksNum[chunkAlg], chunkAlg, 0);
+		for(int i =0; i< algNum; i++){
+			chunkData(duplicateData, dupDataSize, &chunksNum[chunkAlg], i, 0);
+		}
 
 		if(readOver){
 			stop_read_phase();
@@ -279,17 +286,17 @@ int main(int argc, char **argv){
 		if(!chunkTime[i]) continue;
 
 		printChunkName(i);
-		printf("\rChunking time: %.2f ms, \x1B[32mcpu utilization: %.2f\x1B[37m\n \
-				\rProcrss time: %.2f ms \n \
+		printf("\n\rChunking time: %.2f ms\n \
+				\rProcrss time: %.2f ms \n",
+			  chunkTime[i], procTime);
+		printf("\rcpu utilization: %.2f\x1B[37m\n \
 				\rProcrss length: %.2f MB \n \
 				\r\x1B[32mChunking throughput %.2f MB/s\x1B[37m\n \
-				\rSystem throughput %.2f MB/s\n \
-				\rAverage chunk size:%7ld bytes\n",
-			  chunkTime[i], chunkTime[i]/procTime, procTime,
+				\rSystem throughput %.2f MB/s\n",
+			  chunkTime[i]/procTime,
 			  processedLen_MB,
 			  processedLen_MB*1000/chunkTime[i],
-			  processedLen_MB*1000/procTime,
-			  processedLen_B/chunksNum[i]);
+			  processedLen_MB*1000/procTime);
 	}
 	printSizeDist();
 	

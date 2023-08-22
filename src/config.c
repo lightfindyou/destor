@@ -103,8 +103,12 @@ void load_config_from_string(sds config) {
 				destor.chunk_algorithm = CHUNK_SC;
 			} else if (strcasecmp(argv[1], "gear") == 0){
 				destor.chunk_algorithm =  CHUNK_GEAR;
-			} else if (strcasecmp(argv[1], "gearjump") == 0){
+			} else if (strcasecmp(argv[1], "JC") == 0){
 				destor.chunk_algorithm =  CHUNK_GEARJUMP;
+			} else if (strcasecmp(argv[1], "TTTDGear") == 0){
+				destor.chunk_algorithm =  CHUNK_TTTDGEAR;
+			} else if (strcasecmp(argv[1], "JCTTTD") == 0){
+				destor.chunk_algorithm =  CHUNK_JCTTTD;
 			} else if (strcasecmp(argv[1], "leap") == 0){
 				destor.chunk_algorithm =  CHUNK_LEAP;
 			} else if (strcasecmp(argv[1], "normalized-gearjump") == 0){
@@ -342,6 +346,12 @@ void load_config_from_string(sds config) {
 void load_config() {
 	sds config = sdsempty();
 	char buf[DESTOR_CONFIGLINE_MAX + 1];
+	char configpath[PATH_MAX+1];
+	if(realpath("destor.config", configpath)){
+		printf("path:%s\n", configpath);
+	}else{
+		printf("resolve error\n");
+	}
 
 	FILE *fp;
 	if ((fp = fopen("destor.config", "r")) == 0) {

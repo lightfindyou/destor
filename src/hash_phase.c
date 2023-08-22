@@ -1,6 +1,7 @@
 #include "destor.h"
 #include "jcr.h"
 #include "backup.h"
+#include "xxhash.h"
 
 static pthread_t hash_t;
 static int64_t chunk_num;
@@ -22,10 +23,11 @@ static void* sha1_thread(void* arg) {
 
 		TIMER_DECLARE(1);
 		TIMER_BEGIN(1);
-		SHA_CTX ctx;
-		SHA1_Init(&ctx);
-		SHA1_Update(&ctx, c->data, c->size);
-		SHA1_Final(c->fp, &ctx);
+//		SHA_CTX ctx;
+//		SHA1_Init(&ctx);
+//		SHA1_Update(&ctx, c->data, c->size);
+//		SHA1_Final(c->fp, &ctx);
+		*((unsigned long long *)(c->fp)) = XXH64(c->data, c->size, 0);
 		TIMER_END(1, jcr.hash_time);
 
 		hash2code(c->fp, code);

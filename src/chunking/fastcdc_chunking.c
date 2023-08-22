@@ -132,6 +132,7 @@ int fastcdc_chunk_data(unsigned char *p, int n){
 }
 
 uint64_t Mask;
+uint64_t back_mask_TTTD;
 void gear_init(){
     char seed[SeedLength];
     for(int i=0; i<SymbolCount; i++){
@@ -155,6 +156,7 @@ void gear_init(){
     assert(index>6);
     assert(index<17);
     Mask = g_condition_mask[cOnes];
+    back_mask_TTTD = g_condition_mask[cOnes - 1];
 
     printf("\nMask:  %16lx\n", Mask);
 }
@@ -180,6 +182,38 @@ int gear_chunk_data(unsigned char *p, int n){
         if( G_UNLIKELY(!(fingerprint & Mask)) ){ return i; }
     }
     return n;
+}
+
+int TTTD_gear_chunk_data(unsigned char *p, int n){
+
+    uint64_t fingerprint=0;
+    int i=0, m = 0;
+    int minSize = destor.chunk_min_size;
+
+	if (n <= minSize)
+		return n;
+#if !CHUNKMIN 
+	else
+		i = minSize;
+#endif  //MINJUMP 
+    n = n<destor.chunk_max_size?n:destor.chunk_max_size;
+
+    while(i < n){
+        fingerprint = (fingerprint<<1) + (g_gear_matrix[p[i]]);
+        i++;
+
+        if( G_UNLIKELY(!(fingerprint & back_mask_TTTD)) ){
+            if(!(fingerprint & Mask)){
+                return i;
+            }
+            m = i;
+        }
+    }
+
+	if (m != 0)
+		return m;
+	else
+		return i;
 }
 
 uint32_t gearjumpChunkSize;
@@ -276,6 +310,40 @@ int gearjump_chunk_data(unsigned char *p, int n){
     }
 
     return i<n?i:n;
+}
+
+int gearjumpTTTD_chunk_data(unsigned char *p, int n){
+
+    uint64_t fingerprint=0;
+    int i=0, m = 0;
+    int minSize = destor.chunk_min_size;
+
+	if (n <= minSize)
+		return n;
+	else
+		i =  minSize;
+    unsigned long end = n < destor.chunk_max_size? n:destor.chunk_max_size;
+
+    while(i < end){
+        fingerprint = (fingerprint<<1) + (g_gear_matrix[p[i]]);
+        i++;
+
+        if(__glibc_unlikely(!(fingerprint & jumpMask)) ){
+
+            if ((!(fingerprint & Mask))) { //AVERAGE*2, *4, *8
+                return i;
+            } 
+            m = i;
+            fingerprint=0;
+            //TODO xzjin here need to set the fingerprint to 0 ?
+            i += jumpLen;
+        }
+    }
+
+    if(m != 0){
+        return m;
+    }
+    return i<end?i:end;
 }
 
 uint64_t largeMask;

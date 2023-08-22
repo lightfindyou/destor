@@ -122,6 +122,14 @@ int sc_chunk_data(unsigned char *p, int n) {
 		return n;
 
 	for (; curr <= end; curr++) {
+//		{
+//		int __ret;
+//		uint64_t __a = (*((uint64_t *) (curr-1)));
+//		uint64_t __b = (*((uint64_t *) curr));
+//		if (__a > __b) __ret = 1;
+//		else __ret = -1;
+//		__ret;
+//		}
 		int comp_res = ae_memcmp((curr-1), curr);
 		if (comp_res > 0) {
 			curBiggerLen++;

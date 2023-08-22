@@ -77,6 +77,8 @@
 #define CHUNK_RABIN_JUMP 10
 #define CHUNK_GEAR 11
 #define CHUNK_NORMALIZED_GEARJUMP 12
+#define CHUNK_TTTDGEAR 13
+#define CHUNK_JCTTTD 14
 
 /*
  * A global fingerprint index is required.
