@@ -117,6 +117,10 @@ void start_simi_phase() {
 		weightchunk_similariting_init();
 		similariting = weightchunk_similariting;
 		stopSimilariting = voidStopSimilariting;
+	}else if(destor.similarity_algorithm == SIMILARITY_MOSTFITFEATURE){
+		mostfitfeature_similariting_init();
+		similariting = mostfitfeature_similariting;
+		stopSimilariting = mostfitfeature_similariting_stop;
 	}
 
 

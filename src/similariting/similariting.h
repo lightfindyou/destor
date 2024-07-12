@@ -73,6 +73,10 @@ void common_similariting_init_MT(int feaNum);
 void common_similariting_stop_MT();
 struct chunk* topK_match_similariting_MT(struct chunk* c, int suFeaNum);
 
+void mostfitfeature_similariting_init();
+void mostfitfeature_similariting(struct chunk* c);
+void mostfitfeature_similariting_stop();
+
 extern GHashTable* cand_tab;
 extern GHashTable* existing_fea_tab;
 extern GHashTable* commonSimiSufeatureTab;
