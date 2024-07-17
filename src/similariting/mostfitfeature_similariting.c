@@ -80,7 +80,7 @@ void mostfitfeature_similariting(struct chunk* c){
 
 	simiSearchRet_mostfitfeature = NULL;
 	curMaxHitTime_mostfitfeature = 0;
-	printf("most fit feature number: %d\n", c->feaNum);
+	//printf("most fit feature number: %d\n", c->feaNum);
 
 	//clear hitTime
 	for(int i = 0; i<c->feaNum; i++){
@@ -114,15 +114,15 @@ void mostfitfeature_similariting(struct chunk* c){
 				if(hitTime > curMaxHitTime_mostfitfeature){
 					curMaxHitTime_mostfitfeature = hitTime;
 					simiSearchRet_mostfitfeature = candChunk;
-					printf("update similar result\n");
+					//printf("update similar result\n");
 				}
 			}
 		}
 	}
 
-	printf("check similar result\n");
+	//printf("check similar result\n");
 	if(simiSearchRet_mostfitfeature) {
-		printf("insert into base chunk\n");
+		//printf("insert into base chunk\n");
 		g_queue_push_tail(c->basechunk, simiSearchRet_mostfitfeature);
 	}
 

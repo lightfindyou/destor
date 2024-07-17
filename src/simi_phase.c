@@ -121,6 +121,10 @@ void start_simi_phase() {
 		mostfitfeature_similariting_init();
 		similariting = mostfitfeature_similariting;
 		stopSimilariting = mostfitfeature_similariting_stop;
+	}else if(destor.similarity_algorithm == SIMILARITY_FIRSTFITFEATURE){
+		firstfitfeature_similariting_init();
+		similariting = firstfitfeature_similariting;
+		stopSimilariting = firstfitfeature_similariting_stop;
 	}
 
 

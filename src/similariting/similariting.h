@@ -77,6 +77,10 @@ void mostfitfeature_similariting_init();
 void mostfitfeature_similariting(struct chunk* c);
 void mostfitfeature_similariting_stop();
 
+void firstfitfeature_similariting(struct chunk* c);
+void firstfitfeature_similariting_init();
+void firstfitfeature_similariting_stop();
+
 extern GHashTable* cand_tab;
 extern GHashTable* existing_fea_tab;
 extern GHashTable* commonSimiSufeatureTab;

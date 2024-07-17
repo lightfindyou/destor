@@ -8,8 +8,8 @@ int highdedup_featuring(unsigned char* buf, int size, struct chunk* c){
 	sufeature* superfeature = c->fea;
 //	memset(superfeature, 0x0, sizeof(sufeature)*HIGHDEDUP_FEATURE_NUM);
 
-//	c->feaNum = gear_max_highdedup_12fea_64B_max(buf, size, superfeature,
-//				 HIGHDEDUP_FEATURE_NUM, HIGHDEDUP_FEATURE_MASK);
+	c->feaNum = gear_max_highdedup_12fea_64B_max(buf, size, superfeature,
+				 HIGHDEDUP_FEATURE_NUM, HIGHDEDUP_FEATURE_MASK);
 /**The feature phase has been merged with chunking phase*/
 //	c->feaNum = gear_max_highdedup_32fea_16B_max(buf, size, superfeature,
 //				 HIGHDEDUP_FEATURE_NUM, HIGHDEDUP_FEATURE_MASK, c);

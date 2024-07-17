@@ -124,6 +124,7 @@ extern char* featureAlgStr[];
 #define SIMILARITY_STATIS 10
 #define SIMILARITY_WEIGHTCHUNK 11
 #define SIMILARITY_MOSTFITFEATURE 12
+#define SIMILARITY_FIRSTFITFEATURE 13
 
 /*
  * A global fingerprint index is required.

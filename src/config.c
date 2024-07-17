@@ -165,6 +165,9 @@ void load_config_from_string(sds config) {
 			} else if (strcasecmp(argv[1], "featuremostfit") == 0) {
 				destor.feature_algorithm = FEAUTRE_HIGHDEDUP;
 				destor.similarity_algorithm = SIMILARITY_MOSTFITFEATURE;
+			} else if (strcasecmp(argv[1], "featurefirstfit") == 0) {
+				destor.feature_algorithm = FEAUTRE_HIGHDEDUP;
+				destor.similarity_algorithm = SIMILARITY_FIRSTFITFEATURE;
 			} else if (strcasecmp(argv[1], "highdedup_fsc") == 0) {
 				destor.feature_algorithm = FEAUTRE_HIGHDEDUP_FSC;
 				destor.similarity_algorithm = SIMILARITY_HIGHDEDUP;

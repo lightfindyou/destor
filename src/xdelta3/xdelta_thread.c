@@ -70,7 +70,7 @@ void *xdelta_thread(void *arg) {
 				int refSize = 0;
 				struct chunk* firstBase;
 				int refNum = g_queue_get_length(c->basechunk);
-				printf("start xdelta, ref num: %d\n", refNum);
+				//printf("start xdelta, ref num: %d\n", refNum);
 				if(c->basechunk && refNum){	//NOT self compress chunk
 					VERBOSE("Similariting phase: %ldth chunk similar with %d chunks", chunk_num++, refNum);
 					firstBase = g_queue_peek_head(c->basechunk);

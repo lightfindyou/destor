@@ -1,3 +1,3 @@
 noinst_LIBRARIES=libsimilar.a
-libsimilar_a_SOURCES=finesse_similariting.c highdedup_similariting.c ntransform_odess_similariting.c bruteforce_similariting.c fineANN_similariting.c  statis_similariting.c common_similariting.c weightchunk_similariting.c common_similaritingMT.c mostfitfeature_similariting.c
+libsimilar_a_SOURCES=finesse_similariting.c highdedup_similariting.c ntransform_odess_similariting.c bruteforce_similariting.c fineANN_similariting.c  statis_similariting.c common_similariting.c weightchunk_similariting.c common_similaritingMT.c mostfitfeature_similariting.c  firstfitfeature_similariting.c
 LIBS= -lm -lcrypto -lssl
