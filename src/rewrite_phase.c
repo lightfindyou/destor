@@ -7,6 +7,8 @@
 #include "rewrite_phase.h"
 #include "backup.h"
 
+struct rewrite_buffer_t rewrite_buffer;
+
 static pthread_t rewrite_t;
 
 /* Descending order */

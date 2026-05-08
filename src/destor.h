@@ -290,7 +290,9 @@ struct destor {
 
 	int backup_retention_time;
 
-} destor;
+};
+
+extern struct destor destor;
 
 typedef unsigned char fingerprint[20];
 typedef int64_t containerid; //container id

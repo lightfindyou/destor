@@ -10,8 +10,8 @@
 
 #include "utils/sync_queue.h"
 
-SyncQueue *restore_chunk_queue;
-SyncQueue *restore_recipe_queue;
+extern SyncQueue *restore_chunk_queue;
+extern SyncQueue *restore_recipe_queue;
 
 void* assembly_restore_thread(void *arg);
 void* optimal_restore_thread(void *arg);

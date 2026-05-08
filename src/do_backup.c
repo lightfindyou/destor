@@ -15,6 +15,13 @@ extern struct {
     int read_prefetching_units;
 } index_overhead;
 
+SyncQueue* read_queue;
+SyncQueue* chunk_queue;
+SyncQueue* hash_queue;
+SyncQueue* trace_queue;
+SyncQueue* dedup_queue;
+SyncQueue* rewrite_queue;
+
 void do_backup(char *path) {
 
     double dedup_time = 0;
