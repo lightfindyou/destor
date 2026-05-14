@@ -11,6 +11,7 @@ static pthread_t chunk_t;
 static int64_t chunk_num;
 
 static int (*chunking)(unsigned char* buf, int size);
+static int chunking_uses_gpu = 0;
 
 static inline int fixed_chunk_data(unsigned char* buf, int size){
 	return destor.chunk_avg_size > size ? size : destor.chunk_avg_size;
@@ -131,6 +132,8 @@ static void* chunk_thread(void *arg) {
 //xzjin get file data from read_queue and hash, then, put into chunk_queue
 //xzjin only chunck, no dedup
 void start_chunk_phase() {
+	chunking_uses_gpu = 0;
+	destor.chunk_gpu_is_active = 0;
 
 	if (destor.chunk_algorithm == CHUNK_RABIN){
 		int pwr;
@@ -211,7 +214,17 @@ void start_chunk_phase() {
 		assert(destor.chunk_max_size <= CONTAINER_SIZE - CONTAINER_META_SIZE);
 
 		chunking = fastcdc_chunk_data;
-		fastcdc_init(destor.chunk_avg_size);
+		fastcdc_init();
+		if (destor.chunk_gpu_enable) {
+			if (fastcdc_gpu_init() == 0) {
+				chunking = fastcdc_gpu_chunk_data;
+				chunking_uses_gpu = 1;
+				destor.chunk_gpu_is_active = 1;
+				NOTICE("Chunk phase: FastCDC GPU mode enabled, device=%d, batch-size=%d", destor.chunk_gpu_device_id, destor.chunk_gpu_batch_size);
+			} else {
+				WARNING("Chunk phase: FastCDC GPU mode unavailable, fallback to CPU");
+			}
+		}
 	} else if(destor.chunk_algorithm == CHUNK_SC){
 		chunking = sc_chunk_data;
 		sc_init();
@@ -247,6 +260,10 @@ void start_chunk_phase() {
 		exit(1);
 	}
 
+	if (destor.chunk_gpu_enable && destor.chunk_algorithm != CHUNK_FASTCDC) {
+		WARNING("Chunk phase: GPU mode currently supports FastCDC only, fallback to CPU");
+	}
+
 	chunk_queue = sync_queue_new(100);
 	pthread_create(&chunk_t, NULL, chunk_thread, NULL);
     pid_t tid = gettid(); 
@@ -258,5 +275,10 @@ void start_chunk_phase() {
 
 void stop_chunk_phase() {
 	pthread_join(chunk_t, NULL);
+	if (chunking_uses_gpu) {
+		fastcdc_gpu_close();
+		chunking_uses_gpu = 0;
+		destor.chunk_gpu_is_active = 0;
+	}
 	NOTICE("chunk phase stops successfully!");
 }

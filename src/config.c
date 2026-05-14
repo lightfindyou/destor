@@ -120,6 +120,20 @@ void load_config_from_string(sds config) {
 			}
 		} else if (strcasecmp(argv[0], "jumpOnes") == 0 && argc == 2) {
 			destor.jumpOnes = atoi(argv[1]);
+		} else if (strcasecmp(argv[0], "chunk-gpu-enable") == 0 && argc == 2) {
+			destor.chunk_gpu_enable = yesnotoi(argv[1]);
+			if (destor.chunk_gpu_enable < 0) {
+				err = "Invalid chunk gpu enable value";
+				goto loaderr;
+			}
+		} else if (strcasecmp(argv[0], "chunk-gpu-device-id") == 0 && argc == 2) {
+			destor.chunk_gpu_device_id = atoi(argv[1]);
+		} else if (strcasecmp(argv[0], "chunk-gpu-batch-size") == 0 && argc == 2) {
+			destor.chunk_gpu_batch_size = atoi(argv[1]);
+			if (destor.chunk_gpu_batch_size <= 0) {
+				err = "Invalid chunk gpu batch size";
+				goto loaderr;
+			}
 		} else if (strcasecmp(argv[0], "chunk-avg-size") == 0 && argc == 2) {
 			destor.chunk_avg_size = atoi(argv[1]);
 		} else if (strcasecmp(argv[0], "chunk-max-size") == 0 && argc == 2) {

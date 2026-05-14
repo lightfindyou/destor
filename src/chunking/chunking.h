@@ -5,7 +5,7 @@
 #ifndef CHUNK_H_
 #define CHUNK_H_
 
-#include "destor.h"
+#include "../destor.h"
 
 void windows_reset();
 void chunkAlg_init();
@@ -22,6 +22,9 @@ int tttd_chunk_data(unsigned char *p, int n);
 
 void fastcdc_init();
 int fastcdc_chunk_data(unsigned char *p, int n);
+int fastcdc_gpu_init();
+void fastcdc_gpu_close();
+int fastcdc_gpu_chunk_data(unsigned char *p, int n);
 
 void gear_init();
 int gear_chunk_data(unsigned char *p, int n);

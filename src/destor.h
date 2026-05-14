@@ -212,6 +212,10 @@ struct destor {
 	int chunk_min_size;
 	int chunk_avg_size;
 	int jumpOnes;
+	int chunk_gpu_enable;
+	int chunk_gpu_device_id;
+	int chunk_gpu_batch_size;
+	int chunk_gpu_is_active;
 
 	/* the cache type and size */
 	int restore_cache[2];

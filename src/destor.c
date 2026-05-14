@@ -91,6 +91,10 @@ void destor_start() {
 	destor.chunk_min_size = 1024;
 	destor.chunk_avg_size = 8192;
 	destor.jumpOnes = 1;
+	destor.chunk_gpu_enable = 0;
+	destor.chunk_gpu_device_id = 0;
+	destor.chunk_gpu_batch_size = 8 * 1024 * 1024;
+	destor.chunk_gpu_is_active = 0;
 
 	destor.restore_cache[0] = RESTORE_CACHE_LRU;
 	destor.restore_cache[1] = 1024;
