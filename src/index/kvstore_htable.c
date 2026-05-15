@@ -7,6 +7,8 @@
 
 #include "../destor.h"
 #include "index.h"
+#include <errno.h>
+#include <sys/stat.h>
 
 typedef char* kvpair;
 
@@ -16,6 +18,39 @@ typedef char* kvpair;
 static GHashTable *htable;
 
 static int32_t kvpair_size;
+
+/* mkdir -p style helper for local index paths. */
+static int ensure_dir_exists(const char *path) {
+	char buf[4096];
+	char *p;
+	size_t len;
+
+	if (!path || !path[0])
+		return -1;
+
+	len = strlen(path);
+	if (len >= sizeof(buf))
+		return -1;
+
+	strcpy(buf, path);
+	if (len > 1 && buf[len - 1] == '/')
+		buf[len - 1] = '\0';
+
+	for (p = buf + 1; *p; p++) {
+		if (*p == '/') {
+			*p = '\0';
+			if (mkdir(buf, S_IRWXU | S_IRWXG | S_IRWXO) != 0
+					&& errno != EEXIST)
+				return -1;
+			*p = '/';
+		}
+	}
+
+	if (mkdir(buf, S_IRWXU | S_IRWXG | S_IRWXO) != 0 && errno != EEXIST)
+		return -1;
+
+	return 0;
+}
 
 /*
  * Create a new kv pair.
@@ -99,12 +134,28 @@ void init_kvstore_htable(){
 }
 
 void close_kvstore_htable() {
-	sds indexpath = sdsdup(destor.working_directory);
-	indexpath = sdscat(indexpath, "/index/htable");
+	sds indexdir = sdsdup(destor.working_directory);
+	indexdir = sdscat(indexdir, "index");
+
+	if (ensure_dir_exists(indexdir) != 0) {
+		fprintf(stderr,
+				"Can not create index directory: %s\n"
+				"reason: %s\n",
+				indexdir,
+				strerror(errno));
+		exit(1);
+	}
+
+	sds indexpath = sdsdup(indexdir);
+	indexpath = sdscat(indexpath, "/htable");
 
 	FILE *fp;
 	if ((fp = fopen(indexpath, "w")) == NULL) {
-		perror("Can not open index/htable for write because:");
+		fprintf(stderr,
+				"Can not open index/htable for write: %s\n"
+				"reason: %s\n",
+				indexpath,
+				strerror(errno));
 		exit(1);
 	}
 
@@ -147,6 +198,7 @@ void close_kvstore_htable() {
 	NOTICE("flushing hash table successfully!");
 
 	sdsfree(indexpath);
+	sdsfree(indexdir);
 
 	g_hash_table_destroy(htable);
 }

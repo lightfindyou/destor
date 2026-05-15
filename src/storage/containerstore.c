@@ -2,6 +2,9 @@
 #include "../utils/serial.h"
 #include "../utils/sync_queue.h"
 #include "../jcr.h"
+#include <errno.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 static int64_t container_count = 0;
 static FILE* fp;
@@ -17,6 +20,39 @@ struct metaEntry {
 	int32_t len;
 	fingerprint fp;
 };
+
+/* mkdir -p style helper for local storage paths. */
+static int ensure_dir_exists(const char *path) {
+	char buf[4096];
+	char *p;
+	size_t len;
+
+	if (!path || !path[0])
+		return -1;
+
+	len = strlen(path);
+	if (len >= sizeof(buf))
+		return -1;
+
+	strcpy(buf, path);
+	if (len > 1 && buf[len - 1] == '/')
+		buf[len - 1] = '\0';
+
+	for (p = buf + 1; *p; p++) {
+		if (*p == '/') {
+			*p = '\0';
+			if (mkdir(buf, S_IRWXU | S_IRWXG | S_IRWXO) != 0
+					&& errno != EEXIST)
+				return -1;
+			*p = '/';
+		}
+	}
+
+	if (mkdir(buf, S_IRWXU | S_IRWXG | S_IRWXO) != 0 && errno != EEXIST)
+		return -1;
+
+	return 0;
+}
 
 /*
  * We must ensure a container is either in the buffer or written to disks.
@@ -45,16 +81,42 @@ static void* append_thread(void *arg) {
 
 //xzjin create container_buffer and append_t thread
 void init_container_store() {
+	if (ensure_dir_exists(destor.working_directory) != 0) {
+		char cwd[4096] = {0};
+		if (!getcwd(cwd, sizeof(cwd))) {
+			strcpy(cwd, "<unknown>");
+		}
+		fprintf(stderr,
+				"Can not create working directory: %s\n"
+				"process cwd: %s\n"
+				"reason: %s\n",
+				destor.working_directory,
+				cwd,
+				strerror(errno));
+		exit(1);
+	}
 
 	sds containerfile = sdsdup(destor.working_directory);
 	printf("working dir: %s\n", destor.working_directory);
-	containerfile = sdscat(containerfile, "/container.pool");
+	containerfile = sdscat(containerfile, "container.pool");
 	printf("container file:%s\n", containerfile);
 
 	if ((fp = fopen(containerfile, "r+"))) {
 		fread(&container_count, 8, 1, fp);
 	} else if (!(fp = fopen(containerfile, "w+"))) {
-		perror( "Can not create container.pool for read and write because");
+		char cwd[4096] = {0};
+		if (!getcwd(cwd, sizeof(cwd))) {
+			strcpy(cwd, "<unknown>");
+		}
+		fprintf(stderr,
+				"Can not create container file: %s\n"
+				"working dir: %s\n"
+				"process cwd: %s\n"
+				"reason: %s\n",
+				containerfile,
+				destor.working_directory,
+				cwd,
+				strerror(errno));
 		exit(1);
 	}
 
