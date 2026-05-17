@@ -22,6 +22,12 @@ SyncQueue* trace_queue;
 SyncQueue* dedup_queue;
 SyncQueue* rewrite_queue;
 
+static double throughput_mb_s(int64_t bytes, double time_us) {
+    if (time_us <= 0)
+        return 0;
+    return (double)bytes * 1000000 / (1024 * 1024 * time_us);
+}
+
 void do_backup(char *path) {
 
     double dedup_time = 0;
@@ -104,21 +110,23 @@ void do_backup(char *path) {
     printf("backup path: %s\n", jcr.path);
     printf("number of files: %d\n", jcr.file_num);
     printf("number of chunks: %" PRId32 " (%" PRId64 " bytes on average)\n",
-           jcr.chunk_num, jcr.data_size / jcr.chunk_num);
+            jcr.chunk_num, jcr.chunk_num != 0 ? jcr.data_size / jcr.chunk_num : 0);
     printf("number of unique chunks: %" PRId32 "\n", jcr.unique_chunk_num);
     printf("total size(B): %" PRId64 "\n", jcr.data_size);
     printf("stored data size(B): %" PRId64 "\n",
            jcr.unique_data_size + jcr.rewritten_chunk_size);
-    printf("deduplication ratio: \x1B[32m%.4f\x1B[37m, %.4f\n",
-           jcr.data_size != 0 ? (jcr.data_size - jcr.unique_data_size -
-                                 jcr.rewritten_chunk_size) /
-                                    (double)(jcr.data_size)
-                              : 0,
-           jcr.data_size /
-               (double)(jcr.unique_data_size + jcr.rewritten_chunk_size));
+    printf("deduplication ratio: \x1B[32m%.2f%% saved\x1B[37m, %.4fx\n",
+           jcr.data_size != 0
+               ? 100.0 * (jcr.data_size - jcr.unique_data_size -
+                          jcr.rewritten_chunk_size) /
+                     (double)(jcr.data_size)
+               : 0.0,
+           (jcr.unique_data_size + jcr.rewritten_chunk_size) != 0
+               ? jcr.data_size /
+                     (double)(jcr.unique_data_size + jcr.rewritten_chunk_size)
+               : 0.0);
     printf("\x1B[32mTotal time(s): %.3f\x1B[37m\n", jcr.total_time / 1000000);
-    printf("throughput(MB/s): %.2f\n",
-           (double)jcr.data_size * 1000000 / (1024 * 1024 * jcr.total_time));
+        printf("throughput(MB/s): %.2f\n", throughput_mb_s(jcr.data_size, jcr.total_time));
     printf("number of zero chunks: %" PRId32 "\n", jcr.zero_chunk_num);
     printf("size of zero chunks: %" PRId64 "\n", jcr.zero_chunk_size);
     printf("number of rewritten chunks: %" PRId32 "\n",
@@ -138,23 +146,23 @@ void do_backup(char *path) {
     destor.rewritten_chunk_size += jcr.rewritten_chunk_size;
 
     printf("read_time : %.3fs, %.2fMB/s\n", jcr.read_time / 1000000,
-           jcr.data_size * 1000000 / jcr.read_time / 1024 / 1024);
+            throughput_mb_s(jcr.data_size, jcr.read_time));
     printf("chunk_time : %.3fs, %.2fMB/s\n", jcr.chunk_time / 1000000,
-           jcr.data_size * 1000000 / jcr.chunk_time / 1024 / 1024);
+            throughput_mb_s(jcr.data_size, jcr.chunk_time));
     printf("hash_time : %.3fs, %.2fMB/s\n", jcr.hash_time / 1000000,
-           jcr.data_size * 1000000 / jcr.hash_time / 1024 / 1024);
+            throughput_mb_s(jcr.data_size, jcr.hash_time));
 
     printf("dedup_time : %.3fs, %.2fMB/s\n", jcr.dedup_time / 1000000,
-           jcr.data_size * 1000000 / jcr.dedup_time / 1024 / 1024);
+            throughput_mb_s(jcr.data_size, jcr.dedup_time));
 
     printf("rewrite_time : %.3fs, %.2fMB/s\n", jcr.rewrite_time / 1000000,
-           jcr.data_size * 1000000 / jcr.rewrite_time / 1024 / 1024);
+            throughput_mb_s(jcr.data_size, jcr.rewrite_time));
 
     printf("filter_time : %.3fs, %.2fMB/s\n", jcr.filter_time / 1000000,
-           jcr.data_size * 1000000 / jcr.filter_time / 1024 / 1024);
+            throughput_mb_s(jcr.data_size, jcr.filter_time));
 
     printf("write_time : %.3fs, %.2fMB/s\n", jcr.write_time / 1000000,
-           jcr.data_size * 1000000 / jcr.write_time / 1024 / 1024);
+            throughput_mb_s(jcr.data_size, jcr.write_time));
 
     // double seek_time = 0.005; //5ms
     // double bandwidth = 120 * 1024 * 1024; //120MB/s
@@ -208,7 +216,7 @@ void do_backup(char *path) {
         jcr.inherited_sparse_num, index_overhead.lookup_requests,
         index_overhead.lookup_requests_for_unique,
         index_overhead.update_requests, index_overhead.read_prefetching_units,
-        (double)jcr.data_size * 1000000 / (1024 * 1024 * jcr.total_time));
+        throughput_mb_s(jcr.data_size, jcr.total_time));
 
     fclose(fp);
 }

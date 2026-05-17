@@ -238,10 +238,14 @@ void destor_stat() {
 	printf("the size of saved data (B): %" PRId64 "\n",
 			destor.data_size - destor.stored_data_size);
 
-	printf("deduplication ratio: %.4f, %.4f\n",
-			(destor.data_size - destor.stored_data_size)
-					/ (double) destor.data_size,
-			((double) destor.data_size) / (destor.stored_data_size));
+	printf("deduplication ratio: %.2f%% saved, %.4fx\n",
+			destor.data_size != 0
+				? 100.0 * (destor.data_size - destor.stored_data_size)
+						/ (double) destor.data_size
+				: 0.0,
+			destor.stored_data_size != 0
+				? ((double) destor.data_size) / (double) destor.stored_data_size
+				: 0.0);
 
 	printf("the number of zero chunks: %" PRId64 "\n", destor.zero_chunk_num);
 	printf("the size of zero chunks (B): %" PRId64 "\n", destor.zero_chunk_size);
@@ -266,6 +270,43 @@ void destor_stat() {
 
 	printf("=== destor stat ===\n");
 	exit(0);
+}
+
+static const char *chunk_algorithm_name(int algorithm) {
+	switch (algorithm) {
+	case CHUNK_FIXED:
+		return "fixed";
+	case CHUNK_RABIN:
+		return "rabin";
+	case CHUNK_NORMALIZED_RABIN:
+		return "normalized rabin";
+	case CHUNK_RABIN_JUMP:
+		return "rabinJump";
+	case CHUNK_TTTD:
+		return "tttd";
+	case CHUNK_FILE:
+		return "file";
+	case CHUNK_AE:
+		return "ae";
+	case CHUNK_FASTCDC:
+		return "fastcdc";
+	case CHUNK_SC:
+		return "sc";
+	case CHUNK_GEAR:
+		return "gear";
+	case CHUNK_GEARJUMP:
+		return "JC";
+	case CHUNK_TTTDGEAR:
+		return "TTTDGear";
+	case CHUNK_JCTTTD:
+		return "JCTTTD";
+	case CHUNK_LEAP:
+		return "leap";
+	case CHUNK_NORMALIZED_GEARJUMP:
+		return "normalized-gearjump";
+	default:
+		return "unknown";
+	}
 }
 
 int main(int argc, char **argv) {
@@ -302,7 +343,8 @@ int main(int argc, char **argv) {
 		}
 	}
 
-	printf("chunck algorithm:%d.\n", destor.chunk_algorithm);
+	printf("chunck algorithm:%d. %s\n", destor.chunk_algorithm,
+			chunk_algorithm_name(destor.chunk_algorithm));
 	sds path = NULL;
 
 	switch (job) {
