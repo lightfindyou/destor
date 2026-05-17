@@ -71,7 +71,7 @@ int fastcdc_gpu_init() {
 	fastcdc_gpu_reset_state();
 	g_cuda.handle = dlopen("libcuda.so.1", RTLD_NOW);
 	if (!g_cuda.handle) {
-		WARNING("FastCDC GPU: CUDA driver not found (libcuda.so.1). Falling back to CPU.");
+		WARNING("Chunk GPU: CUDA driver not found (libcuda.so.1). Falling back to CPU.");
 		return -1;
 	}
 
@@ -84,7 +84,7 @@ int fastcdc_gpu_init() {
 
 	CUresult rc = g_cuda.cuInit(0);
 	if (rc != CUDA_SUCCESS) {
-		WARNING("FastCDC GPU: cuInit failed: %s", fastcdc_cuda_error_string(rc));
+		WARNING("Chunk GPU: cuInit failed: %s", fastcdc_cuda_error_string(rc));
 		fastcdc_gpu_release_driver();
 		return -1;
 	}
@@ -92,13 +92,13 @@ int fastcdc_gpu_init() {
 	int device_count = 0;
 	rc = g_cuda.cuDeviceGetCount(&device_count);
 	if (rc != CUDA_SUCCESS || device_count <= 0) {
-		WARNING("FastCDC GPU: no usable CUDA device found");
+		WARNING("Chunk GPU: no usable CUDA device found");
 		fastcdc_gpu_release_driver();
 		return -1;
 	}
 
 	if (destor.chunk_gpu_device_id < 0 || destor.chunk_gpu_device_id >= device_count) {
-		WARNING("FastCDC GPU: device id %d out of range [0, %d), falling back to CPU",
+		WARNING("Chunk GPU: device id %d out of range [0, %d), falling back to CPU",
 				destor.chunk_gpu_device_id, device_count);
 		fastcdc_gpu_release_driver();
 		return -1;
@@ -107,20 +107,20 @@ int fastcdc_gpu_init() {
 	CUdevice dev = 0;
 	rc = g_cuda.cuDeviceGet(&dev, destor.chunk_gpu_device_id);
 	if (rc != CUDA_SUCCESS) {
-		WARNING("FastCDC GPU: cuDeviceGet failed: %s", fastcdc_cuda_error_string(rc));
+		WARNING("Chunk GPU: cuDeviceGet failed: %s", fastcdc_cuda_error_string(rc));
 		fastcdc_gpu_release_driver();
 		return -1;
 	}
 
 	rc = g_cuda.cuCtxCreate(&g_cuda.ctx, 0, dev);
 	if (rc != CUDA_SUCCESS || !g_cuda.ctx) {
-		WARNING("FastCDC GPU: cuCtxCreate failed: %s", fastcdc_cuda_error_string(rc));
+		WARNING("Chunk GPU: cuCtxCreate failed: %s", fastcdc_cuda_error_string(rc));
 		fastcdc_gpu_release_driver();
 		return -1;
 	}
 
 	g_cuda.initialized = 1;
-	NOTICE("FastCDC GPU: CUDA context initialized on device %d", destor.chunk_gpu_device_id);
+	NOTICE("Chunk GPU: CUDA context initialized on device %d", destor.chunk_gpu_device_id);
 	return 0;
 }
 
@@ -134,4 +134,18 @@ void fastcdc_gpu_close() {
 int fastcdc_gpu_chunk_data(unsigned char *p, int n) {
 	/* CPU fallback remains the execution path until CUDA kernel is added. */
 	return fastcdc_chunk_data(p, n);
+}
+
+int jc_gpu_init() {
+	/* Reuse the same CUDA driver/context bootstrap as FastCDC GPU path. */
+	return fastcdc_gpu_init();
+}
+
+void jc_gpu_close() {
+	fastcdc_gpu_close();
+}
+
+int jc_gpu_chunk_data(unsigned char *p, int n) {
+	/* CPU fallback remains the execution path until CUDA kernel is added. */
+	return gearjump_chunk_data(p, n);
 }

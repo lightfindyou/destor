@@ -26,6 +26,10 @@ int fastcdc_gpu_init();
 void fastcdc_gpu_close();
 int fastcdc_gpu_chunk_data(unsigned char *p, int n);
 
+int jc_gpu_init();
+void jc_gpu_close();
+int jc_gpu_chunk_data(unsigned char *p, int n);
+
 void gear_init();
 int gear_chunk_data(unsigned char *p, int n);
 int TTTD_gear_chunk_data(unsigned char *p, int n);

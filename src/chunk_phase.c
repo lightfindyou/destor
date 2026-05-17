@@ -12,6 +12,7 @@ static int64_t chunk_num;
 
 static int (*chunking)(unsigned char* buf, int size);
 static int chunking_uses_gpu = 0;
+static void (*chunking_gpu_close_fn)() = NULL;
 
 static inline int fixed_chunk_data(unsigned char* buf, int size){
 	return destor.chunk_avg_size > size ? size : destor.chunk_avg_size;
@@ -134,6 +135,7 @@ static void* chunk_thread(void *arg) {
 void start_chunk_phase() {
 	chunking_uses_gpu = 0;
 	destor.chunk_gpu_is_active = 0;
+	chunking_gpu_close_fn = NULL;
 
 	if (destor.chunk_algorithm == CHUNK_RABIN){
 		int pwr;
@@ -220,6 +222,7 @@ void start_chunk_phase() {
 				chunking = fastcdc_gpu_chunk_data;
 				chunking_uses_gpu = 1;
 				destor.chunk_gpu_is_active = 1;
+				chunking_gpu_close_fn = fastcdc_gpu_close;
 				NOTICE("Chunk phase: FastCDC GPU mode enabled, device=%d, batch-size=%d", destor.chunk_gpu_device_id, destor.chunk_gpu_batch_size);
 			} else {
 				WARNING("Chunk phase: FastCDC GPU mode unavailable, fallback to CPU");
@@ -240,6 +243,17 @@ void start_chunk_phase() {
 #else
 		gearjump_init();
 #endif //SENTEST
+		if (destor.chunk_gpu_enable) {
+			if (jc_gpu_init() == 0) {
+				chunking = jc_gpu_chunk_data;
+				chunking_uses_gpu = 1;
+				destor.chunk_gpu_is_active = 1;
+				chunking_gpu_close_fn = jc_gpu_close;
+				NOTICE("Chunk phase: JC GPU mode enabled, device=%d, batch-size=%d", destor.chunk_gpu_device_id, destor.chunk_gpu_batch_size);
+			} else {
+				WARNING("Chunk phase: JC GPU mode unavailable, fallback to CPU");
+			}
+		}
 	} else if(destor.chunk_algorithm == CHUNK_JCTTTD){
 		gearjump_init(destor.jumpOnes);
 		chunking = gearjumpTTTD_chunk_data;
@@ -260,8 +274,9 @@ void start_chunk_phase() {
 		exit(1);
 	}
 
-	if (destor.chunk_gpu_enable && destor.chunk_algorithm != CHUNK_FASTCDC) {
-		WARNING("Chunk phase: GPU mode currently supports FastCDC only, fallback to CPU");
+	if (destor.chunk_gpu_enable && destor.chunk_algorithm != CHUNK_FASTCDC
+			&& destor.chunk_algorithm != CHUNK_GEARJUMP) {
+		WARNING("Chunk phase: GPU mode currently supports FastCDC/JC only, fallback to CPU");
 	}
 
 	chunk_queue = sync_queue_new(100);
@@ -276,9 +291,12 @@ void start_chunk_phase() {
 void stop_chunk_phase() {
 	pthread_join(chunk_t, NULL);
 	if (chunking_uses_gpu) {
-		fastcdc_gpu_close();
+		if (chunking_gpu_close_fn) {
+			chunking_gpu_close_fn();
+		}
 		chunking_uses_gpu = 0;
 		destor.chunk_gpu_is_active = 0;
+		chunking_gpu_close_fn = NULL;
 	}
 	NOTICE("chunk phase stops successfully!");
 }
