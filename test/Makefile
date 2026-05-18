@@ -1,17 +1,39 @@
-all:
+
+.PHONY: all latest legacy effectiveTestor speedTestor throughput fastcdcParity sizeDist rapidCDCSizeDist perfromanceBreakdown chunkingTool chunkingSuite
+
+all: latest
+
+latest: chunkingTool chunkingSuite fastcdcParity
+
+legacy: effectiveTestor speedTestor throughput sizeDist rapidCDCSizeDist perfromanceBreakdown
+
+effectiveTestor:
 	gcc -ggdb -Wall -I/usr/local/include -O3 -o effectiveTestor effectiveTestor.c JC.c rabin.c ae.c leap.c Rabin_simple.c fastcdc.c -lm -lcrypto -lssl
 
+speedTestor:
 	gcc -ggdb -Wall -I/usr/local/include -O3 -o speedTestor speedTestor.c read.c JC.c rabin.c ae.c leap.c sds.c fastcdc.c Rabin_simple.c -lm -lcrypto -lssl -pthread
 
+throughput:
 	gcc -ggdb -Wall -I/usr/local/include -O3 -o throughput throughput.c read.c JC.c rabin.c ae.c leap.c sds.c fastcdc.c Rabin_simple.c -lm -lcrypto -lssl -pthread
 
-	gcc -ggdb -Wall -I/usr/local/include -O3 -o fastcdcParity fastcdc_parity.c ../src/chunking/fastcdc_chunking.c ../src/chunking/fastcdc_gpu.c -lm -lcrypto -lssl -lglib -ldl
-
-	gcc -ggdb -Wall -I/usr/local/include -O3 -o sizeDist sizeDist.c -lm 
-	gcc -o rapidCDCSizeDist rapidCDCSizeDist.c -lm 
-
-	gcc -ggdb -Wall -I/usr/local/include -O3 -o  perfromanceBreakdown perfromanceBreakdown.c read.c JC.c rabin.c ae.c leap.c sds.c fastcdc.c Rabin_simple.c -lm -lcrypto -lssl -pthread -lglib -lxxhash
-
 fastcdcParity:
-	gcc -ggdb -Wall -I/usr/local/include -O3 -o fastcdcParity fastcdc_parity.c ../src/chunking/fastcdc_chunking.c ../src/chunking/fastcdc_gpu.c -lm -lcrypto -lssl -lglib -ldl
+	gcc -ggdb -Wall -O3 $(shell pkg-config --cflags glib-2.0) -o fastcdcParity fastcdc_parity.c ../src/chunking/libchunk.a -lm -lcrypto -lssl $(shell pkg-config --libs glib-2.0) -ldl -pthread
+
+sizeDist:
+	gcc -ggdb -Wall -I/usr/local/include -O3 -o sizeDist sizeDist.c -lm
+
+rapidCDCSizeDist:
+	gcc -o rapidCDCSizeDist rapidCDCSizeDist.c -lm
+
+perfromanceBreakdown:
+	gcc -ggdb -Wall -I/usr/local/include -O3 -o perfromanceBreakdown perfromanceBreakdown.c read.c JC.c rabin.c ae.c leap.c sds.c fastcdc.c Rabin_simple.c -lm -lcrypto -lssl -pthread -lglib -lxxhash
+
+chunkingTool: ../src/chunking/libchunk.a chunkingTool.c
+	gcc -ggdb -Wall -O3 $(shell pkg-config --cflags glib-2.0) -o chunkingTool chunkingTool.c ../src/chunking/libchunk.a -lm -lcrypto -lssl $(shell pkg-config --libs glib-2.0) -ldl -pthread
+
+chunkingSuite: chunkingTool run_chunking_suite.sh
+	sh ./run_chunking_suite.sh ../README.md
+
+../src/chunking/libchunk.a:
+	$(MAKE) -C ../src/chunking libchunk.a
 	
