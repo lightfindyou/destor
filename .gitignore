@@ -48,3 +48,5 @@ tmp/
 **tmp
 test/dedup.output
 ubuntu_more.nohup.pid
+test/chunkingTool
+test/fastcdcParity
