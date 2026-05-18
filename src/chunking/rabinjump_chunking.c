@@ -8,6 +8,10 @@
 #include <stdio.h>
 #include <string.h>
 
+#ifndef CHUNKING_INIT_DEBUG
+#define CHUNKING_INIT_DEBUG 0
+#endif
+
 static int chunkMax, chunkAvg, chunkMin;
 static unsigned long mask;
 static unsigned long jumpMask;
@@ -30,9 +34,11 @@ void rabinJump_init(int chunkSize) {
 	jumpMask = g_condition_mask[index - 2];
 	jumpLen = chunkAvg / 2;
 
-	printf("Mask:    %16lx\n", mask);
-	printf("jumpMask:%16lx\n", jumpMask);
-	printf("jumpLen:%d\n\n", jumpLen);
+	if (CHUNKING_INIT_DEBUG) {
+		printf("Mask:    %16lx\n", mask);
+		printf("jumpMask:%16lx\n", jumpMask);
+		printf("jumpLen:%d\n\n", jumpLen);
+	}
 }
 
 int rabinjump_chunk_data(unsigned char *p, int n) {

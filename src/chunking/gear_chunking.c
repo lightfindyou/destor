@@ -6,6 +6,10 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#ifndef CHUNKING_INIT_DEBUG
+#define CHUNKING_INIT_DEBUG 0
+#endif
+
 static uint64_t mask;
 static uint64_t back_mask_tttd;
 
@@ -18,7 +22,9 @@ void gear_init() {
 	mask = g_condition_mask[index];
 	back_mask_tttd = g_condition_mask[index - 1];
 
-	printf("\nMask:  %16lx\n", mask);
+	if (CHUNKING_INIT_DEBUG) {
+		printf("\nMask:  %16lx\n", mask);
+	}
 }
 
 int gear_chunk_data(unsigned char *p, int n) {

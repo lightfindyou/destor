@@ -6,6 +6,10 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#ifndef CHUNKING_INIT_DEBUG
+#define CHUNKING_INIT_DEBUG 0
+#endif
+
 static uint32_t gearjumpChunkSize;
 static uint64_t mask;
 static uint64_t jumpMask;
@@ -36,15 +40,19 @@ void gearjump_init() {
 	jOnes = cOnes - mto;
 	jumpMask = g_condition_mask[jOnes];
 	jumpLen = pow(2, (cOnes + jOnes)) / (pow(2, cOnes) - pow(2, jOnes));
-	printf("cOnes:%d, jOnes:%d, jumpLen:%d.\n", cOnes, jOnes, jumpLen);
+	if (CHUNKING_INIT_DEBUG) {
+		printf("cOnes:%d, jOnes:%d, jumpLen:%d.\n", cOnes, jOnes, jumpLen);
+	}
 #else
 	jumpMask = g_condition_mask[index - 2];
 	jumpLen = gearjumpChunkSize / 2;
 #endif
 
-	printf("\nMask:  %16lx\n", mask);
-	printf("jumpMask:%16lx\n", jumpMask);
-	printf("jumpLen:%d\n\n", jumpLen);
+	if (CHUNKING_INIT_DEBUG) {
+		printf("\nMask:  %16lx\n", mask);
+		printf("jumpMask:%16lx\n", jumpMask);
+		printf("jumpLen:%d\n\n", jumpLen);
+	}
 }
 
 #define CHUNKMIN 0
@@ -134,15 +142,19 @@ void normalized_gearjump_init(int mto) {
 	largeJumpMask = g_condition_mask[jOnes + 2];
 	jumpLen = pow(2, (cOnes + jOnes)) / (pow(2, cOnes) - pow(2, jOnes));
 	largeJumpLen = pow(2, (cOnes + 2 + jOnes + 2)) / (pow(2, cOnes + 2) - pow(2, jOnes + 2));
-	printf("cOnes:%d, jOnes:%d, jumpLen:%d.\n", cOnes, jOnes, jumpLen);
+	if (CHUNKING_INIT_DEBUG) {
+		printf("cOnes:%d, jOnes:%d, jumpLen:%d.\n", cOnes, jOnes, jumpLen);
+	}
 #else
 	jumpMask = g_condition_mask[index - 2];
 	jumpLen = gearjumpChunkSize / 2;
 #endif
 
-	printf("\n  Mask:%16lx\t    largeMask:%16lx\n", mask, largeMask);
-	printf("jumpMask:%16lx\tlargejumpMask:%16lx\n", jumpMask, largeJumpMask);
-	printf(" jumpLen:%d\t    largeJumpLen:%d\n\n", jumpLen, largeJumpLen);
+	if (CHUNKING_INIT_DEBUG) {
+		printf("\n  Mask:%16lx\t    largeMask:%16lx\n", mask, largeMask);
+		printf("jumpMask:%16lx\tlargejumpMask:%16lx\n", jumpMask, largeJumpMask);
+		printf(" jumpLen:%d\t    largeJumpLen:%d\n\n", jumpLen, largeJumpLen);
+	}
 }
 
 int normalized_gearjump_chunk_data(unsigned char *p, int n) {
