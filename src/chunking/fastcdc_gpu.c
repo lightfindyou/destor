@@ -283,6 +283,10 @@ static void fastcdc_gpu_release_driver() {
 static int fastcdc_gpu_prepare_kernel() {
 	CUresult rc;
 
+	if (g_cuda.kernel_ready) {
+		return 0;
+	}
+
 	if (fastcdc_gpu_resolve_ptx_path(g_cuda.ptx_path, sizeof(g_cuda.ptx_path)) != 0) {
 		WARNING("FastCDC GPU: PTX file not found. Build src/chunking/fastcdc_gpu_kernel.ptx first.");
 		fastcdc_gpu_release_driver();
@@ -332,9 +336,9 @@ static int fastcdc_gpu_prepare_kernel() {
 	return 0;
 }
 
-int fastcdc_gpu_init() {
+static int cuda_driver_init_context() {
 	if (g_cuda.initialized) {
-		return g_cuda.kernel_ready ? 0 : -1;
+		return 0;
 	}
 
 	fastcdc_gpu_reset_state();
@@ -399,6 +403,13 @@ int fastcdc_gpu_init() {
 
 	g_cuda.initialized = 1;
 	NOTICE("Chunk GPU: CUDA context initialized on device %d", destor.chunk_gpu_device_id);
+	return 0;
+}
+
+int fastcdc_gpu_init() {
+	if (cuda_driver_init_context() != 0) {
+		return -1;
+	}
 	return fastcdc_gpu_prepare_kernel();
 }
 
@@ -500,8 +511,8 @@ int fastcdc_gpu_chunk_data(unsigned char *p, int n) {
 }
 
 int jc_gpu_init() {
-	/* Reuse the same CUDA driver/context bootstrap as FastCDC GPU path. */
-	return fastcdc_gpu_init();
+	/* JC still uses CPU chunking, but can reuse a single CUDA context for experiments. */
+	return cuda_driver_init_context();
 }
 
 void jc_gpu_close() {

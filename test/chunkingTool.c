@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "../src/destor.h"
 #include "../src/chunking/chunking.h"
@@ -73,6 +74,18 @@ struct chunk_tool_path_list {
 	char **items;
 	int count;
 	int capacity;
+	size_t total_bytes;
+};
+
+struct chunk_tool_progress_state {
+	const struct chunk_tool_options *options;
+	const struct chunk_tool_run *run;
+	const struct chunk_tool_path_list *paths;
+	int current_file_index;
+	size_t current_file_size;
+	size_t completed_bytes;
+	struct timespec last_update;
+	int active;
 };
 
 static int select_algorithm(const struct chunk_tool_options *options, struct chunk_tool_run *run);
@@ -86,6 +99,7 @@ static int append_stats_csv(const char *path,
 		const struct chunk_tool_stats *stats);
 static void baseline_parallel_init(void);
 static int baseline_parallel_chunk_data(unsigned char *p, int n);
+static double time_diff_ms(const struct timespec *start, const struct timespec *end);
 
 static const char *k_all_algorithms[] = {
 	"rabin",
@@ -108,6 +122,127 @@ static const char *k_all_algorithms[] = {
 #define CHUNK_TOOL_MAX_BATCH 32
 
 static uint64_t g_baseline_mask;
+static struct chunk_tool_progress_state g_chunk_tool_progress;
+
+static int chunk_tool_stdout_supports_color(void) {
+	return isatty(STDOUT_FILENO);
+}
+
+static int chunk_tool_stderr_supports_progress(void) {
+	return isatty(STDERR_FILENO);
+}
+
+static const char *chunk_tool_mode_style(int uses_gpu) {
+	if (!chunk_tool_stdout_supports_color()) {
+		return "";
+	}
+	return uses_gpu ? "\033[1;32m" : "\033[1;34m";
+}
+
+static const char *chunk_tool_reset_style(void) {
+	return chunk_tool_stdout_supports_color() ? "\033[0m" : "";
+}
+
+static double chunk_tool_throughput_mib_s(const struct chunk_tool_stats *stats) {
+	if (!stats || stats->elapsed_ms <= 0.0) {
+		return 0.0;
+	}
+	return ((double)stats->total_bytes * 1000.0)
+			/ (stats->elapsed_ms * 1024.0 * 1024.0);
+}
+
+static void chunk_tool_progress_clear(void) {
+	if (!g_chunk_tool_progress.active || !chunk_tool_stderr_supports_progress()) {
+		g_chunk_tool_progress.active = 0;
+		return;
+	}
+	fprintf(stderr, "\r\033[2K");
+	fflush(stderr);
+	g_chunk_tool_progress.active = 0;
+}
+
+static int chunk_tool_progress_should_refresh(void) {
+	struct timespec now;
+	double elapsed_ms;
+
+	if (!chunk_tool_stderr_supports_progress()) {
+		return 0;
+	}
+	clock_gettime(CLOCK_MONOTONIC, &now);
+	elapsed_ms = time_diff_ms(&g_chunk_tool_progress.last_update, &now);
+	if (elapsed_ms < 3000.0) {
+		return 0;
+	}
+	g_chunk_tool_progress.last_update = now;
+	return 1;
+}
+
+static void chunk_tool_progress_render(size_t current_file_offset) {
+	double file_percent = 100.0;
+	double total_percent = 100.0;
+	size_t total_done;
+
+	if (!g_chunk_tool_progress.active || !chunk_tool_stderr_supports_progress()) {
+		return;
+	}
+	if (g_chunk_tool_progress.current_file_size > 0) {
+		file_percent = (double)current_file_offset * 100.0
+				/ (double)g_chunk_tool_progress.current_file_size;
+		if (file_percent > 100.0) {
+			file_percent = 100.0;
+		}
+	}
+	total_done = g_chunk_tool_progress.completed_bytes + current_file_offset;
+	if (g_chunk_tool_progress.paths && g_chunk_tool_progress.paths->total_bytes > 0) {
+		total_percent = (double)total_done * 100.0
+				/ (double)g_chunk_tool_progress.paths->total_bytes;
+		if (total_percent > 100.0) {
+			total_percent = 100.0;
+		}
+	}
+	fprintf(stderr,
+			"\r\033[2K[%s] %s file %d/%d  file %.1f%%  total %.1f%%  bytes %zu/%zu",
+			g_chunk_tool_progress.run && g_chunk_tool_progress.run->uses_gpu ? "GPU" : "CPU",
+			g_chunk_tool_progress.run ? g_chunk_tool_progress.run->display_name : "chunking",
+			g_chunk_tool_progress.current_file_index + 1,
+			g_chunk_tool_progress.paths ? g_chunk_tool_progress.paths->count : 1,
+			file_percent,
+			total_percent,
+			total_done,
+			g_chunk_tool_progress.paths ? g_chunk_tool_progress.paths->total_bytes : g_chunk_tool_progress.current_file_size);
+	fflush(stderr);
+}
+
+static void chunk_tool_progress_begin(const struct chunk_tool_options *options,
+		const struct chunk_tool_run *run,
+		const struct chunk_tool_path_list *paths,
+		int current_file_index,
+		size_t current_file_size,
+		size_t completed_bytes) {
+	if (!chunk_tool_stderr_supports_progress()) {
+		return;
+	}
+	g_chunk_tool_progress.options = options;
+	g_chunk_tool_progress.run = run;
+	g_chunk_tool_progress.paths = paths;
+	g_chunk_tool_progress.current_file_index = current_file_index;
+	g_chunk_tool_progress.current_file_size = current_file_size;
+	g_chunk_tool_progress.completed_bytes = completed_bytes;
+	if (!g_chunk_tool_progress.active) {
+		clock_gettime(CLOCK_MONOTONIC, &g_chunk_tool_progress.last_update);
+	}
+	g_chunk_tool_progress.active = 1;
+}
+
+static void chunk_tool_progress_finish_file(size_t current_file_size) {
+	if (!g_chunk_tool_progress.active) {
+		return;
+	}
+	if (chunk_tool_progress_should_refresh()) {
+		chunk_tool_progress_render(current_file_size);
+	}
+	g_chunk_tool_progress.completed_bytes += current_file_size;
+}
 
 static void chunk_tool_error_at(const char *file,
 		int line,
@@ -321,6 +456,7 @@ static void free_path_list(struct chunk_tool_path_list *paths) {
 	paths->items = NULL;
 	paths->count = 0;
 	paths->capacity = 0;
+	paths->total_bytes = 0;
 }
 
 static int collect_input_paths_recursive(const char *path, struct chunk_tool_path_list *paths) {
@@ -334,7 +470,11 @@ static int collect_input_paths_recursive(const char *path, struct chunk_tool_pat
 	}
 
 	if (S_ISREG(st.st_mode)) {
-		return append_path(paths, path);
+		if (append_path(paths, path) != 0) {
+			return -1;
+		}
+		paths->total_bytes += (size_t)st.st_size;
+		return 0;
 	}
 	if (!S_ISDIR(st.st_mode)) {
 		return 0;
@@ -454,9 +594,12 @@ static void finalize_stats(struct chunk_tool_stats *stats) {
 }
 
 static void print_stats_summary(const struct chunk_tool_stats *stats, const char *input_label) {
-	printf("algorithm: %s%s\n",
+	printf("%s[%s]%s algorithm=%s throughput=%.2f MiB/s\n",
+			chunk_tool_mode_style(stats->uses_gpu),
+			stats->uses_gpu ? "GPU" : "CPU",
+			chunk_tool_reset_style(),
 			stats->algorithm,
-			stats->uses_gpu ? " (gpu)" : "");
+			chunk_tool_throughput_mib_s(stats));
 	printf("input: %s\n", input_label);
 	printf("files: %zu\n", stats->file_count);
 	printf("bytes: %zu\n", stats->total_bytes);
@@ -660,6 +803,9 @@ static int run_chunking(const struct chunk_tool_options *options,
 		}
 
 		offset += (size_t)chunk_size;
+		if (g_chunk_tool_progress.active && chunk_tool_progress_should_refresh()) {
+			chunk_tool_progress_render(offset);
+		}
 	}
 
 	clock_gettime(CLOCK_MONOTONIC, &end_time);
@@ -695,25 +841,29 @@ static void print_batch_summary(const struct chunk_tool_stats *stats, int count)
 	int i;
 
 	printf("\nsummary:\n");
-	printf("%-20s %-8s %-8s %-12s %-16s %-12s %-10s\n",
+	printf("%-10s %-20s %-10s %-8s %-8s %-12s %-16s %-12s\n",
+			"mode",
 			"algorithm",
+			"MiB/s",
 			"files",
 			"chunks",
 			"cfg(avg)",
 			"obs(min/max/avg)",
-			"elapsed(ms)",
-			"mode");
+			"elapsed(ms)");
 	for (i = 0; i < count; i++) {
-		printf("%-20s %-8zu %-8zu %-12d %d/%d/%.2f %12.3f %-10s\n",
+		printf("%s%-10s%s %-20s %-10.2f %-8zu %-8zu %-12d %d/%d/%.2f %12.3f\n",
+				chunk_tool_mode_style(stats[i].uses_gpu),
+				stats[i].uses_gpu ? "GPU" : "CPU",
+				chunk_tool_reset_style(),
 				stats[i].algorithm,
+				chunk_tool_throughput_mib_s(&stats[i]),
 				stats[i].file_count,
 				stats[i].chunk_count,
 				stats[i].configured_avg,
 				stats[i].observed_min,
 				stats[i].observed_max,
 				stats[i].observed_avg,
-				stats[i].elapsed_ms,
-				stats[i].uses_gpu ? "gpu" : "cpu");
+				stats[i].elapsed_ms);
 	}
 }
 
@@ -800,104 +950,74 @@ static void reset_destor_for_run(const struct chunk_tool_options *options) {
 	destor.chunk_gpu_is_active = 0;
 }
 
-static int execute_single_run(const struct chunk_tool_options *options,
-		unsigned char *buffer,
-		size_t buffer_size,
+static int execute_path_run(const struct chunk_tool_options *options,
+		const struct chunk_tool_path_list *paths,
 		struct chunk_tool_stats *stats,
-		int show_separator,
-		int print_summary) {
+		int show_separator) {
+	int i;
 	struct chunk_tool_run run;
-	int rc;
 
-	reset_destor_for_run(options);
 	init_stats(stats);
+	reset_destor_for_run(options);
 	if (show_separator) {
 		printf("\n==== %s ====\n", options->algorithm);
 	}
 	if (select_algorithm(options, &run) != 0) {
 		return 2;
 	}
-
-	if (buffer_size == 0) {
-		stats->algorithm = run.display_name;
-		stats->configured_min = destor.chunk_min_size;
-		stats->configured_avg = run.effective_avg_size;
-		stats->configured_max = destor.chunk_max_size;
-		stats->file_count = 1;
-		stats->total_bytes = 0;
-		stats->chunk_count = 0;
-		stats->observed_min = 0;
-		stats->observed_max = 0;
-		stats->observed_avg = 0.0;
-		stats->elapsed_ms = 0.0;
-		stats->uses_gpu = run.uses_gpu;
-		rc = 0;
-	} else {
-		rc = run_chunking(options, &run, buffer, buffer_size, stats) == 0 ? 0 : 1;
-	}
-
-	if (print_summary) {
-		print_stats_summary(stats, options->input_path);
-	}
-
-	if (run.close_fn) {
-		run.close_fn();
-	}
-	return rc;
-}
-
-static int execute_path_run(const struct chunk_tool_options *options,
-		const struct chunk_tool_path_list *paths,
-		struct chunk_tool_stats *stats,
-		int show_separator) {
-	int i;
-
-	init_stats(stats);
-	for (i = 0; i < paths->count; i++) {
-		unsigned char *buffer = NULL;
-		size_t buffer_size = 0;
-		struct chunk_tool_options file_options = *options;
-		struct chunk_tool_stats file_stats;
-		int rc;
-
-		file_options.input_path = paths->items[i];
-		if (read_input_file(paths->items[i], &buffer, &buffer_size) != 0) {
-			free(buffer);
-			return 2;
-		}
-		rc = execute_single_run(&file_options,
-				buffer,
-				buffer_size,
-				&file_stats,
-				show_separator && i == 0,
-				0);
-		free(buffer);
-		if (rc != 0) {
-			return rc;
-		}
-		merge_stats(stats, &file_stats);
-	}
-
 	if (paths->count == 0) {
-		struct chunk_tool_run run;
-
-		reset_destor_for_run(options);
-		if (show_separator) {
-			printf("\n==== %s ====\n", options->algorithm);
-		}
-		if (select_algorithm(options, &run) != 0) {
-			return 2;
-		}
 		stats->algorithm = run.display_name;
 		stats->configured_min = destor.chunk_min_size;
 		stats->configured_avg = run.effective_avg_size;
 		stats->configured_max = destor.chunk_max_size;
+		stats->configured_mask_bits = destor.chunk_mask_bits;
+		stats->configured_warp_window = destor.chunk_warp_window;
 		stats->uses_gpu = run.uses_gpu;
 		stats->observed_min = 0;
 		if (run.close_fn) {
 			run.close_fn();
 		}
+		finalize_stats(stats);
+		return 0;
 	}
+
+	for (i = 0; i < paths->count; i++) {
+		unsigned char *buffer = NULL;
+		size_t buffer_size = 0;
+		struct chunk_tool_stats file_stats;
+		int rc;
+
+		if (read_input_file(paths->items[i], &buffer, &buffer_size) != 0) {
+			free(buffer);
+			if (run.close_fn) {
+				run.close_fn();
+			}
+			chunk_tool_progress_clear();
+			return 2;
+		}
+		chunk_tool_progress_begin(options,
+				&run,
+				paths,
+				i,
+				buffer_size,
+				g_chunk_tool_progress.completed_bytes);
+		init_stats(&file_stats);
+		rc = run_chunking(options, &run, buffer, buffer_size, &file_stats) == 0 ? 0 : 1;
+		chunk_tool_progress_finish_file(buffer_size);
+		free(buffer);
+		if (rc != 0) {
+			if (run.close_fn) {
+				run.close_fn();
+			}
+			chunk_tool_progress_clear();
+			return rc;
+		}
+		merge_stats(stats, &file_stats);
+	}
+	if (run.close_fn) {
+		run.close_fn();
+	}
+	chunk_tool_progress_clear();
 
 	finalize_stats(stats);
 	return 0;
