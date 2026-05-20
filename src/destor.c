@@ -90,6 +90,9 @@ void destor_start() {
 	destor.chunk_max_size = 65536;
 	destor.chunk_min_size = 1024;
 	destor.chunk_avg_size = 8192;
+	destor.chunk_mask_bits = 0;
+	destor.chunk_warp_window = 32;
+	destor.chunk_profile_enabled = 0;
 	destor.jumpOnes = 1;
 	destor.chunk_gpu_enable = 0;
 	destor.chunk_gpu_device_id = 0;

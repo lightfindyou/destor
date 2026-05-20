@@ -211,6 +211,9 @@ struct destor {
 	int chunk_max_size;
 	int chunk_min_size;
 	int chunk_avg_size;
+	int chunk_mask_bits;
+	int chunk_warp_window;
+	int chunk_profile_enabled;
 	int jumpOnes;
 	int chunk_gpu_enable;
 	int chunk_gpu_device_id;

@@ -30,9 +30,15 @@ void gearjump_init() {
 
 	gearjumpChunkSize = destor.chunk_avg_size;
 	int index = log2(gearjumpChunkSize);
-	int jOnes = 0, cOnes = index - 1;
+	int jOnes = 0;
+	int cOnes = destor.chunk_mask_bits > 0 ? destor.chunk_mask_bits : index - 1;
 	assert(index > 6);
 	assert(index < 17);
+	assert(cOnes > 1);
+	assert(cOnes < 17);
+	if (destor.chunk_mask_bits > 0) {
+		gearjumpChunkSize = 1U << (cOnes + 1);
+	}
 	mask = g_condition_mask[cOnes];
 #if SENTEST
 	assert(mto > 0);
@@ -44,7 +50,7 @@ void gearjump_init() {
 		printf("cOnes:%d, jOnes:%d, jumpLen:%d.\n", cOnes, jOnes, jumpLen);
 	}
 #else
-	jumpMask = g_condition_mask[index - 2];
+	jumpMask = g_condition_mask[cOnes - 1];
 	jumpLen = gearjumpChunkSize / 2;
 #endif
 
@@ -63,7 +69,10 @@ int gearjump_chunk_data(unsigned char *p, int n) {
 	int minSize = destor.chunk_min_size;
 
 	if (n <= minSize)
+	{
+		chunk_experiment_note_chunk_complete(n, 0);
 		return n;
+ 	}
 #if !CHUNKMIN
 	else
 		i = minSize;
@@ -73,6 +82,7 @@ int gearjump_chunk_data(unsigned char *p, int n) {
 	while (i < n) {
 		fingerprint = (fingerprint << 1) + (g_gear_matrix[p[i]]);
 		i++;
+		chunk_experiment_note_fingerprint_update();
 
 		if (G_UNLIKELY(!(fingerprint & jumpMask))) {
 			if (!(fingerprint & mask)) {
@@ -82,14 +92,17 @@ int gearjump_chunk_data(unsigned char *p, int n) {
 					continue;
 				}
 #endif
+				chunk_experiment_note_chunk_complete(i, 1);
 				return i;
 			} else {
 				fingerprint = 0;
+				chunk_experiment_note_jump(jumpLen);
 				i += jumpLen;
 			}
 		}
 	}
 
+	chunk_experiment_note_chunk_complete(i < n ? i : n, 0);
 	return i < n ? i : n;
 }
 

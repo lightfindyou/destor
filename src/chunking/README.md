@@ -8,7 +8,8 @@ This directory keeps each chunking algorithm family in its own source file so th
 - `rabinjump_chunking.c`: RabinJump variant built on Rabin's rolling fingerprint state.
 - `ae_chunking.c`: AE chunking.
 - `fastcdc_chunking.c`: FastCDC only.
-- `fastcdc_gpu.c`: CUDA driver bootstrap and current CPU fallback wrappers for FastCDC and JC GPU paths.
+- `fastcdc_gpu.c`: CUDA driver bootstrap, PTX module loading, and FastCDC GPU launch wrapper with CPU fallback.
+- `fastcdc_gpu_kernel.cu`: FastCDC CUDA kernel source compiled to PTX and loaded by the driver API wrapper.
 - `gear_common.c` / `gear_common.h`: shared Gear lookup-table initialization and condition masks.
 - `gear_chunking.c`: standard Gear and Gear TTTD.
 - `gearjump_chunking.c`: GearJump, GearJump TTTD, and normalized GearJump.
@@ -21,3 +22,4 @@ This directory keeps each chunking algorithm family in its own source file so th
 - Prefer adding new chunking variants to a dedicated source file when they are algorithmically distinct.
 - Keep cross-file sharing private unless the rest of the project needs the symbol in `chunking.h`.
 - If a new file is added, update `Makefile.am`, `Makefile.in`, and `Makefile` together in this repository layout.
+- Build the FastCDC PTX explicitly with `make -C src/chunking fastcdc_gpu_ptx` or point `DESTOR_FASTCDC_GPU_PTX` at a prebuilt PTX file before running GPU tests.

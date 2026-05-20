@@ -3,6 +3,7 @@
 #include <errno.h>
 #include <limits.h>
 #include <dirent.h>
+#include <math.h>
 #include <sys/stat.h>
 #include <time.h>
 #include <stdarg.h>
@@ -13,6 +14,7 @@
 
 #include "../src/destor.h"
 #include "../src/chunking/chunking.h"
+#include "../src/chunking/gear_common.h"
 
 struct destor destor;
 
@@ -23,11 +25,15 @@ struct chunk_tool_options {
 	const char *algorithm;
 	const char *batch_algorithms;
 	const char *input_path;
+	const char *result_csv_path;
 	int chunk_avg_size;
 	int chunk_min_size;
 	int chunk_max_size;
+	int chunk_mask_bits;
+	int chunk_warp_window;
 	int jump_mask_delta;
 	int leap_par_idx;
+	int profile_chunking;
 	int gpu_enabled;
 	int gpu_device_id;
 	int gpu_batch_size;
@@ -49,6 +55,8 @@ struct chunk_tool_stats {
 	int configured_min;
 	int configured_avg;
 	int configured_max;
+	int configured_mask_bits;
+	int configured_warp_window;
 	size_t file_count;
 	size_t total_bytes;
 	size_t chunk_count;
@@ -57,6 +65,8 @@ struct chunk_tool_stats {
 	double observed_avg;
 	double elapsed_ms;
 	int uses_gpu;
+	int profile_chunking;
+	struct chunk_experiment_stats experiment_stats;
 };
 
 struct chunk_tool_path_list {
@@ -71,6 +81,11 @@ static int run_chunking(const struct chunk_tool_options *options,
 		unsigned char *buffer,
 		size_t buffer_size,
 		struct chunk_tool_stats *stats);
+static int append_stats_csv(const char *path,
+		const char *input_label,
+		const struct chunk_tool_stats *stats);
+static void baseline_parallel_init(void);
+static int baseline_parallel_chunk_data(unsigned char *p, int n);
 
 static const char *k_all_algorithms[] = {
 	"rabin",
@@ -79,6 +94,7 @@ static const char *k_all_algorithms[] = {
 	"tttd",
 	"ae",
 	"sc",
+	"baseline",
 	"fastcdc",
 	"gear",
 	"jc",
@@ -90,6 +106,8 @@ static const char *k_all_algorithms[] = {
 
 #define CHUNK_TOOL_ALGORITHM_COUNT ((int)(sizeof(k_all_algorithms) / sizeof(k_all_algorithms[0])))
 #define CHUNK_TOOL_MAX_BATCH 32
+
+static uint64_t g_baseline_mask;
 
 static void chunk_tool_error_at(const char *file,
 		int line,
@@ -120,6 +138,10 @@ static void usage(const char *prog) {
 			"  -s, --avg SIZE         Average chunk size, default 4096\n"
 			"      --min SIZE         Minimum chunk size, default avg/4\n"
 			"      --max SIZE         Maximum chunk size, default avg*4\n"
+			"      --mask-bits N      Override boundary mask bits for JC/FastCDC\n"
+			"      --warp-window N    Record target warp window size, default 32\n"
+			"      --profile-chunking Collect CPU-side chunking work counters\n"
+			"      --result-csv PATH  Append one CSV row per run to PATH\n"
 			"      --gpu              Enable GPU wrapper when supported\n"
 			"      --gpu-device ID    GPU device id, default 0\n"
 			"      --gpu-batch SIZE   GPU batch size, default 8388608\n"
@@ -139,6 +161,7 @@ static void usage(const char *prog) {
 			"  tttd\n"
 			"  ae\n"
 			"  sc\n"
+			"  baseline\n"
 			"  fastcdc\n"
 			"  gear\n"
 			"  jc\n"
@@ -441,6 +464,10 @@ static void print_stats_summary(const struct chunk_tool_stats *stats, const char
 			stats->configured_min,
 			stats->configured_avg,
 			stats->configured_max);
+	if (stats->configured_mask_bits > 0) {
+		printf("configured mask bits: %d\n", stats->configured_mask_bits);
+	}
+	printf("configured warp window: %d\n", stats->configured_warp_window);
 	printf("chunks: %zu\n", stats->chunk_count);
 	if (stats->chunk_count > 0) {
 		printf("observed min/max/avg: %d/%d/%.2f\n",
@@ -448,7 +475,108 @@ static void print_stats_summary(const struct chunk_tool_stats *stats, const char
 				stats->observed_max,
 				stats->observed_avg);
 	}
+	if (stats->profile_chunking) {
+		double avg_checks = stats->experiment_stats.chunk_count > 0
+				? (double)stats->experiment_stats.total_checks_per_chunk
+				/ (double)stats->experiment_stats.chunk_count
+				: 0.0;
+		double avg_redundant_checks = stats->experiment_stats.chunk_count > 0
+				? (double)stats->experiment_stats.redundant_checks
+				/ (double)stats->experiment_stats.chunk_count
+				: 0.0;
+		printf("fingerprint updates: %llu\n",
+				(unsigned long long)stats->experiment_stats.fingerprint_updates);
+		printf("cutoff hits: %llu\n",
+				(unsigned long long)stats->experiment_stats.cutoff_hits);
+		printf("jump hits/bytes skipped: %llu/%llu\n",
+				(unsigned long long)stats->experiment_stats.jump_hits,
+				(unsigned long long)stats->experiment_stats.jump_bytes_skipped);
+		printf("redundant checks/warp groups: %llu/%llu\n",
+				(unsigned long long)stats->experiment_stats.redundant_checks,
+				(unsigned long long)stats->experiment_stats.simulated_warp_groups);
+		printf("checks per chunk min/max/avg: %llu/%llu/%.2f\n",
+				(unsigned long long)stats->experiment_stats.min_checks_per_chunk,
+				(unsigned long long)stats->experiment_stats.max_checks_per_chunk,
+				avg_checks);
+		printf("avg redundant checks per chunk: %.2f\n", avg_redundant_checks);
+	}
 	printf("elapsed: %.3f ms\n", stats->elapsed_ms);
+}
+
+static void baseline_parallel_init(void) {
+	int index;
+	int mask_bits;
+
+	gear_matrix_init();
+	index = log2(destor.chunk_avg_size);
+	assert(index > 6);
+	assert(index < 17);
+	mask_bits = destor.chunk_mask_bits > 0 ? destor.chunk_mask_bits : index - 1;
+	assert(mask_bits > 1);
+	assert(mask_bits < 17);
+	g_baseline_mask = g_condition_mask[mask_bits];
+}
+
+static int baseline_parallel_chunk_data(unsigned char *p, int n) {
+	uint64_t fingerprint = 0;
+	int i = 0;
+	int min_size = destor.chunk_min_size;
+	int end;
+	int warp_window = destor.chunk_warp_window;
+
+	if (n <= min_size) {
+		chunk_experiment_note_chunk_complete(n, 0);
+		return n;
+	}
+
+	i = min_size;
+	end = n < destor.chunk_max_size ? n : destor.chunk_max_size;
+	while (i < end) {
+		int pos;
+		int group_end = i + warp_window < end ? i + warp_window : end;
+		int first_cutoff = -1;
+
+		for (pos = i; pos < group_end; pos++) {
+			fingerprint = (fingerprint << 1) + g_gear_matrix[p[pos]];
+			chunk_experiment_note_fingerprint_update();
+			if (first_cutoff < 0 && !(fingerprint & g_baseline_mask)) {
+				first_cutoff = pos + 1;
+			}
+		}
+
+		if (first_cutoff >= 0) {
+			chunk_experiment_note_redundancy(group_end - first_cutoff, group_end - i);
+			chunk_experiment_note_chunk_complete(first_cutoff, 1);
+			return first_cutoff;
+		}
+
+		chunk_experiment_note_redundancy(0, group_end - i);
+		i = group_end;
+	}
+
+	chunk_experiment_note_chunk_complete(end, 0);
+	return end;
+}
+
+static void merge_experiment_stats(struct chunk_experiment_stats *total,
+		const struct chunk_experiment_stats *part) {
+	total->fingerprint_updates += part->fingerprint_updates;
+	total->chunk_count += part->chunk_count;
+	total->cutoff_hits += part->cutoff_hits;
+	total->jump_hits += part->jump_hits;
+	total->jump_bytes_skipped += part->jump_bytes_skipped;
+	total->redundant_checks += part->redundant_checks;
+	total->simulated_warp_groups += part->simulated_warp_groups;
+	total->total_chunk_bytes += part->total_chunk_bytes;
+	total->total_checks_per_chunk += part->total_checks_per_chunk;
+	if (part->chunk_count > 0) {
+		if (total->min_checks_per_chunk == 0 || part->min_checks_per_chunk < total->min_checks_per_chunk) {
+			total->min_checks_per_chunk = part->min_checks_per_chunk;
+		}
+		if (part->max_checks_per_chunk > total->max_checks_per_chunk) {
+			total->max_checks_per_chunk = part->max_checks_per_chunk;
+		}
+	}
 }
 
 static void merge_stats(struct chunk_tool_stats *total, const struct chunk_tool_stats *part) {
@@ -457,7 +585,10 @@ static void merge_stats(struct chunk_tool_stats *total, const struct chunk_tool_
 		total->configured_min = part->configured_min;
 		total->configured_avg = part->configured_avg;
 		total->configured_max = part->configured_max;
+		total->configured_mask_bits = part->configured_mask_bits;
+		total->configured_warp_window = part->configured_warp_window;
 		total->uses_gpu = part->uses_gpu;
+		total->profile_chunking = part->profile_chunking;
 	}
 
 	total->file_count += part->file_count;
@@ -471,6 +602,9 @@ static void merge_stats(struct chunk_tool_stats *total, const struct chunk_tool_
 		if (part->observed_max > total->observed_max) {
 			total->observed_max = part->observed_max;
 		}
+	}
+	if (part->profile_chunking) {
+		merge_experiment_stats(&total->experiment_stats, &part->experiment_stats);
 	}
 	finalize_stats(total);
 }
@@ -488,6 +622,9 @@ static int run_chunking(const struct chunk_tool_options *options,
 	int observed_max = 0;
 	struct timespec start_time;
 	struct timespec end_time;
+	struct chunk_experiment_stats experiment_stats;
+
+	chunk_experiment_reset_stats();
 
 	clock_gettime(CLOCK_MONOTONIC, &start_time);
 
@@ -526,10 +663,13 @@ static int run_chunking(const struct chunk_tool_options *options,
 	}
 
 	clock_gettime(CLOCK_MONOTONIC, &end_time);
+	chunk_experiment_snapshot(&experiment_stats);
 	stats->algorithm = run->display_name;
 	stats->configured_min = destor.chunk_min_size;
 	stats->configured_avg = run->effective_avg_size;
 	stats->configured_max = destor.chunk_max_size;
+	stats->configured_mask_bits = destor.chunk_mask_bits;
+	stats->configured_warp_window = destor.chunk_warp_window;
 	stats->file_count = 1;
 	stats->total_bytes = buffer_size;
 	stats->chunk_count = chunk_count;
@@ -540,6 +680,10 @@ static int run_chunking(const struct chunk_tool_options *options,
 			: 0.0;
 	stats->elapsed_ms = time_diff_ms(&start_time, &end_time);
 	stats->uses_gpu = run->uses_gpu;
+	stats->profile_chunking = options->profile_chunking;
+	if (options->profile_chunking) {
+		stats->experiment_stats = experiment_stats;
+	}
 	if (options->print_chunks && chunk_count > (size_t)options->print_limit) {
 		printf("printed first %d of %zu chunks\n", options->print_limit, chunk_count);
 	}
@@ -573,11 +717,82 @@ static void print_batch_summary(const struct chunk_tool_stats *stats, int count)
 	}
 }
 
+static int append_stats_csv(const char *path,
+		const char *input_label,
+		const struct chunk_tool_stats *stats) {
+	FILE *fp;
+	long file_size;
+	double avg_checks = 0.0;
+
+	if (!path || !stats) {
+		return 0;
+	}
+
+	fp = fopen(path, "a+");
+	if (!fp) {
+		CHUNK_TOOL_ERROR("Failed to open CSV output %s: %s", path, strerror(errno));
+		return -1;
+	}
+	if (fseek(fp, 0, SEEK_END) != 0) {
+		CHUNK_TOOL_ERROR("Failed to seek CSV output %s: %s", path, strerror(errno));
+		fclose(fp);
+		return -1;
+	}
+	file_size = ftell(fp);
+	if (file_size < 0) {
+		CHUNK_TOOL_ERROR("Failed to inspect CSV output %s: %s", path, strerror(errno));
+		fclose(fp);
+		return -1;
+	}
+	if (file_size == 0) {
+		fprintf(fp,
+				"algorithm,input,mode,files,bytes,cfg_min,cfg_avg,cfg_max,mask_bits,warp_window,chunks,obs_min,obs_max,obs_avg,elapsed_ms,fingerprint_updates,cutoff_hits,jump_hits,jump_bytes_skipped,redundant_checks,warp_groups,min_checks,max_checks,avg_checks\n");
+	}
+	if (stats->experiment_stats.chunk_count > 0) {
+		avg_checks = (double)stats->experiment_stats.total_checks_per_chunk
+				/ (double)stats->experiment_stats.chunk_count;
+	}
+	fprintf(fp,
+			"%s,%s,%s,%zu,%zu,%d,%d,%d,%d,%d,%zu,%d,%d,%.2f,%.3f,%llu,%llu,%llu,%llu,%llu,%llu,%llu,%llu,%.2f\n",
+			stats->algorithm,
+			input_label,
+			stats->uses_gpu ? "gpu" : "cpu",
+			stats->file_count,
+			stats->total_bytes,
+			stats->configured_min,
+			stats->configured_avg,
+			stats->configured_max,
+			stats->configured_mask_bits,
+			stats->configured_warp_window,
+			stats->chunk_count,
+			stats->observed_min,
+			stats->observed_max,
+			stats->observed_avg,
+			stats->elapsed_ms,
+			(unsigned long long)stats->experiment_stats.fingerprint_updates,
+			(unsigned long long)stats->experiment_stats.cutoff_hits,
+			(unsigned long long)stats->experiment_stats.jump_hits,
+			(unsigned long long)stats->experiment_stats.jump_bytes_skipped,
+			(unsigned long long)stats->experiment_stats.redundant_checks,
+			(unsigned long long)stats->experiment_stats.simulated_warp_groups,
+			(unsigned long long)stats->experiment_stats.min_checks_per_chunk,
+			(unsigned long long)stats->experiment_stats.max_checks_per_chunk,
+			avg_checks);
+	if (fclose(fp) != 0) {
+		CHUNK_TOOL_ERROR("Failed to close CSV output %s: %s", path, strerror(errno));
+		return -1;
+	}
+	return 0;
+}
+
 static void reset_destor_for_run(const struct chunk_tool_options *options) {
 	destor.chunk_algorithm = -1;
 	destor.chunk_min_size = options->chunk_min_size;
 	destor.chunk_avg_size = options->chunk_avg_size;
 	destor.chunk_max_size = options->chunk_max_size;
+	destor.chunk_mask_bits = options->chunk_mask_bits;
+	destor.chunk_warp_window = options->chunk_warp_window;
+	destor.chunk_profile_enabled = options->profile_chunking;
 	destor.jumpOnes = options->jump_mask_delta;
 	destor.chunk_gpu_enable = options->gpu_enabled;
 	destor.chunk_gpu_device_id = options->gpu_device_id;
@@ -732,6 +947,10 @@ static int select_algorithm(const struct chunk_tool_options *options, struct chu
 		sc_init();
 		run->chunk_fn = sc_chunk_data;
 		run->display_name = "sc";
+	} else if (strcmp(options->algorithm, "baseline") == 0) {
+		baseline_parallel_init();
+		run->chunk_fn = baseline_parallel_chunk_data;
+		run->display_name = "baseline";
 	} else if (strcmp(options->algorithm, "fastcdc") == 0) {
 		fastcdc_init();
 		run->chunk_fn = fastcdc_chunk_data;
@@ -791,6 +1010,7 @@ static int parse_args(int argc, char **argv, struct chunk_tool_options *options)
 
 	memset(options, 0, sizeof(*options));
 	options->chunk_avg_size = 4096;
+	options->chunk_warp_window = 32;
 	options->jump_mask_delta = 1;
 	options->gpu_device_id = 0;
 	options->gpu_batch_size = 8 * 1024 * 1024;
@@ -838,6 +1058,24 @@ static int parse_args(int argc, char **argv, struct chunk_tool_options *options)
 			}
 			continue;
 		}
+		if (strcmp(argv[i], "--mask-bits") == 0 && i + 1 < argc) {
+			options->chunk_mask_bits = parse_int_arg("mask bits", argv[++i]);
+			if (options->chunk_mask_bits < 0) {
+				return -1;
+			}
+			continue;
+		}
+		if (strcmp(argv[i], "--warp-window") == 0 && i + 1 < argc) {
+			options->chunk_warp_window = parse_int_arg("warp window", argv[++i]);
+			if (options->chunk_warp_window < 0) {
+				return -1;
+			}
+			continue;
+		}
+		if (strcmp(argv[i], "--profile-chunking") == 0) {
+			options->profile_chunking = 1;
+			continue;
+		}
 		if (strcmp(argv[i], "--gpu") == 0) {
 			options->gpu_enabled = 1;
 			continue;
@@ -881,6 +1119,10 @@ static int parse_args(int argc, char **argv, struct chunk_tool_options *options)
 			}
 			continue;
 		}
+		if (strcmp(argv[i], "--result-csv") == 0 && i + 1 < argc) {
+			options->result_csv_path = argv[++i];
+			continue;
+		}
 
 		usage(argv[0]);
 		CHUNK_TOOL_ERROR("Unknown or incomplete argument: %s", argv[i]);
@@ -912,6 +1154,15 @@ static int parse_args(int argc, char **argv, struct chunk_tool_options *options)
 	}
 	if (options->chunk_min_size > options->chunk_avg_size || options->chunk_avg_size > options->chunk_max_size) {
 		CHUNK_TOOL_ERROR("Require min <= avg <= max");
+		return -1;
+	}
+	if (options->chunk_mask_bits != 0
+			&& (options->chunk_mask_bits <= 1 || options->chunk_mask_bits >= 17)) {
+		CHUNK_TOOL_ERROR("Require mask bits in [2, 16]");
+		return -1;
+	}
+	if (options->chunk_warp_window <= 0) {
+		CHUNK_TOOL_ERROR("Warp window must be positive");
 		return -1;
 	}
 
@@ -966,6 +1217,10 @@ int main(int argc, char **argv) {
 			break;
 		}
 		print_stats_summary(&stats[i], options.input_path);
+		if (append_stats_csv(options.result_csv_path, options.input_path, &stats[i]) != 0) {
+			rc = 2;
+			break;
+		}
 	}
 
 	if (algorithm_count > 1 && rc == 0) {
