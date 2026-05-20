@@ -1077,12 +1077,12 @@ static int select_algorithm(const struct chunk_tool_options *options, struct chu
 		run->display_name = "fastcdc";
 		if (options->gpu_enabled) {
 			if (fastcdc_gpu_init() != 0) {
-				CHUNK_TOOL_ERROR("FastCDC GPU init failed");
-				return -1;
+				WARNING("chunkingTool: FastCDC --gpu requested, but GPU kernel is unavailable; falling back to CPU");
+			} else {
+				run->chunk_fn = fastcdc_gpu_chunk_data;
+				run->close_fn = fastcdc_gpu_close;
+				run->uses_gpu = 1;
 			}
-			run->chunk_fn = fastcdc_gpu_chunk_data;
-			run->close_fn = fastcdc_gpu_close;
-			run->uses_gpu = 1;
 		}
 	} else if (strcmp(options->algorithm, "gear") == 0) {
 		gear_init();
@@ -1093,13 +1093,10 @@ static int select_algorithm(const struct chunk_tool_options *options, struct chu
 		run->chunk_fn = gearjump_chunk_data;
 		run->display_name = "jc";
 		if (options->gpu_enabled) {
-			if (jc_gpu_init() != 0) {
-				CHUNK_TOOL_ERROR("JC GPU init failed");
-				return -1;
+			WARNING("chunkingTool: JC --gpu requested, but JC still runs on CPU fallback; no JC GPU kernel is implemented yet");
+			if (jc_gpu_init() == 0) {
+				jc_gpu_close();
 			}
-			run->chunk_fn = jc_gpu_chunk_data;
-			run->close_fn = jc_gpu_close;
-			run->uses_gpu = 1;
 		}
 	} else if (strcmp(options->algorithm, "jctttd") == 0) {
 		gearjump_init(options->jump_mask_delta);
