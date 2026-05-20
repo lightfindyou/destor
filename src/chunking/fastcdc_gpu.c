@@ -4,6 +4,7 @@
 
 #include <dlfcn.h>
 #include <limits.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -18,6 +19,7 @@ typedef unsigned long long CUdeviceptr;
 
 #define CUDA_SUCCESS 0
 #define FASTCDC_GPU_KERNEL_SYMBOL "fastcdc_chunk_kernel"
+#define JC_GPU_KERNEL_SYMBOL "jc_chunk_kernel"
 #define FASTCDC_GPU_GEAR_SYMBOL_COUNT 256
 
 typedef CUresult (*cuInit_t)(unsigned int flags);
@@ -49,7 +51,13 @@ typedef CUresult (*cuCtxSynchronize_t)(void);
 struct fastcdc_gpu_kernel_result {
 	int chunk_size;
 	int cutoff_hit;
+	int cutoff_lane;
+	int tail_idle_lanes;
 	uint64_t fingerprint_updates;
+	uint64_t redundant_checks;
+	uint64_t warp_groups;
+	uint64_t jump_hits;
+	uint64_t jump_bytes_skipped;
 };
 
 struct cuda_driver_state {
@@ -57,9 +65,11 @@ struct cuda_driver_state {
 	CUcontext ctx;
 	CUmodule module;
 	CUfunction fastcdc_kernel;
+	CUfunction jc_kernel;
 	CUdeviceptr gear_matrix_device;
 	int initialized;
 	int kernel_ready;
+	int jc_kernel_ready;
 	char ptx_path[PATH_MAX];
 	cuInit_t cuInit;
 	cuDeviceGetCount_t cuDeviceGetCount;
@@ -81,6 +91,8 @@ struct cuda_driver_state {
 static struct cuda_driver_state g_cuda;
 static struct chunk_experiment_stats g_chunk_experiment_stats;
 static uint64_t g_chunk_experiment_current_checks;
+
+static int cuda_driver_init_context();
 
 static int fastcdc_gpu_floor_log2(unsigned int value) {
 	int index = 0;
@@ -109,6 +121,39 @@ static void fastcdc_gpu_compute_masks(uint64_t *mask_s,
 	if (mask_l) {
 		*mask_l = (uint64_t)g_condition_mask[mask_bits - 1];
 	}
+}
+
+static int jc_gpu_compute_params(uint64_t *mask,
+		uint64_t *jump_mask,
+		int *jump_len,
+		int *expect_chunk_size) {
+	int index = fastcdc_gpu_floor_log2((unsigned int)destor.chunk_avg_size);
+	int c_ones = destor.chunk_mask_bits > 0 ? destor.chunk_mask_bits : index - 1;
+	int jump_delta = destor.jumpOnes > 0 ? destor.jumpOnes : 1;
+	int j_ones = c_ones - jump_delta;
+	uint64_t numerator;
+	uint64_t denominator;
+
+	if (c_ones <= 1 || c_ones >= 17 || j_ones <= 0 || j_ones >= c_ones) {
+		return -1;
+	}
+	if (expect_chunk_size) {
+		*expect_chunk_size = destor.chunk_mask_bits > 0
+				? (1 << (c_ones + 1))
+				: destor.chunk_avg_size;
+	}
+	if (mask) {
+		*mask = (uint64_t)g_condition_mask[c_ones];
+	}
+	if (jump_mask) {
+		*jump_mask = (uint64_t)g_condition_mask[j_ones];
+	}
+	numerator = 1ULL << (c_ones + j_ones);
+	denominator = (1ULL << c_ones) - (1ULL << j_ones);
+	if (jump_len) {
+		*jump_len = denominator == 0 ? 0 : (int)(numerator / denominator);
+	}
+	return 0;
 }
 
 static int fastcdc_gpu_resolve_ptx_path(char *path, size_t path_size) {
@@ -149,7 +194,14 @@ static void fastcdc_gpu_note_kernel_result(const struct fastcdc_gpu_kernel_resul
 		return;
 	}
 	g_chunk_experiment_stats.fingerprint_updates += result->fingerprint_updates;
+	g_chunk_experiment_stats.jump_hits += result->jump_hits;
+	g_chunk_experiment_stats.jump_bytes_skipped += result->jump_bytes_skipped;
+	if (result->cutoff_hit) {
+		g_chunk_experiment_stats.cutoff_lane_sum += (uint64_t)result->cutoff_lane;
+		g_chunk_experiment_stats.tail_idle_lane_sum += (uint64_t)result->tail_idle_lanes;
+	}
 	g_chunk_experiment_current_checks = result->fingerprint_updates;
+	chunk_experiment_note_redundancy((int)result->redundant_checks, (int)result->warp_groups);
 	chunk_experiment_note_chunk_complete(result->chunk_size, result->cutoff_hit);
 }
 
@@ -187,15 +239,15 @@ void chunk_experiment_note_jump(int jump_bytes) {
 	}
 }
 
-void chunk_experiment_note_redundancy(int redundant_checks, int warp_group_size) {
+void chunk_experiment_note_redundancy(int redundant_checks, int warp_group_count) {
 	if (!destor.chunk_profile_enabled) {
 		return;
 	}
 	if (redundant_checks > 0) {
 		g_chunk_experiment_stats.redundant_checks += (uint64_t)redundant_checks;
 	}
-	if (warp_group_size > 0) {
-		g_chunk_experiment_stats.simulated_warp_groups++;
+	if (warp_group_count > 0) {
+		g_chunk_experiment_stats.simulated_warp_groups += (uint64_t)warp_group_count;
 	}
 }
 
@@ -287,52 +339,82 @@ static int fastcdc_gpu_prepare_kernel() {
 		return 0;
 	}
 
-	if (fastcdc_gpu_resolve_ptx_path(g_cuda.ptx_path, sizeof(g_cuda.ptx_path)) != 0) {
-		WARNING("FastCDC GPU: PTX file not found. Build src/chunking/fastcdc_gpu_kernel.ptx first.");
-		fastcdc_gpu_release_driver();
+	if (cuda_driver_init_context() != 0) {
 		return -1;
 	}
 
-	rc = g_cuda.cuModuleLoad(&g_cuda.module, g_cuda.ptx_path);
-	if (rc != CUDA_SUCCESS || !g_cuda.module) {
-		WARNING("FastCDC GPU: cuModuleLoad failed for %s: %s",
-				g_cuda.ptx_path,
-				fastcdc_cuda_error_string(rc));
-		fastcdc_gpu_release_driver();
-		return -1;
+	if (!g_cuda.module) {
+		if (fastcdc_gpu_resolve_ptx_path(g_cuda.ptx_path, sizeof(g_cuda.ptx_path)) != 0) {
+			WARNING("FastCDC GPU: PTX file not found. Build src/chunking/fastcdc_gpu_kernel.ptx first.");
+			fastcdc_gpu_release_driver();
+			return -1;
+		}
+
+		rc = g_cuda.cuModuleLoad(&g_cuda.module, g_cuda.ptx_path);
+		if (rc != CUDA_SUCCESS || !g_cuda.module) {
+			WARNING("FastCDC GPU: cuModuleLoad failed for %s: %s",
+					g_cuda.ptx_path,
+					fastcdc_cuda_error_string(rc));
+			fastcdc_gpu_release_driver();
+			return -1;
+		}
+
+		gear_matrix_init();
+		rc = g_cuda.cuMemAlloc(&g_cuda.gear_matrix_device,
+				sizeof(g_gear_matrix[0]) * FASTCDC_GPU_GEAR_SYMBOL_COUNT);
+		if (rc != CUDA_SUCCESS || !g_cuda.gear_matrix_device) {
+			WARNING("FastCDC GPU: cuMemAlloc for gear matrix failed: %s",
+					fastcdc_cuda_error_string(rc));
+			fastcdc_gpu_release_driver();
+			return -1;
+		}
+
+		rc = g_cuda.cuMemcpyHtoD(g_cuda.gear_matrix_device,
+				g_gear_matrix,
+				sizeof(g_gear_matrix[0]) * FASTCDC_GPU_GEAR_SYMBOL_COUNT);
+		if (rc != CUDA_SUCCESS) {
+			WARNING("FastCDC GPU: cuMemcpyHtoD for gear matrix failed: %s",
+					fastcdc_cuda_error_string(rc));
+			fastcdc_gpu_release_driver();
+			return -1;
+		}
+
+		NOTICE("Chunk GPU: PTX module loaded from %s", g_cuda.ptx_path);
 	}
 
 	rc = g_cuda.cuModuleGetFunction(&g_cuda.fastcdc_kernel,
 			g_cuda.module,
 			FASTCDC_GPU_KERNEL_SYMBOL);
 	if (rc != CUDA_SUCCESS || !g_cuda.fastcdc_kernel) {
-		WARNING("FastCDC GPU: cuModuleGetFunction failed: %s", fastcdc_cuda_error_string(rc));
-		fastcdc_gpu_release_driver();
-		return -1;
-	}
-
-	gear_matrix_init();
-	rc = g_cuda.cuMemAlloc(&g_cuda.gear_matrix_device,
-			sizeof(g_gear_matrix[0]) * FASTCDC_GPU_GEAR_SYMBOL_COUNT);
-	if (rc != CUDA_SUCCESS || !g_cuda.gear_matrix_device) {
-		WARNING("FastCDC GPU: cuMemAlloc for gear matrix failed: %s",
+		WARNING("FastCDC GPU: cuModuleGetFunction(%s) failed: %s",
+				FASTCDC_GPU_KERNEL_SYMBOL,
 				fastcdc_cuda_error_string(rc));
-		fastcdc_gpu_release_driver();
-		return -1;
-	}
-
-	rc = g_cuda.cuMemcpyHtoD(g_cuda.gear_matrix_device,
-			g_gear_matrix,
-			sizeof(g_gear_matrix[0]) * FASTCDC_GPU_GEAR_SYMBOL_COUNT);
-	if (rc != CUDA_SUCCESS) {
-		WARNING("FastCDC GPU: cuMemcpyHtoD for gear matrix failed: %s",
-				fastcdc_cuda_error_string(rc));
-		fastcdc_gpu_release_driver();
 		return -1;
 	}
 
 	g_cuda.kernel_ready = 1;
-	NOTICE("Chunk GPU: FastCDC PTX module loaded from %s", g_cuda.ptx_path);
+	return 0;
+}
+
+static int jc_gpu_prepare_kernel() {
+	CUresult rc;
+
+	if (g_cuda.jc_kernel_ready) {
+		return 0;
+	}
+	if (fastcdc_gpu_prepare_kernel() != 0) {
+		return -1;
+	}
+	rc = g_cuda.cuModuleGetFunction(&g_cuda.jc_kernel,
+			g_cuda.module,
+			JC_GPU_KERNEL_SYMBOL);
+	if (rc != CUDA_SUCCESS || !g_cuda.jc_kernel) {
+		WARNING("JC GPU: cuModuleGetFunction(%s) failed: %s",
+				JC_GPU_KERNEL_SYMBOL,
+				fastcdc_cuda_error_string(rc));
+		return -1;
+	}
+	g_cuda.jc_kernel_ready = 1;
 	return 0;
 }
 
@@ -407,10 +489,11 @@ static int cuda_driver_init_context() {
 }
 
 int fastcdc_gpu_init() {
-	if (cuda_driver_init_context() != 0) {
-		return -1;
-	}
 	return fastcdc_gpu_prepare_kernel();
+}
+
+int fastcdc_gpu_is_ready() {
+	return g_cuda.kernel_ready;
 }
 
 void fastcdc_gpu_close() {
@@ -428,8 +511,9 @@ int fastcdc_gpu_chunk_data(unsigned char *p, int n) {
 	uint64_t mask_l = 0;
 	int expect_size = 0;
 	int copy_len;
+	int warp_window = destor.chunk_warp_window;
 	struct fastcdc_gpu_kernel_result result;
-	void *kernel_params[9];
+	void *kernel_params[10];
 
 	if (!g_cuda.kernel_ready) {
 		return fastcdc_chunk_data(p, n);
@@ -473,13 +557,14 @@ int fastcdc_gpu_chunk_data(unsigned char *p, int n) {
 	kernel_params[5] = &expect_size;
 	kernel_params[6] = &mask_s;
 	kernel_params[7] = &mask_l;
-	kernel_params[8] = &device_result;
+	kernel_params[8] = &warp_window;
+	kernel_params[9] = &device_result;
 
 	rc = g_cuda.cuLaunchKernel(g_cuda.fastcdc_kernel,
 			1,
 			1,
 			1,
-			1,
+			32,
 			1,
 			1,
 			0,
@@ -511,8 +596,7 @@ int fastcdc_gpu_chunk_data(unsigned char *p, int n) {
 }
 
 int jc_gpu_init() {
-	/* JC still uses CPU chunking, but can reuse a single CUDA context for experiments. */
-	return cuda_driver_init_context();
+	return jc_gpu_prepare_kernel();
 }
 
 void jc_gpu_close() {
@@ -520,6 +604,96 @@ void jc_gpu_close() {
 }
 
 int jc_gpu_chunk_data(unsigned char *p, int n) {
-	/* CPU fallback remains the execution path until CUDA kernel is added. */
-	return gearjump_chunk_data(p, n);
+	CUdeviceptr device_input = 0;
+	CUdeviceptr device_result = 0;
+	CUresult rc;
+	uint64_t mask = 0;
+	uint64_t jump_mask = 0;
+	int jump_len = 0;
+	int expect_size = 0;
+	int copy_len;
+	int warp_window = destor.chunk_warp_window;
+	struct fastcdc_gpu_kernel_result result;
+	void *kernel_params[10];
+
+	if (!g_cuda.jc_kernel_ready) {
+		return gearjump_chunk_data(p, n);
+	}
+	if (jc_gpu_compute_params(&mask, &jump_mask, &jump_len, &expect_size) != 0 || jump_len <= 0) {
+		return gearjump_chunk_data(p, n);
+	}
+
+	copy_len = n < destor.chunk_max_size ? n : destor.chunk_max_size;
+	memset(&result, 0, sizeof(result));
+
+	rc = g_cuda.cuMemAlloc(&device_input, (size_t)copy_len);
+	if (rc != CUDA_SUCCESS) {
+		WARNING("JC GPU: cuMemAlloc input failed: %s", fastcdc_cuda_error_string(rc));
+		return gearjump_chunk_data(p, n);
+	}
+	rc = g_cuda.cuMemAlloc(&device_result, sizeof(result));
+	if (rc != CUDA_SUCCESS) {
+		WARNING("JC GPU: cuMemAlloc result failed: %s", fastcdc_cuda_error_string(rc));
+		g_cuda.cuMemFree(device_input);
+		return gearjump_chunk_data(p, n);
+	}
+	rc = g_cuda.cuMemcpyHtoD(device_input, p, (size_t)copy_len);
+	if (rc != CUDA_SUCCESS) {
+		WARNING("JC GPU: cuMemcpyHtoD input failed: %s", fastcdc_cuda_error_string(rc));
+		g_cuda.cuMemFree(device_result);
+		g_cuda.cuMemFree(device_input);
+		return gearjump_chunk_data(p, n);
+	}
+	rc = g_cuda.cuMemcpyHtoD(device_result, &result, sizeof(result));
+	if (rc != CUDA_SUCCESS) {
+		WARNING("JC GPU: cuMemcpyHtoD result init failed: %s", fastcdc_cuda_error_string(rc));
+		g_cuda.cuMemFree(device_result);
+		g_cuda.cuMemFree(device_input);
+		return gearjump_chunk_data(p, n);
+	}
+
+	kernel_params[0] = &device_input;
+	kernel_params[1] = &copy_len;
+	kernel_params[2] = &g_cuda.gear_matrix_device;
+	kernel_params[3] = &destor.chunk_min_size;
+	kernel_params[4] = &destor.chunk_max_size;
+	kernel_params[5] = &mask;
+	kernel_params[6] = &jump_mask;
+	kernel_params[7] = &jump_len;
+	kernel_params[8] = &warp_window;
+	kernel_params[9] = &device_result;
+
+	rc = g_cuda.cuLaunchKernel(g_cuda.jc_kernel,
+			1,
+			1,
+			1,
+			32,
+			1,
+			1,
+			0,
+			NULL,
+			kernel_params,
+			NULL);
+	if (rc == CUDA_SUCCESS) {
+		rc = g_cuda.cuCtxSynchronize();
+	}
+	if (rc == CUDA_SUCCESS) {
+		rc = g_cuda.cuMemcpyDtoH(&result, device_result, sizeof(result));
+	}
+
+	g_cuda.cuMemFree(device_result);
+	g_cuda.cuMemFree(device_input);
+
+	if (rc != CUDA_SUCCESS) {
+		WARNING("JC GPU: kernel launch failed, falling back to CPU: %s",
+				fastcdc_cuda_error_string(rc));
+		return gearjump_chunk_data(p, n);
+	}
+	if (result.chunk_size <= 0 || result.chunk_size > n) {
+		WARNING("JC GPU: invalid kernel chunk size %d, falling back to CPU", result.chunk_size);
+		return gearjump_chunk_data(p, n);
+	}
+
+	fastcdc_gpu_note_kernel_result(&result);
+	return result.chunk_size;
 }

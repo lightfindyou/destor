@@ -1,9 +1,9 @@
 
-.PHONY: all latest legacy effectiveTestor speedTestor throughput fastcdcParity sizeDist rapidCDCSizeDist perfromanceBreakdown chunkingTool chunkingSuite
+.PHONY: all latest legacy effectiveTestor speedTestor throughput fastcdcParity jcParity fastcdcGpuPtx ncuChunkingProfile summarizeChunkingResults sizeDist rapidCDCSizeDist perfromanceBreakdown chunkingTool chunkingSuite
 
 all: latest
 
-latest: chunkingTool chunkingSuite fastcdcParity
+latest: chunkingTool chunkingSuite fastcdcParity jcParity
 
 legacy: effectiveTestor speedTestor throughput sizeDist rapidCDCSizeDist perfromanceBreakdown
 
@@ -18,6 +18,18 @@ throughput:
 
 fastcdcParity:
 	gcc -ggdb -Wall -O3 $(shell pkg-config --cflags glib-2.0) -o fastcdcParity fastcdc_parity.c ../src/chunking/libchunk.a -lm -lcrypto -lssl $(shell pkg-config --libs glib-2.0) -ldl -pthread
+
+jcParity:
+	gcc -ggdb -Wall -O3 $(shell pkg-config --cflags glib-2.0) -o jcParity jc_parity.c ../src/chunking/libchunk.a -lm -lcrypto -lssl $(shell pkg-config --libs glib-2.0) -ldl -pthread
+
+fastcdcGpuPtx:
+	$(MAKE) -C ../src/chunking fastcdc_gpu_ptx
+
+ncuChunkingProfile:
+	sh ./run_ncu_chunking_profile.sh ../README.md ./ncu-results
+
+summarizeChunkingResults:
+	python3 ./summarize_chunking_results.py ./ncu-results/ncu_summary.csv ./ncu-results/merged_results.csv
 
 sizeDist:
 	gcc -ggdb -Wall -I/usr/local/include -O3 -o sizeDist sizeDist.c -lm

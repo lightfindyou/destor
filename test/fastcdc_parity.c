@@ -98,7 +98,11 @@ int main(int argc, char **argv) {
 	destor.chunk_gpu_enable = 1;
 
 	fastcdc_init();
-	(void)fastcdc_gpu_init();
+	if (fastcdc_gpu_init() != 0 || !fastcdc_gpu_is_ready()) {
+		fprintf(stderr,
+				"FastCDC GPU parity requires a loaded GPU kernel. Build PTX first with make -C src/chunking fastcdc_gpu_ptx\n");
+		return 2;
+	}
 
 	srand(seed);
 

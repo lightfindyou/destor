@@ -627,6 +627,14 @@ static void print_stats_summary(const struct chunk_tool_stats *stats, const char
 				? (double)stats->experiment_stats.redundant_checks
 				/ (double)stats->experiment_stats.chunk_count
 				: 0.0;
+		double avg_cutoff_lane = stats->experiment_stats.cutoff_hits > 0
+				? (double)stats->experiment_stats.cutoff_lane_sum
+				/ (double)stats->experiment_stats.cutoff_hits
+				: 0.0;
+		double avg_tail_idle_lanes = stats->experiment_stats.cutoff_hits > 0
+				? (double)stats->experiment_stats.tail_idle_lane_sum
+				/ (double)stats->experiment_stats.cutoff_hits
+				: 0.0;
 		printf("fingerprint updates: %llu\n",
 				(unsigned long long)stats->experiment_stats.fingerprint_updates);
 		printf("cutoff hits: %llu\n",
@@ -637,6 +645,9 @@ static void print_stats_summary(const struct chunk_tool_stats *stats, const char
 		printf("redundant checks/warp groups: %llu/%llu\n",
 				(unsigned long long)stats->experiment_stats.redundant_checks,
 				(unsigned long long)stats->experiment_stats.simulated_warp_groups);
+		printf("avg cutoff lane / tail idle lanes: %.2f / %.2f\n",
+				avg_cutoff_lane,
+				avg_tail_idle_lanes);
 		printf("checks per chunk min/max/avg: %llu/%llu/%.2f\n",
 				(unsigned long long)stats->experiment_stats.min_checks_per_chunk,
 				(unsigned long long)stats->experiment_stats.max_checks_per_chunk,
@@ -688,12 +699,12 @@ static int baseline_parallel_chunk_data(unsigned char *p, int n) {
 		}
 
 		if (first_cutoff >= 0) {
-			chunk_experiment_note_redundancy(group_end - first_cutoff, group_end - i);
+			chunk_experiment_note_redundancy(group_end - first_cutoff, 1);
 			chunk_experiment_note_chunk_complete(first_cutoff, 1);
 			return first_cutoff;
 		}
 
-		chunk_experiment_note_redundancy(0, group_end - i);
+		chunk_experiment_note_redundancy(0, 1);
 		i = group_end;
 	}
 
@@ -710,6 +721,8 @@ static void merge_experiment_stats(struct chunk_experiment_stats *total,
 	total->jump_bytes_skipped += part->jump_bytes_skipped;
 	total->redundant_checks += part->redundant_checks;
 	total->simulated_warp_groups += part->simulated_warp_groups;
+	total->cutoff_lane_sum += part->cutoff_lane_sum;
+	total->tail_idle_lane_sum += part->tail_idle_lane_sum;
 	total->total_chunk_bytes += part->total_chunk_bytes;
 	total->total_checks_per_chunk += part->total_checks_per_chunk;
 	if (part->chunk_count > 0) {
@@ -896,14 +909,14 @@ static int append_stats_csv(const char *path,
 	}
 	if (file_size == 0) {
 		fprintf(fp,
-				"algorithm,input,mode,files,bytes,cfg_min,cfg_avg,cfg_max,mask_bits,warp_window,chunks,obs_min,obs_max,obs_avg,elapsed_ms,fingerprint_updates,cutoff_hits,jump_hits,jump_bytes_skipped,redundant_checks,warp_groups,min_checks,max_checks,avg_checks\n");
+				"algorithm,input,mode,files,bytes,cfg_min,cfg_avg,cfg_max,mask_bits,warp_window,chunks,obs_min,obs_max,obs_avg,elapsed_ms,fingerprint_updates,cutoff_hits,jump_hits,jump_bytes_skipped,redundant_checks,warp_groups,cutoff_lane_sum,tail_idle_lane_sum,min_checks,max_checks,avg_checks\n");
 	}
 	if (stats->experiment_stats.chunk_count > 0) {
 		avg_checks = (double)stats->experiment_stats.total_checks_per_chunk
 				/ (double)stats->experiment_stats.chunk_count;
 	}
 	fprintf(fp,
-			"%s,%s,%s,%zu,%zu,%d,%d,%d,%d,%d,%zu,%d,%d,%.2f,%.3f,%llu,%llu,%llu,%llu,%llu,%llu,%llu,%llu,%.2f\n",
+			"%s,%s,%s,%zu,%zu,%d,%d,%d,%d,%d,%zu,%d,%d,%.2f,%.3f,%llu,%llu,%llu,%llu,%llu,%llu,%llu,%llu,%llu,%llu,%.2f\n",
 			stats->algorithm,
 			input_label,
 			stats->uses_gpu ? "gpu" : "cpu",
@@ -925,6 +938,8 @@ static int append_stats_csv(const char *path,
 			(unsigned long long)stats->experiment_stats.jump_bytes_skipped,
 			(unsigned long long)stats->experiment_stats.redundant_checks,
 			(unsigned long long)stats->experiment_stats.simulated_warp_groups,
+			(unsigned long long)stats->experiment_stats.cutoff_lane_sum,
+			(unsigned long long)stats->experiment_stats.tail_idle_lane_sum,
 			(unsigned long long)stats->experiment_stats.min_checks_per_chunk,
 			(unsigned long long)stats->experiment_stats.max_checks_per_chunk,
 			avg_checks);
@@ -1093,9 +1108,12 @@ static int select_algorithm(const struct chunk_tool_options *options, struct chu
 		run->chunk_fn = gearjump_chunk_data;
 		run->display_name = "jc";
 		if (options->gpu_enabled) {
-			WARNING("chunkingTool: JC --gpu requested, but JC still runs on CPU fallback; no JC GPU kernel is implemented yet");
-			if (jc_gpu_init() == 0) {
-				jc_gpu_close();
+			if (jc_gpu_init() != 0) {
+				WARNING("chunkingTool: JC --gpu requested, but GPU kernel is unavailable; falling back to CPU");
+			} else {
+				run->chunk_fn = jc_gpu_chunk_data;
+				run->close_fn = jc_gpu_close;
+				run->uses_gpu = 1;
 			}
 		}
 	} else if (strcmp(options->algorithm, "jctttd") == 0) {

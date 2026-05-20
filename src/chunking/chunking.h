@@ -15,6 +15,8 @@ struct chunk_experiment_stats {
 	uint64_t jump_bytes_skipped;
 	uint64_t redundant_checks;
 	uint64_t simulated_warp_groups;
+	uint64_t cutoff_lane_sum;
+	uint64_t tail_idle_lane_sum;
 	uint64_t total_chunk_bytes;
 	uint64_t total_checks_per_chunk;
 	uint64_t min_checks_per_chunk;
@@ -25,7 +27,7 @@ void chunk_experiment_reset_stats();
 void chunk_experiment_snapshot(struct chunk_experiment_stats *stats);
 void chunk_experiment_note_fingerprint_update();
 void chunk_experiment_note_jump(int jump_bytes);
-void chunk_experiment_note_redundancy(int redundant_checks, int warp_group_size);
+void chunk_experiment_note_redundancy(int redundant_checks, int warp_group_count);
 void chunk_experiment_note_chunk_complete(int chunk_size, int cutoff_hit);
 
 /* Rabin family */
@@ -49,6 +51,7 @@ int fastcdc_chunk_data(unsigned char *p, int n);
 
 /* FastCDC GPU fallback wrapper */
 int fastcdc_gpu_init();
+int fastcdc_gpu_is_ready();
 void fastcdc_gpu_close();
 int fastcdc_gpu_chunk_data(unsigned char *p, int n);
 
