@@ -15,6 +15,8 @@ typedef int CUdevice;
 typedef struct CUctx_st *CUcontext;
 typedef struct CUmod_st *CUmodule;
 typedef struct CUfunc_st *CUfunction;
+typedef struct CUstream_st *CUstream;
+typedef struct CUevent_st *CUevent;
 typedef unsigned long long CUdeviceptr;
 
 #define CUDA_SUCCESS 0
@@ -34,8 +36,12 @@ typedef CUresult (*cuModuleUnload_t)(CUmodule module);
 typedef CUresult (*cuModuleGetFunction_t)(CUfunction *hfunc, CUmodule module, const char *name);
 typedef CUresult (*cuMemAlloc_t)(CUdeviceptr *dptr, size_t bytesize);
 typedef CUresult (*cuMemFree_t)(CUdeviceptr dptr);
+typedef CUresult (*cuMemHostAlloc_t)(void **pp, size_t bytesize, unsigned int Flags);
+typedef CUresult (*cuMemFreeHost_t)(void *p);
 typedef CUresult (*cuMemcpyHtoD_t)(CUdeviceptr dstDevice, const void *srcHost, size_t ByteCount);
 typedef CUresult (*cuMemcpyDtoH_t)(void *dstHost, CUdeviceptr srcDevice, size_t ByteCount);
+typedef CUresult (*cuMemcpyHtoDAsync_t)(CUdeviceptr dstDevice, const void *srcHost, size_t ByteCount, CUstream hStream);
+typedef CUresult (*cuMemcpyDtoHAsync_t)(void *dstHost, CUdeviceptr srcDevice, size_t ByteCount, CUstream hStream);
 typedef CUresult (*cuLaunchKernel_t)(CUfunction f,
 		unsigned int gridDimX,
 		unsigned int gridDimY,
@@ -47,6 +53,14 @@ typedef CUresult (*cuLaunchKernel_t)(CUfunction f,
 		void *hStream,
 		void **kernelParams,
 		void **extra);
+typedef CUresult (*cuStreamCreate_t)(CUstream *phStream, unsigned int Flags);
+typedef CUresult (*cuStreamDestroy_t)(CUstream hStream);
+typedef CUresult (*cuStreamSynchronize_t)(CUstream hStream);
+typedef CUresult (*cuEventCreate_t)(CUevent *phEvent, unsigned int Flags);
+typedef CUresult (*cuEventDestroy_t)(CUevent hEvent);
+typedef CUresult (*cuEventRecord_t)(CUevent hEvent, CUstream hStream);
+typedef CUresult (*cuEventSynchronize_t)(CUevent hEvent);
+typedef CUresult (*cuEventElapsedTime_t)(float *pMilliseconds, CUevent hStart, CUevent hEnd);
 typedef CUresult (*cuCtxSynchronize_t)(void);
 
 struct fastcdc_gpu_kernel_result {
@@ -72,6 +86,7 @@ struct cuda_driver_state {
 	CUdeviceptr batch_offsets_device;
 	CUdeviceptr batch_lengths_device;
 	CUdeviceptr batch_results_device;
+	CUstream batch_stream;
 	size_t batch_input_capacity;
 	int batch_task_capacity;
 	unsigned char *batch_input_host;
@@ -94,10 +109,23 @@ struct cuda_driver_state {
 	cuModuleGetFunction_t cuModuleGetFunction;
 	cuMemAlloc_t cuMemAlloc;
 	cuMemFree_t cuMemFree;
+	cuMemHostAlloc_t cuMemHostAlloc;
+	cuMemFreeHost_t cuMemFreeHost;
 	cuMemcpyHtoD_t cuMemcpyHtoD;
 	cuMemcpyDtoH_t cuMemcpyDtoH;
+	cuMemcpyHtoDAsync_t cuMemcpyHtoDAsync;
+	cuMemcpyDtoHAsync_t cuMemcpyDtoHAsync;
 	cuLaunchKernel_t cuLaunchKernel;
+	cuStreamCreate_t cuStreamCreate;
+	cuStreamDestroy_t cuStreamDestroy;
+	cuStreamSynchronize_t cuStreamSynchronize;
+    cuEventCreate_t cuEventCreate;
+    cuEventDestroy_t cuEventDestroy;
+    cuEventRecord_t cuEventRecord;
+    cuEventSynchronize_t cuEventSynchronize;
+    cuEventElapsedTime_t cuEventElapsedTime;
 	cuCtxSynchronize_t cuCtxSynchronize;
+	double batch_compute_ms_accum;
 };
 
 static struct cuda_driver_state g_cuda;
@@ -107,6 +135,13 @@ static uint64_t g_chunk_experiment_current_checks;
 static int cuda_driver_init_context();
 
 static int fastcdc_gpu_ensure_batch_capacity(size_t total_bytes, int task_count);
+void fastcdc_gpu_reset_batch_timing(void) {
+	g_cuda.batch_compute_ms_accum = 0.0;
+}
+
+double fastcdc_gpu_get_batch_compute_ms(void) {
+	return g_cuda.batch_compute_ms_accum;
+}
 
 static int fastcdc_gpu_floor_log2(unsigned int value) {
 	int index = 0;
@@ -328,10 +363,37 @@ static int fastcdc_gpu_activate_context() {
 }
 
 static void fastcdc_gpu_release_driver() {
-	free(g_cuda.batch_results_host);
-	free(g_cuda.batch_lengths_host);
-	free(g_cuda.batch_offsets_host);
-	free(g_cuda.batch_input_host);
+	if (g_cuda.batch_stream && g_cuda.cuStreamDestroy) {
+		g_cuda.cuStreamDestroy(g_cuda.batch_stream);
+	}
+	if (g_cuda.batch_results_host) {
+		if (g_cuda.cuMemFreeHost) {
+			g_cuda.cuMemFreeHost(g_cuda.batch_results_host);
+		} else {
+			free(g_cuda.batch_results_host);
+		}
+	}
+	if (g_cuda.batch_lengths_host) {
+		if (g_cuda.cuMemFreeHost) {
+			g_cuda.cuMemFreeHost(g_cuda.batch_lengths_host);
+		} else {
+			free(g_cuda.batch_lengths_host);
+		}
+	}
+	if (g_cuda.batch_offsets_host) {
+		if (g_cuda.cuMemFreeHost) {
+			g_cuda.cuMemFreeHost(g_cuda.batch_offsets_host);
+		} else {
+			free(g_cuda.batch_offsets_host);
+		}
+	}
+	if (g_cuda.batch_input_host) {
+		if (g_cuda.cuMemFreeHost) {
+			g_cuda.cuMemFreeHost(g_cuda.batch_input_host);
+		} else {
+			free(g_cuda.batch_input_host);
+		}
+	}
 	if (g_cuda.batch_results_device && g_cuda.cuMemFree) {
 		g_cuda.cuMemFree(g_cuda.batch_results_device);
 	}
@@ -359,9 +421,47 @@ static void fastcdc_gpu_release_driver() {
 	fastcdc_gpu_reset_state();
 }
 
+static int fastcdc_gpu_alloc_host_buffer(void **ptr, size_t bytes) {
+	void *buffer = NULL;
+
+	if (!ptr) {
+		return -1;
+	}
+	if (bytes == 0) {
+		*ptr = NULL;
+		return 0;
+	}
+	if (g_cuda.cuMemHostAlloc) {
+		if (g_cuda.cuMemHostAlloc(&buffer, bytes, 0) != CUDA_SUCCESS) {
+			return -1;
+		}
+	} else {
+		buffer = malloc(bytes);
+		if (!buffer) {
+			return -1;
+		}
+	}
+	*ptr = buffer;
+	return 0;
+}
+
+static void fastcdc_gpu_free_host_buffer(void *ptr) {
+	if (!ptr) {
+		return;
+	}
+	if (g_cuda.cuMemFreeHost) {
+		g_cuda.cuMemFreeHost(ptr);
+	} else {
+		free(ptr);
+	}
+}
+
 static int fastcdc_gpu_ensure_batch_capacity(size_t total_bytes, int task_count) {
 	CUdeviceptr new_device_ptr = 0;
-	void *new_host_ptr;
+	unsigned char *new_input_host = NULL;
+	int *new_offsets_host = NULL;
+	int *new_lengths_host = NULL;
+	struct fastcdc_gpu_kernel_result *new_results_host = NULL;
 
 	if (task_count <= 0) {
 		return -1;
@@ -370,43 +470,47 @@ static int fastcdc_gpu_ensure_batch_capacity(size_t total_bytes, int task_count)
 		return -1;
 	}
 	if (total_bytes > g_cuda.batch_input_capacity) {
-		new_host_ptr = realloc(g_cuda.batch_input_host, total_bytes);
-		if (!new_host_ptr) {
+		if (fastcdc_gpu_alloc_host_buffer((void **)&new_input_host, total_bytes) != 0) {
 			return -1;
 		}
-		g_cuda.batch_input_host = (unsigned char *)new_host_ptr;
 		if (g_cuda.batch_input_device) {
 			g_cuda.cuMemFree(g_cuda.batch_input_device);
 			g_cuda.batch_input_device = 0;
 		}
 		if (total_bytes > 0) {
 			if (g_cuda.cuMemAlloc(&new_device_ptr, total_bytes) != CUDA_SUCCESS) {
-				g_cuda.batch_input_capacity = 0;
+				fastcdc_gpu_free_host_buffer(new_input_host);
 				return -1;
 			}
 			g_cuda.batch_input_device = new_device_ptr;
 		}
+		fastcdc_gpu_free_host_buffer(g_cuda.batch_input_host);
+		g_cuda.batch_input_host = new_input_host;
 		g_cuda.batch_input_capacity = total_bytes;
 	}
 	if (task_count > g_cuda.batch_task_capacity) {
-		new_host_ptr = realloc(g_cuda.batch_offsets_host, sizeof(int) * (size_t)task_count);
-		if (!new_host_ptr) {
+		if (fastcdc_gpu_alloc_host_buffer((void **)&new_offsets_host, sizeof(int) * (size_t)task_count) != 0) {
 			return -1;
 		}
-		g_cuda.batch_offsets_host = (int *)new_host_ptr;
 
-		new_host_ptr = realloc(g_cuda.batch_lengths_host, sizeof(int) * (size_t)task_count);
-		if (!new_host_ptr) {
+		if (fastcdc_gpu_alloc_host_buffer((void **)&new_lengths_host, sizeof(int) * (size_t)task_count) != 0) {
+			fastcdc_gpu_free_host_buffer(new_offsets_host);
 			return -1;
 		}
-		g_cuda.batch_lengths_host = (int *)new_host_ptr;
 
-		new_host_ptr = realloc(g_cuda.batch_results_host,
-				sizeof(struct fastcdc_gpu_kernel_result) * (size_t)task_count);
-		if (!new_host_ptr) {
+		if (fastcdc_gpu_alloc_host_buffer((void **)&new_results_host,
+				sizeof(struct fastcdc_gpu_kernel_result) * (size_t)task_count) != 0) {
+			fastcdc_gpu_free_host_buffer(new_lengths_host);
+			fastcdc_gpu_free_host_buffer(new_offsets_host);
 			return -1;
 		}
-		g_cuda.batch_results_host = (struct fastcdc_gpu_kernel_result *)new_host_ptr;
+
+		fastcdc_gpu_free_host_buffer(g_cuda.batch_offsets_host);
+		fastcdc_gpu_free_host_buffer(g_cuda.batch_lengths_host);
+		fastcdc_gpu_free_host_buffer(g_cuda.batch_results_host);
+		g_cuda.batch_offsets_host = new_offsets_host;
+		g_cuda.batch_lengths_host = new_lengths_host;
+		g_cuda.batch_results_host = new_results_host;
 
 		if (g_cuda.batch_offsets_device) {
 			g_cuda.cuMemFree(g_cuda.batch_offsets_device);
@@ -576,9 +680,21 @@ static int cuda_driver_init_context() {
 	LOAD_CUDA_SYMBOL(cuModuleGetFunction);
 	LOAD_CUDA_SYMBOL_ANY(cuMemAlloc, cuMemAlloc_t, "cuMemAlloc_v2", "cuMemAlloc");
 	LOAD_CUDA_SYMBOL_ANY(cuMemFree, cuMemFree_t, "cuMemFree_v2", "cuMemFree");
+	LOAD_CUDA_SYMBOL_ANY(cuMemHostAlloc, cuMemHostAlloc_t, "cuMemHostAlloc_v2", "cuMemHostAlloc");
+	LOAD_CUDA_SYMBOL_ANY(cuMemFreeHost, cuMemFreeHost_t, "cuMemFreeHost_v2", "cuMemFreeHost");
 	LOAD_CUDA_SYMBOL_ANY(cuMemcpyHtoD, cuMemcpyHtoD_t, "cuMemcpyHtoD_v2", "cuMemcpyHtoD");
 	LOAD_CUDA_SYMBOL_ANY(cuMemcpyDtoH, cuMemcpyDtoH_t, "cuMemcpyDtoH_v2", "cuMemcpyDtoH");
+	LOAD_CUDA_SYMBOL_ANY(cuMemcpyHtoDAsync, cuMemcpyHtoDAsync_t, "cuMemcpyHtoDAsync_v2", "cuMemcpyHtoDAsync");
+	LOAD_CUDA_SYMBOL_ANY(cuMemcpyDtoHAsync, cuMemcpyDtoHAsync_t, "cuMemcpyDtoHAsync_v2", "cuMemcpyDtoHAsync");
 	LOAD_CUDA_SYMBOL(cuLaunchKernel);
+	LOAD_CUDA_SYMBOL_ANY(cuStreamCreate, cuStreamCreate_t, "cuStreamCreate_v2", "cuStreamCreate");
+	LOAD_CUDA_SYMBOL_ANY(cuStreamDestroy, cuStreamDestroy_t, "cuStreamDestroy_v2", "cuStreamDestroy");
+	LOAD_CUDA_SYMBOL_ANY(cuStreamSynchronize, cuStreamSynchronize_t, "cuStreamSynchronize_v2", "cuStreamSynchronize");
+	LOAD_CUDA_SYMBOL_ANY(cuEventCreate, cuEventCreate_t, "cuEventCreate_v2", "cuEventCreate");
+	LOAD_CUDA_SYMBOL_ANY(cuEventDestroy, cuEventDestroy_t, "cuEventDestroy_v2", "cuEventDestroy");
+	LOAD_CUDA_SYMBOL_ANY(cuEventRecord, cuEventRecord_t, "cuEventRecord_v2", "cuEventRecord");
+	LOAD_CUDA_SYMBOL_ANY(cuEventSynchronize, cuEventSynchronize_t, "cuEventSynchronize_v2", "cuEventSynchronize");
+	LOAD_CUDA_SYMBOL_ANY(cuEventElapsedTime, cuEventElapsedTime_t, "cuEventElapsedTime_v2", "cuEventElapsedTime");
 	LOAD_CUDA_SYMBOL(cuCtxSynchronize);
 	g_cuda.cuGetErrorString = (cuGetErrorString_t)dlsym(g_cuda.handle, "cuGetErrorString");
 
@@ -615,6 +731,12 @@ static int cuda_driver_init_context() {
 	rc = g_cuda.cuCtxCreate(&g_cuda.ctx, 0, dev);
 	if (rc != CUDA_SUCCESS || !g_cuda.ctx) {
 		WARNING("Chunk GPU: cuCtxCreate failed: %s", fastcdc_cuda_error_string(rc));
+		fastcdc_gpu_release_driver();
+		return -1;
+	}
+	rc = g_cuda.cuStreamCreate(&g_cuda.batch_stream, 0);
+	if (rc != CUDA_SUCCESS || !g_cuda.batch_stream) {
+		WARNING("Chunk GPU: cuStreamCreate failed: %s", fastcdc_cuda_error_string(rc));
 		fastcdc_gpu_release_driver();
 		return -1;
 	}
@@ -666,6 +788,8 @@ int fastcdc_gpu_chunk_batch(unsigned char **buffers,
 		int task_count,
 		int *chunk_sizes) {
 	CUresult rc = CUDA_SUCCESS;
+	CUevent start_event = NULL;
+	CUevent stop_event = NULL;
 	uint64_t mask_s = 0;
 	uint64_t mask_l = 0;
 	int expect_size = 0;
@@ -675,6 +799,7 @@ int fastcdc_gpu_chunk_batch(unsigned char **buffers,
 	int i;
 	int ok = 1;
 	size_t total_bytes = 0;
+	float kernel_ms = 0.0f;
 
 	if (!buffers || !sizes || !chunk_sizes || task_count <= 0) {
 		return -1;
@@ -717,32 +842,57 @@ int fastcdc_gpu_chunk_batch(unsigned char **buffers,
 		}
 		g_cuda.batch_offsets_host[i] = (int)((i == 0) ? 0 : (g_cuda.batch_offsets_host[i - 1] + g_cuda.batch_lengths_host[i - 1]));
 		g_cuda.batch_lengths_host[i] = copy_len;
-		if (copy_len > 0) {
-			memcpy(g_cuda.batch_input_host + g_cuda.batch_offsets_host[i], buffers[i], (size_t)copy_len);
-		}
 	}
 
 	fastcdc_gpu_compute_masks(&mask_s, &mask_l, &expect_size);
 	blocks = (task_count + threads_per_block - 1) / threads_per_block;
 
-	rc = g_cuda.cuMemcpyHtoD(g_cuda.batch_input_device, g_cuda.batch_input_host, total_bytes);
-	if (rc != CUDA_SUCCESS) {
-		ok = 0;
-		goto done;
+	for (i = 0; i < task_count; i++) {
+		if (g_cuda.batch_lengths_host[i] <= 0) {
+			continue;
+		}
+		rc = g_cuda.cuMemcpyHtoDAsync(g_cuda.batch_input_device + (CUdeviceptr)g_cuda.batch_offsets_host[i],
+				buffers[i],
+				(size_t)g_cuda.batch_lengths_host[i],
+				g_cuda.batch_stream);
+		if (rc != CUDA_SUCCESS) {
+			ok = 0;
+			goto done;
+		}
 	}
-	rc = g_cuda.cuMemcpyHtoD(g_cuda.batch_offsets_device,
+	rc = g_cuda.cuMemcpyHtoDAsync(g_cuda.batch_offsets_device,
 			g_cuda.batch_offsets_host,
-			sizeof(int) * (size_t)task_count);
+			sizeof(int) * (size_t)task_count,
+			g_cuda.batch_stream);
 	if (rc != CUDA_SUCCESS) {
 		ok = 0;
 		goto done;
 	}
-	rc = g_cuda.cuMemcpyHtoD(g_cuda.batch_lengths_device,
+	rc = g_cuda.cuMemcpyHtoDAsync(g_cuda.batch_lengths_device,
 			g_cuda.batch_lengths_host,
-			sizeof(int) * (size_t)task_count);
+			sizeof(int) * (size_t)task_count,
+			g_cuda.batch_stream);
 	if (rc != CUDA_SUCCESS) {
 		ok = 0;
 		goto done;
+	}
+	if (g_cuda.cuEventCreate && g_cuda.cuEventRecord && g_cuda.cuEventSynchronize
+			&& g_cuda.cuEventElapsedTime && g_cuda.cuEventDestroy) {
+		rc = g_cuda.cuEventCreate(&start_event, 0);
+		if (rc != CUDA_SUCCESS) {
+			ok = 0;
+			goto done;
+		}
+		rc = g_cuda.cuEventCreate(&stop_event, 0);
+		if (rc != CUDA_SUCCESS) {
+			ok = 0;
+			goto done;
+		}
+		rc = g_cuda.cuEventRecord(start_event, g_cuda.batch_stream);
+		if (rc != CUDA_SUCCESS) {
+			ok = 0;
+			goto done;
+		}
 	}
 
 	{
@@ -769,22 +919,33 @@ int fastcdc_gpu_chunk_batch(unsigned char **buffers,
 				1,
 				1,
 				0,
-				NULL,
+					g_cuda.batch_stream,
 				kernel_params,
 				NULL);
 	}
-	if (rc == CUDA_SUCCESS) {
-		rc = g_cuda.cuCtxSynchronize();
+	if (rc == CUDA_SUCCESS && start_event && stop_event) {
+		rc = g_cuda.cuEventRecord(stop_event, g_cuda.batch_stream);
 	}
 	if (rc == CUDA_SUCCESS) {
-		rc = g_cuda.cuMemcpyDtoH(g_cuda.batch_results_host,
+		rc = g_cuda.cuMemcpyDtoHAsync(g_cuda.batch_results_host,
 				g_cuda.batch_results_device,
-				sizeof(struct fastcdc_gpu_kernel_result) * (size_t)task_count);
+				sizeof(struct fastcdc_gpu_kernel_result) * (size_t)task_count,
+				g_cuda.batch_stream);
+	}
+	if (rc == CUDA_SUCCESS && stop_event) {
+		rc = g_cuda.cuEventSynchronize(stop_event);
+	}
+	if (rc == CUDA_SUCCESS && start_event && stop_event) {
+		rc = g_cuda.cuEventElapsedTime(&kernel_ms, start_event, stop_event);
+	}
+	if (rc == CUDA_SUCCESS) {
+		rc = g_cuda.cuStreamSynchronize(g_cuda.batch_stream);
 	}
 	if (rc != CUDA_SUCCESS) {
 		ok = 0;
 		goto done;
 	}
+	g_cuda.batch_compute_ms_accum += (double)kernel_ms;
 
 	for (i = 0; i < task_count; i++) {
 		if (g_cuda.batch_results_host[i].chunk_size <= 0 || g_cuda.batch_results_host[i].chunk_size > sizes[i]) {
@@ -796,6 +957,12 @@ int fastcdc_gpu_chunk_batch(unsigned char **buffers,
 	}
 
 done:
+	if (start_event && g_cuda.cuEventDestroy) {
+		g_cuda.cuEventDestroy(start_event);
+	}
+	if (stop_event && g_cuda.cuEventDestroy) {
+		g_cuda.cuEventDestroy(stop_event);
+	}
 	if (!ok) {
 		WARNING("FastCDC GPU batch: launch/copy failed, falling back to CPU: %s",
 				fastcdc_cuda_error_string(rc));
@@ -831,6 +998,8 @@ int jc_gpu_chunk_batch(unsigned char **buffers,
 		int task_count,
 		int *chunk_sizes) {
 	CUresult rc = CUDA_SUCCESS;
+	CUevent start_event = NULL;
+	CUevent stop_event = NULL;
 	uint64_t mask = 0;
 	uint64_t jump_mask = 0;
 	int jump_len = 0;
@@ -841,6 +1010,7 @@ int jc_gpu_chunk_batch(unsigned char **buffers,
 	int i;
 	int ok = 1;
 	size_t total_bytes = 0;
+	float kernel_ms = 0.0f;
 
 	if (!buffers || !sizes || !chunk_sizes || task_count <= 0) {
 		return -1;
@@ -887,28 +1057,53 @@ int jc_gpu_chunk_batch(unsigned char **buffers,
 		}
 		g_cuda.batch_offsets_host[i] = (int)((i == 0) ? 0 : (g_cuda.batch_offsets_host[i - 1] + g_cuda.batch_lengths_host[i - 1]));
 		g_cuda.batch_lengths_host[i] = copy_len;
-		if (copy_len > 0) {
-			memcpy(g_cuda.batch_input_host + g_cuda.batch_offsets_host[i], buffers[i], (size_t)copy_len);
-		}
 	}
 
 	blocks = (task_count + threads_per_block - 1) / threads_per_block;
 
-	rc = g_cuda.cuMemcpyHtoD(g_cuda.batch_input_device, g_cuda.batch_input_host, total_bytes);
-	if (rc != CUDA_SUCCESS) {
-		ok = 0;
-		goto done;
+	for (i = 0; i < task_count; i++) {
+		if (g_cuda.batch_lengths_host[i] <= 0) {
+			continue;
+		}
+		rc = g_cuda.cuMemcpyHtoDAsync(g_cuda.batch_input_device + (CUdeviceptr)g_cuda.batch_offsets_host[i],
+				buffers[i],
+				(size_t)g_cuda.batch_lengths_host[i],
+				g_cuda.batch_stream);
+		if (rc != CUDA_SUCCESS) {
+			ok = 0;
+			goto done;
+		}
 	}
-	rc = g_cuda.cuMemcpyHtoD(g_cuda.batch_offsets_device,
+	if (g_cuda.cuEventCreate && g_cuda.cuEventRecord && g_cuda.cuEventSynchronize
+			&& g_cuda.cuEventElapsedTime && g_cuda.cuEventDestroy) {
+		rc = g_cuda.cuEventCreate(&start_event, 0);
+		if (rc != CUDA_SUCCESS) {
+			ok = 0;
+			goto done;
+		}
+		rc = g_cuda.cuEventCreate(&stop_event, 0);
+		if (rc != CUDA_SUCCESS) {
+			ok = 0;
+			goto done;
+		}
+		rc = g_cuda.cuEventRecord(start_event, g_cuda.batch_stream);
+		if (rc != CUDA_SUCCESS) {
+			ok = 0;
+			goto done;
+		}
+	}
+	rc = g_cuda.cuMemcpyHtoDAsync(g_cuda.batch_offsets_device,
 			g_cuda.batch_offsets_host,
-			sizeof(int) * (size_t)task_count);
+			sizeof(int) * (size_t)task_count,
+			g_cuda.batch_stream);
 	if (rc != CUDA_SUCCESS) {
 		ok = 0;
 		goto done;
 	}
-	rc = g_cuda.cuMemcpyHtoD(g_cuda.batch_lengths_device,
+	rc = g_cuda.cuMemcpyHtoDAsync(g_cuda.batch_lengths_device,
 			g_cuda.batch_lengths_host,
-			sizeof(int) * (size_t)task_count);
+			sizeof(int) * (size_t)task_count,
+			g_cuda.batch_stream);
 	if (rc != CUDA_SUCCESS) {
 		ok = 0;
 		goto done;
@@ -938,22 +1133,33 @@ int jc_gpu_chunk_batch(unsigned char **buffers,
 				1,
 				1,
 				0,
-				NULL,
+					g_cuda.batch_stream,
 				kernel_params,
 				NULL);
 	}
-	if (rc == CUDA_SUCCESS) {
-		rc = g_cuda.cuCtxSynchronize();
+	if (rc == CUDA_SUCCESS && start_event && stop_event) {
+		rc = g_cuda.cuEventRecord(stop_event, g_cuda.batch_stream);
 	}
 	if (rc == CUDA_SUCCESS) {
-		rc = g_cuda.cuMemcpyDtoH(g_cuda.batch_results_host,
+		rc = g_cuda.cuMemcpyDtoHAsync(g_cuda.batch_results_host,
 				g_cuda.batch_results_device,
-				sizeof(struct fastcdc_gpu_kernel_result) * (size_t)task_count);
+				sizeof(struct fastcdc_gpu_kernel_result) * (size_t)task_count,
+				g_cuda.batch_stream);
+	}
+	if (rc == CUDA_SUCCESS && stop_event) {
+		rc = g_cuda.cuEventSynchronize(stop_event);
+	}
+	if (rc == CUDA_SUCCESS && start_event && stop_event) {
+		rc = g_cuda.cuEventElapsedTime(&kernel_ms, start_event, stop_event);
+	}
+	if (rc == CUDA_SUCCESS) {
+		rc = g_cuda.cuStreamSynchronize(g_cuda.batch_stream);
 	}
 	if (rc != CUDA_SUCCESS) {
 		ok = 0;
 		goto done;
 	}
+	g_cuda.batch_compute_ms_accum += (double)kernel_ms;
 
 	for (i = 0; i < task_count; i++) {
 		if (g_cuda.batch_results_host[i].chunk_size <= 0 || g_cuda.batch_results_host[i].chunk_size > sizes[i]) {
@@ -965,6 +1171,12 @@ int jc_gpu_chunk_batch(unsigned char **buffers,
 	}
 
 done:
+	if (start_event && g_cuda.cuEventDestroy) {
+		g_cuda.cuEventDestroy(start_event);
+	}
+	if (stop_event && g_cuda.cuEventDestroy) {
+		g_cuda.cuEventDestroy(stop_event);
+	}
 	if (!ok) {
 		WARNING("JC GPU batch: launch/copy failed, falling back to CPU: %s",
 				fastcdc_cuda_error_string(rc));

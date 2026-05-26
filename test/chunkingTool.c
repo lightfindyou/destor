@@ -5,9 +5,11 @@
 #include <dirent.h>
 #include <math.h>
 #include <sys/stat.h>
+#include <sys/mman.h>
 #include <time.h>
 #include <stdarg.h>
 #include <stdint.h>
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -70,6 +72,7 @@ struct chunk_tool_stats {
 	int observed_max;
 	double observed_avg;
 	double elapsed_ms;
+	double actual_elapsed_ms;
 	int uses_gpu;
 	int profile_chunking;
 	struct chunk_experiment_stats experiment_stats;
@@ -128,7 +131,7 @@ static const char *k_all_algorithms[] = {
 };
 
 #define CHUNK_TOOL_ALGORITHM_COUNT ((int)(sizeof(k_all_algorithms) / sizeof(k_all_algorithms[0])))
-#define CHUNK_TOOL_MAX_BATCH 32
+#define CHUNK_TOOL_MAX_BATCH 1024
 
 static uint64_t g_baseline_mask;
 static struct chunk_tool_progress_state g_chunk_tool_progress;
@@ -158,6 +161,30 @@ static double chunk_tool_throughput_mib_s(const struct chunk_tool_stats *stats) 
 	}
 	return ((double)stats->total_bytes * 1000.0)
 			/ (stats->elapsed_ms * 1024.0 * 1024.0);
+}
+
+static double chunk_tool_actual_elapsed_ms(const struct chunk_tool_stats *stats) {
+	if (!stats) {
+		return 0.0;
+	}
+	if (stats->actual_elapsed_ms > 0.0) {
+		return stats->actual_elapsed_ms;
+	}
+	return stats->elapsed_ms;
+}
+
+static double chunk_tool_actual_throughput_mib_s(const struct chunk_tool_stats *stats) {
+	double actual_elapsed_ms;
+
+	if (!stats) {
+		return 0.0;
+	}
+	actual_elapsed_ms = chunk_tool_actual_elapsed_ms(stats);
+	if (actual_elapsed_ms <= 0.0) {
+		return 0.0;
+	}
+	return ((double)stats->total_bytes * 1000.0)
+			/ (actual_elapsed_ms * 1024.0 * 1024.0);
 }
 
 static void chunk_tool_progress_clear(void) {
@@ -534,12 +561,27 @@ static int collect_input_paths_recursive(const char *path, struct chunk_tool_pat
 	return 0;
 }
 
-static int read_input_file(const char *path, unsigned char **buffer, size_t *buffer_size) {
+static int read_input_file(const char *path,
+		int prefer_mmap,
+		unsigned char **buffer,
+		size_t *buffer_size,
+		int *is_mmap) {
 	struct stat st;
-	FILE *fp = fopen(path, "rb");
+	FILE *fp;
 	unsigned char *data;
 	size_t read_len;
 	size_t file_size;
+	int fd;
+
+	if (buffer) {
+		*buffer = NULL;
+	}
+	if (buffer_size) {
+		*buffer_size = 0;
+	}
+	if (is_mmap) {
+		*is_mmap = 0;
+	}
 
 	if (stat(path, &st) != 0) {
 		CHUNK_TOOL_ERROR("Failed to stat %s: %s", path, strerror(errno));
@@ -560,6 +602,23 @@ static int read_input_file(const char *path, unsigned char **buffer, size_t *buf
 		return -1;
 	}
 	file_size = (size_t)st.st_size;
+	if (prefer_mmap && file_size > 0) {
+		fd = open(path, O_RDONLY);
+		if (fd >= 0) {
+			void *mapped = mmap(NULL, file_size, PROT_READ, MAP_PRIVATE, fd, 0);
+			close(fd);
+			if (mapped != MAP_FAILED) {
+				*buffer = (unsigned char *)mapped;
+				*buffer_size = file_size;
+				if (is_mmap) {
+					*is_mmap = 1;
+				}
+				return 0;
+			}
+		}
+	}
+
+	fp = fopen(path, "rb");
 
 	if (!fp) {
 		CHUNK_TOOL_ERROR("Failed to open %s: %s", path, strerror(errno));
@@ -587,6 +646,17 @@ static int read_input_file(const char *path, unsigned char **buffer, size_t *buf
 	return 0;
 }
 
+static void release_input_file(unsigned char *buffer, size_t buffer_size, int is_mmap) {
+	if (!buffer) {
+		return;
+	}
+	if (is_mmap) {
+		munmap(buffer, buffer_size);
+		return;
+	}
+	free(buffer);
+}
+
 static void init_stats(struct chunk_tool_stats *stats) {
 	memset(stats, 0, sizeof(*stats));
 	stats->observed_min = INT_MAX;
@@ -603,12 +673,13 @@ static void finalize_stats(struct chunk_tool_stats *stats) {
 }
 
 static void print_stats_summary(const struct chunk_tool_stats *stats, const char *input_label) {
-	printf("%s[%s]%s algorithm=%s throughput=%.2f MiB/s\n",
+	printf("%s[%s]%s algorithm=%s throughput(total)=%.2f MiB/s actual=%.2f MiB/s\n",
 			chunk_tool_mode_style(stats->uses_gpu),
 			stats->uses_gpu ? "GPU" : "CPU",
 			chunk_tool_reset_style(),
 			stats->algorithm,
-			chunk_tool_throughput_mib_s(stats));
+			chunk_tool_throughput_mib_s(stats),
+			chunk_tool_actual_throughput_mib_s(stats));
 	printf("input: %s\n", input_label);
 	printf("files: %zu\n", stats->file_count);
 	printf("bytes: %zu\n", stats->total_bytes);
@@ -664,6 +735,7 @@ static void print_stats_summary(const struct chunk_tool_stats *stats, const char
 		printf("avg redundant checks per chunk: %.2f\n", avg_redundant_checks);
 	}
 	printf("elapsed: %.3f ms\n", stats->elapsed_ms);
+	printf("actual elapsed: %.3f ms\n", chunk_tool_actual_elapsed_ms(stats));
 }
 
 static void baseline_parallel_init(void) {
@@ -760,6 +832,7 @@ static void merge_stats(struct chunk_tool_stats *total, const struct chunk_tool_
 	total->total_bytes += part->total_bytes;
 	total->chunk_count += part->chunk_count;
 	total->elapsed_ms += part->elapsed_ms;
+	total->actual_elapsed_ms += part->actual_elapsed_ms;
 	if (part->chunk_count > 0) {
 		if (total->observed_min == INT_MAX || part->observed_min < total->observed_min) {
 			total->observed_min = part->observed_min;
@@ -789,6 +862,9 @@ static int run_chunking(const struct chunk_tool_options *options,
 	struct timespec end_time;
 	struct chunk_experiment_stats experiment_stats;
 
+	if (run->uses_gpu) {
+		fastcdc_gpu_reset_batch_timing();
+	}
 	chunk_experiment_reset_stats();
 
 	clock_gettime(CLOCK_MONOTONIC, &start_time);
@@ -847,6 +923,7 @@ static int run_chunking(const struct chunk_tool_options *options,
 			? (double)total_chunk_bytes / (double)chunk_count
 			: 0.0;
 	stats->elapsed_ms = time_diff_ms(&start_time, &end_time);
+	stats->actual_elapsed_ms = run->uses_gpu ? fastcdc_gpu_get_batch_compute_ms() : stats->elapsed_ms;
 	stats->uses_gpu = run->uses_gpu;
 	stats->profile_chunking = options->profile_chunking;
 	if (options->profile_chunking) {
@@ -880,6 +957,7 @@ static int run_chunking_batch(const struct chunk_tool_options *options,
 		int batch_count = paths->count - batch_start;
 		unsigned char *buffers[CHUNK_TOOL_MAX_BATCH];
 		size_t buffer_sizes[CHUNK_TOOL_MAX_BATCH];
+		int buffer_is_mmap[CHUNK_TOOL_MAX_BATCH];
 		size_t offsets[CHUNK_TOOL_MAX_BATCH];
 		int done[CHUNK_TOOL_MAX_BATCH];
 		size_t batch_total_bytes = 0;
@@ -897,20 +975,28 @@ static int run_chunking_batch(const struct chunk_tool_options *options,
 		}
 		memset(buffers, 0, sizeof(buffers));
 		memset(buffer_sizes, 0, sizeof(buffer_sizes));
+		memset(buffer_is_mmap, 0, sizeof(buffer_is_mmap));
 		memset(offsets, 0, sizeof(offsets));
 		memset(done, 0, sizeof(done));
 
 		for (i = 0; i < batch_count; i++) {
-			if (read_input_file(paths->items[batch_start + i], &buffers[i], &buffer_sizes[i]) != 0) {
+			if (read_input_file(paths->items[batch_start + i],
+						run->uses_gpu,
+						&buffers[i],
+						&buffer_sizes[i],
+						&buffer_is_mmap[i]) != 0) {
 				int j;
 				for (j = 0; j < batch_count; j++) {
-					free(buffers[j]);
+					release_input_file(buffers[j], buffer_sizes[j], buffer_is_mmap[j]);
 				}
 				return -1;
 			}
 			batch_total_bytes += buffer_sizes[i];
 		}
 
+		if (run->uses_gpu) {
+			fastcdc_gpu_reset_batch_timing();
+		}
 		chunk_experiment_reset_stats();
 		chunk_tool_progress_begin(options,
 				run,
@@ -948,7 +1034,7 @@ static int run_chunking_batch(const struct chunk_tool_options *options,
 
 			if (run->chunk_batch_fn(active_buffers, active_sizes, active_count, chunk_sizes) != 0) {
 				for (i = 0; i < batch_count; i++) {
-					free(buffers[i]);
+					release_input_file(buffers[i], buffer_sizes[i], buffer_is_mmap[i]);
 				}
 				chunk_tool_progress_clear();
 				return -1;
@@ -965,7 +1051,9 @@ static int run_chunking_batch(const struct chunk_tool_options *options,
 							paths->items[batch_start + file_index],
 							remaining);
 					for (file_index = 0; file_index < batch_count; file_index++) {
-						free(buffers[file_index]);
+						release_input_file(buffers[file_index],
+								buffer_sizes[file_index],
+								buffer_is_mmap[file_index]);
 					}
 					chunk_tool_progress_clear();
 					return -1;
@@ -1009,6 +1097,9 @@ static int run_chunking_batch(const struct chunk_tool_options *options,
 		stats->total_bytes += batch_total_bytes;
 		stats->chunk_count += chunk_count;
 		stats->elapsed_ms += time_diff_ms(&start_time, &end_time);
+		if (run->uses_gpu) {
+			stats->actual_elapsed_ms += fastcdc_gpu_get_batch_compute_ms();
+		}
 		if (chunk_count > 0) {
 			if (stats->observed_min == INT_MAX || observed_min < stats->observed_min) {
 				stats->observed_min = observed_min;
@@ -1025,7 +1116,7 @@ static int run_chunking_batch(const struct chunk_tool_options *options,
 		chunk_tool_progress_finish_file(batch_total_bytes);
 
 		for (i = 0; i < batch_count; i++) {
-			free(buffers[i]);
+			release_input_file(buffers[i], buffer_sizes[i], buffer_is_mmap[i]);
 		}
 	}
 
@@ -1041,29 +1132,33 @@ static void print_batch_summary(const struct chunk_tool_stats *stats, int count)
 	int i;
 
 	printf("\nsummary:\n");
-	printf("%-10s %-20s %-10s %-8s %-8s %-12s %-16s %-12s\n",
+	printf("%-10s %-20s %-14s %-14s %-8s %-8s %-12s %-16s %-12s %-12s\n",
 			"mode",
 			"algorithm",
-			"MiB/s",
+			"MiB/s(total)",
+			"MiB/s(actual)",
 			"files",
 			"chunks",
 			"cfg(avg)",
 			"obs(min/max/avg)",
-			"elapsed(ms)");
+			"elapsed(ms)",
+			"actual(ms)");
 	for (i = 0; i < count; i++) {
-		printf("%s%-10s%s %-20s %-10.2f %-8zu %-8zu %-12d %d/%d/%.2f %12.3f\n",
+		printf("%s%-10s%s %-20s %-14.2f %-14.2f %-8zu %-8zu %-12d %d/%d/%.2f %12.3f %12.3f\n",
 				chunk_tool_mode_style(stats[i].uses_gpu),
 				stats[i].uses_gpu ? "GPU" : "CPU",
 				chunk_tool_reset_style(),
 				stats[i].algorithm,
 				chunk_tool_throughput_mib_s(&stats[i]),
+				chunk_tool_actual_throughput_mib_s(&stats[i]),
 				stats[i].file_count,
 				stats[i].chunk_count,
 				stats[i].configured_avg,
 				stats[i].observed_min,
 				stats[i].observed_max,
 				stats[i].observed_avg,
-				stats[i].elapsed_ms);
+				stats[i].elapsed_ms,
+				chunk_tool_actual_elapsed_ms(&stats[i]));
 	}
 }
 
@@ -1096,14 +1191,14 @@ static int append_stats_csv(const char *path,
 	}
 	if (file_size == 0) {
 		fprintf(fp,
-				"algorithm,input,mode,files,bytes,cfg_min,cfg_avg,cfg_max,mask_bits,warp_window,chunks,obs_min,obs_max,obs_avg,elapsed_ms,fingerprint_updates,cutoff_hits,jump_hits,jump_bytes_skipped,redundant_checks,warp_groups,cutoff_lane_sum,tail_idle_lane_sum,min_checks,max_checks,avg_checks\n");
+				"algorithm,input,mode,files,bytes,cfg_min,cfg_avg,cfg_max,mask_bits,warp_window,chunks,obs_min,obs_max,obs_avg,elapsed_ms,actual_elapsed_ms,actual_throughput_mib_s,fingerprint_updates,cutoff_hits,jump_hits,jump_bytes_skipped,redundant_checks,warp_groups,cutoff_lane_sum,tail_idle_lane_sum,min_checks,max_checks,avg_checks\n");
 	}
 	if (stats->experiment_stats.chunk_count > 0) {
 		avg_checks = (double)stats->experiment_stats.total_checks_per_chunk
 				/ (double)stats->experiment_stats.chunk_count;
 	}
 	fprintf(fp,
-			"%s,%s,%s,%zu,%zu,%d,%d,%d,%d,%d,%zu,%d,%d,%.2f,%.3f,%llu,%llu,%llu,%llu,%llu,%llu,%llu,%llu,%llu,%llu,%.2f\n",
+			"%s,%s,%s,%zu,%zu,%d,%d,%d,%d,%d,%zu,%d,%d,%.2f,%.3f,%.3f,%.2f,%llu,%llu,%llu,%llu,%llu,%llu,%llu,%llu,%llu,%llu,%.2f\n",
 			stats->algorithm,
 			input_label,
 			stats->uses_gpu ? "gpu" : "cpu",
@@ -1119,6 +1214,8 @@ static int append_stats_csv(const char *path,
 			stats->observed_max,
 			stats->observed_avg,
 			stats->elapsed_ms,
+			chunk_tool_actual_elapsed_ms(stats),
+			chunk_tool_actual_throughput_mib_s(stats),
 			(unsigned long long)stats->experiment_stats.fingerprint_updates,
 			(unsigned long long)stats->experiment_stats.cutoff_hits,
 			(unsigned long long)stats->experiment_stats.jump_hits,
@@ -1193,11 +1290,12 @@ static int execute_path_run(const struct chunk_tool_options *options,
 	for (i = 0; i < paths->count; i++) {
 		unsigned char *buffer = NULL;
 		size_t buffer_size = 0;
+		int buffer_is_mmap = 0;
 		struct chunk_tool_stats file_stats;
 		int rc;
 
-		if (read_input_file(paths->items[i], &buffer, &buffer_size) != 0) {
-			free(buffer);
+		if (read_input_file(paths->items[i], run.uses_gpu, &buffer, &buffer_size, &buffer_is_mmap) != 0) {
+			release_input_file(buffer, buffer_size, buffer_is_mmap);
 			if (run.close_fn) {
 				run.close_fn();
 			}
@@ -1213,7 +1311,7 @@ static int execute_path_run(const struct chunk_tool_options *options,
 		init_stats(&file_stats);
 		rc = run_chunking(options, &run, buffer, buffer_size, &file_stats) == 0 ? 0 : 1;
 		chunk_tool_progress_finish_file(buffer_size);
-		free(buffer);
+		release_input_file(buffer, buffer_size, buffer_is_mmap);
 		if (rc != 0) {
 			if (run.close_fn) {
 				run.close_fn();

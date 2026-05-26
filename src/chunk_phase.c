@@ -42,8 +42,8 @@ static int chunk_gpu_batch_task_limit() {
 	if (task_limit <= 0) {
 		task_limit = 1;
 	}
-	if (task_limit > 64) {
-		task_limit = 64;
+	if (task_limit > 1024) {
+		task_limit = 1024;
 	}
 	return task_limit;
 }

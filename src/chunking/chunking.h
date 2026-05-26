@@ -58,6 +58,8 @@ int fastcdc_gpu_chunk_batch(unsigned char **buffers,
 		const int *sizes,
 		int task_count,
 		int *chunk_sizes);
+void fastcdc_gpu_reset_batch_timing(void);
+double fastcdc_gpu_get_batch_compute_ms(void);
 
 /* JC GPU fallback wrapper */
 int jc_gpu_init();
