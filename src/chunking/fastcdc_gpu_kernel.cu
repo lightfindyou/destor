@@ -7,33 +7,6 @@ static __device__ __forceinline__ int gpu_effective_window(int warp_window) {
 	return warp_window < 32 ? warp_window : 32;
 }
 
-struct warp_prefix_transform {
-	int count;
-	unsigned long long add;
-};
-
-static __device__ __forceinline__ struct warp_prefix_transform warp_prefix_scan(
-		unsigned long long value,
-		int active) {
-	struct warp_prefix_transform prefix;
-	int lane = (int)(threadIdx.x & 31);
-
-	prefix.count = active ? 1 : 0;
-	prefix.add = active ? value : 0ULL;
-
-	for (int offset = 1; offset < 32; offset <<= 1) {
-		int prev_count = __shfl_up_sync(0xffffffffu, prefix.count, offset);
-		unsigned long long prev_add = __shfl_up_sync(0xffffffffu, prefix.add, offset);
-		if (lane >= offset) {
-			int local_count = prefix.count;
-			prefix.count = prev_count + local_count;
-			prefix.add = (prev_add << local_count) + prefix.add;
-		}
-	}
-
-	return prefix;
-}
-
 struct fastcdc_gpu_kernel_result {
 	int chunk_size;
 	int cutoff_hit;
@@ -47,7 +20,9 @@ struct fastcdc_gpu_kernel_result {
 };
 
 __global__ void fastcdc_chunk_kernel(const unsigned char *input,
-		int n,
+		const int *input_offsets,
+		const int *input_lengths,
+		int task_count,
 		const unsigned long long *gear_matrix,
 		int min_size,
 		int max_size,
@@ -56,35 +31,41 @@ __global__ void fastcdc_chunk_kernel(const unsigned char *input,
 		unsigned long long mask_l,
 		int warp_window,
 		struct fastcdc_gpu_kernel_result *result) {
-	const int lane = (int)(threadIdx.x & 31);
+	const int task_id = (int)(blockIdx.x * blockDim.x + threadIdx.x);
+	const unsigned char *task_input;
+	struct fastcdc_gpu_kernel_result *task_result;
+	int n = 0;
 	unsigned long long fingerprint = 0;
 	unsigned long long updates = 0;
 	unsigned long long redundant = 0;
 	unsigned long long warp_groups = 0;
 	int i = 0;
 	int mid = expect_size;
-	int end = n;
-	int chunk_size = n;
+	int end;
+	int chunk_size;
 	int cutoff_hit = 0;
 	int cutoff_lane = -1;
 	int tail_idle_lanes = 0;
 	int effective_warp_window = gpu_effective_window(warp_window);
 
-	if (blockIdx.x != 0 || threadIdx.x >= 32) {
+	if (task_id >= task_count) {
 		return;
 	}
 
-	if (lane == 0) {
-		result->chunk_size = n;
-		result->cutoff_hit = 0;
-		result->cutoff_lane = -1;
-		result->tail_idle_lanes = 0;
-		result->fingerprint_updates = 0;
-		result->redundant_checks = 0;
-		result->warp_groups = 0;
-		result->jump_hits = 0;
-		result->jump_bytes_skipped = 0;
-	}
+	task_input = input + input_offsets[task_id];
+	n = input_lengths[task_id];
+	end = n;
+	chunk_size = n;
+	task_result = result + task_id;
+	task_result->chunk_size = n;
+	task_result->cutoff_hit = 0;
+	task_result->cutoff_lane = -1;
+	task_result->tail_idle_lanes = 0;
+	task_result->fingerprint_updates = 0;
+	task_result->redundant_checks = 0;
+	task_result->warp_groups = 0;
+	task_result->jump_hits = 0;
+	task_result->jump_bytes_skipped = 0;
 
 	if (n <= min_size) {
 		return;
@@ -101,40 +82,14 @@ __global__ void fastcdc_chunk_kernel(const unsigned char *input,
 		unsigned long long phase_mask = phase == 0 ? mask_s : mask_l;
 
 		while (i < phase_end && !cutoff_hit) {
-			int width = phase_end - i;
-			int active;
-			unsigned long long gear_value;
-			struct warp_prefix_transform prefix;
-			unsigned long long lane_fingerprint;
-			unsigned int match_mask;
-
-			if (width > effective_warp_window) {
-				width = effective_warp_window;
-			}
-			active = lane < width;
-			gear_value = active ? gear_matrix[input[i + lane]] : 0ULL;
-			prefix = warp_prefix_scan(gear_value, active);
-			lane_fingerprint = active ? ((fingerprint << prefix.count) + prefix.add) : 0ULL;
-			match_mask = __ballot_sync(0xffffffffu,
-					active && !(lane_fingerprint & phase_mask));
-			warp_groups++;
-
-			if (match_mask != 0U) {
-				int first_lane = __ffs((int)match_mask) - 1;
-
-				updates += (unsigned long long)(first_lane + 1);
-				chunk_size = i + first_lane;
+			fingerprint = (fingerprint << 1) + gear_matrix[task_input[i]];
+			updates++;
+			if (!(fingerprint & phase_mask)) {
+				chunk_size = i;
 				cutoff_hit = 1;
-				cutoff_lane = chunk_size % effective_warp_window;
-				tail_idle_lanes = width - first_lane - 1;
-				if (tail_idle_lanes < 0) {
-					tail_idle_lanes = 0;
-				}
-				redundant += (unsigned long long)tail_idle_lanes;
+				cutoff_lane = effective_warp_window > 0 ? (i % effective_warp_window) : 0;
 			} else {
-				updates += (unsigned long long)width;
-				fingerprint = __shfl_sync(0xffffffffu, lane_fingerprint, width - 1);
-				i += width;
+				i++;
 			}
 		}
 	}
@@ -142,22 +97,21 @@ __global__ void fastcdc_chunk_kernel(const unsigned char *input,
 	if (!cutoff_hit) {
 		chunk_size = i;
 	}
-
-	if (lane == 0) {
-		result->chunk_size = chunk_size;
-		result->cutoff_hit = cutoff_hit;
-		result->cutoff_lane = cutoff_lane;
-		result->tail_idle_lanes = tail_idle_lanes;
-		result->fingerprint_updates = updates;
-		result->redundant_checks = redundant;
-		result->warp_groups = warp_groups;
-	}
-
-	__syncwarp();
+	warp_groups = (updates + (unsigned long long)effective_warp_window - 1ULL)
+			/ (unsigned long long)effective_warp_window;
+	task_result->chunk_size = chunk_size;
+	task_result->cutoff_hit = cutoff_hit;
+	task_result->cutoff_lane = cutoff_lane;
+	task_result->tail_idle_lanes = tail_idle_lanes;
+	task_result->fingerprint_updates = updates;
+	task_result->redundant_checks = redundant;
+	task_result->warp_groups = warp_groups;
 }
 
 __global__ void jc_chunk_kernel(const unsigned char *input,
-		int n,
+		const int *input_offsets,
+		const int *input_lengths,
+		int task_count,
 		const unsigned long long *gear_matrix,
 		int min_size,
 		int max_size,
@@ -166,7 +120,10 @@ __global__ void jc_chunk_kernel(const unsigned char *input,
 		int jump_len,
 		int warp_window,
 		struct fastcdc_gpu_kernel_result *result) {
-	const int lane = (int)(threadIdx.x & 31);
+	const int task_id = (int)(blockIdx.x * blockDim.x + threadIdx.x);
+	const unsigned char *task_input;
+	struct fastcdc_gpu_kernel_result *task_result;
+	int n = 0;
 	unsigned long long fingerprint = 0;
 	unsigned long long updates = 0;
 	unsigned long long redundant = 0;
@@ -174,28 +131,31 @@ __global__ void jc_chunk_kernel(const unsigned char *input,
 	unsigned long long jump_hits = 0;
 	unsigned long long jump_bytes_skipped = 0;
 	int i = min_size;
-	int chunk_size = n;
+	int chunk_size;
 	int cutoff_hit = 0;
 	int cutoff_lane = -1;
 	int tail_idle_lanes = 0;
 	int effective_warp_window = gpu_effective_window(warp_window);
-	int end = n;
+	int end;
 
-	if (blockIdx.x != 0 || threadIdx.x >= 32) {
+	if (task_id >= task_count) {
 		return;
 	}
 
-	if (lane == 0) {
-		result->chunk_size = n;
-		result->cutoff_hit = 0;
-		result->cutoff_lane = -1;
-		result->tail_idle_lanes = 0;
-		result->fingerprint_updates = 0;
-		result->redundant_checks = 0;
-		result->warp_groups = 0;
-		result->jump_hits = 0;
-		result->jump_bytes_skipped = 0;
-	}
+	task_input = input + input_offsets[task_id];
+	n = input_lengths[task_id];
+	chunk_size = n;
+	end = n;
+	task_result = result + task_id;
+	task_result->chunk_size = n;
+	task_result->cutoff_hit = 0;
+	task_result->cutoff_lane = -1;
+	task_result->tail_idle_lanes = 0;
+	task_result->fingerprint_updates = 0;
+	task_result->redundant_checks = 0;
+	task_result->warp_groups = 0;
+	task_result->jump_hits = 0;
+	task_result->jump_bytes_skipped = 0;
 
 	if (n <= min_size) {
 		return;
@@ -206,52 +166,21 @@ __global__ void jc_chunk_kernel(const unsigned char *input,
 	chunk_size = end;
 
 	while (i < end && !cutoff_hit) {
-		int width = end - i;
-		int active;
-		unsigned long long gear_value;
-		struct warp_prefix_transform prefix;
-		unsigned long long lane_fingerprint;
-		unsigned int jump_hit_mask;
-
-		if (width > effective_warp_window) {
-			width = effective_warp_window;
-		}
-		active = lane < width;
-		gear_value = active ? gear_matrix[input[i + lane]] : 0ULL;
-		prefix = warp_prefix_scan(gear_value, active);
-		lane_fingerprint = active ? ((fingerprint << prefix.count) + prefix.add) : 0ULL;
-		jump_hit_mask = __ballot_sync(0xffffffffu,
-				active && !(lane_fingerprint & jump_mask));
-		warp_groups++;
-
-		if (jump_hit_mask != 0U) {
-			int first_lane = __ffs((int)jump_hit_mask) - 1;
-			int examined_index = i + first_lane;
-			unsigned long long first_fingerprint = __shfl_sync(0xffffffffu,
-					lane_fingerprint,
-					first_lane);
-
-			updates += (unsigned long long)(first_lane + 1);
-			tail_idle_lanes = width - first_lane - 1;
-			if (tail_idle_lanes < 0) {
-				tail_idle_lanes = 0;
-			}
-			redundant += (unsigned long long)tail_idle_lanes;
-
-			if (!(first_fingerprint & mask)) {
-				chunk_size = examined_index + 1;
+		fingerprint = (fingerprint << 1) + gear_matrix[task_input[i]];
+		updates++;
+		if (!(fingerprint & jump_mask)) {
+			if (!(fingerprint & mask)) {
+				chunk_size = i + 1;
 				cutoff_hit = 1;
-				cutoff_lane = examined_index % effective_warp_window;
+				cutoff_lane = effective_warp_window > 0 ? (i % effective_warp_window) : 0;
 			} else {
 				fingerprint = 0;
 				jump_hits++;
 				jump_bytes_skipped += (unsigned long long)jump_len;
-				i = examined_index + 1 + jump_len;
+				i += jump_len + 1;
 			}
 		} else {
-			updates += (unsigned long long)width;
-			fingerprint = __shfl_sync(0xffffffffu, lane_fingerprint, width - 1);
-			i += width;
+			i++;
 		}
 	}
 
@@ -259,19 +188,17 @@ __global__ void jc_chunk_kernel(const unsigned char *input,
 		chunk_size = i < end ? i : end;
 	}
 
-	if (lane == 0) {
-		result->chunk_size = chunk_size;
-		result->cutoff_hit = cutoff_hit;
-		result->cutoff_lane = cutoff_lane;
-		result->tail_idle_lanes = tail_idle_lanes;
-		result->fingerprint_updates = updates;
-		result->redundant_checks = redundant;
-		result->warp_groups = warp_groups;
-		result->jump_hits = jump_hits;
-		result->jump_bytes_skipped = jump_bytes_skipped;
-	}
-
-	__syncwarp();
+	warp_groups = (updates + (unsigned long long)effective_warp_window - 1ULL)
+			/ (unsigned long long)effective_warp_window;
+	task_result->chunk_size = chunk_size;
+	task_result->cutoff_hit = cutoff_hit;
+	task_result->cutoff_lane = cutoff_lane;
+	task_result->tail_idle_lanes = tail_idle_lanes;
+	task_result->fingerprint_updates = updates;
+	task_result->redundant_checks = redundant;
+	task_result->warp_groups = warp_groups;
+	task_result->jump_hits = jump_hits;
+	task_result->jump_bytes_skipped = jump_bytes_skipped;
 }
 
 }

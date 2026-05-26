@@ -54,11 +54,19 @@ int fastcdc_gpu_init();
 int fastcdc_gpu_is_ready();
 void fastcdc_gpu_close();
 int fastcdc_gpu_chunk_data(unsigned char *p, int n);
+int fastcdc_gpu_chunk_batch(unsigned char **buffers,
+		const int *sizes,
+		int task_count,
+		int *chunk_sizes);
 
 /* JC GPU fallback wrapper */
 int jc_gpu_init();
 void jc_gpu_close();
 int jc_gpu_chunk_data(unsigned char *p, int n);
+int jc_gpu_chunk_batch(unsigned char **buffers,
+		const int *sizes,
+		int task_count,
+		int *chunk_sizes);
 
 /* Gear family */
 void gear_init();

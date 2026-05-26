@@ -27,6 +27,7 @@ typedef CUresult (*cuDeviceGetCount_t)(int *count);
 typedef CUresult (*cuDeviceGet_t)(CUdevice *device, int ordinal);
 typedef CUresult (*cuCtxCreate_t)(CUcontext *pctx, unsigned int flags, CUdevice dev);
 typedef CUresult (*cuCtxDestroy_t)(CUcontext ctx);
+typedef CUresult (*cuCtxSetCurrent_t)(CUcontext ctx);
 typedef CUresult (*cuGetErrorString_t)(CUresult error, const char **pStr);
 typedef CUresult (*cuModuleLoad_t)(CUmodule *module, const char *fname);
 typedef CUresult (*cuModuleUnload_t)(CUmodule module);
@@ -76,6 +77,7 @@ struct cuda_driver_state {
 	cuDeviceGet_t cuDeviceGet;
 	cuCtxCreate_t cuCtxCreate;
 	cuCtxDestroy_t cuCtxDestroy;
+	cuCtxSetCurrent_t cuCtxSetCurrent;
 	cuGetErrorString_t cuGetErrorString;
 	cuModuleLoad_t cuModuleLoad;
 	cuModuleUnload_t cuModuleUnload;
@@ -296,6 +298,23 @@ static const char *fastcdc_cuda_error_string(CUresult code) {
 	return "unknown CUDA error";
 }
 
+static int fastcdc_gpu_activate_context() {
+	CUresult rc;
+
+	if (!g_cuda.initialized || !g_cuda.ctx) {
+		return -1;
+	}
+	if (!g_cuda.cuCtxSetCurrent) {
+		return 0;
+	}
+	rc = g_cuda.cuCtxSetCurrent(g_cuda.ctx);
+	if (rc != CUDA_SUCCESS) {
+		WARNING("Chunk GPU: cuCtxSetCurrent failed: %s", fastcdc_cuda_error_string(rc));
+		return -1;
+	}
+	return 0;
+}
+
 static void fastcdc_gpu_release_driver() {
 	if (g_cuda.gear_matrix_device && g_cuda.cuMemFree) {
 		g_cuda.cuMemFree(g_cuda.gear_matrix_device);
@@ -435,6 +454,7 @@ static int cuda_driver_init_context() {
 	LOAD_CUDA_SYMBOL(cuDeviceGet);
 	LOAD_CUDA_SYMBOL_ANY(cuCtxCreate, cuCtxCreate_t, "cuCtxCreate_v2", "cuCtxCreate");
 	LOAD_CUDA_SYMBOL_ANY(cuCtxDestroy, cuCtxDestroy_t, "cuCtxDestroy_v2", "cuCtxDestroy");
+	LOAD_CUDA_SYMBOL(cuCtxSetCurrent);
 	LOAD_CUDA_SYMBOL(cuModuleLoad);
 	LOAD_CUDA_SYMBOL(cuModuleUnload);
 	LOAD_CUDA_SYMBOL(cuModuleGetFunction);
@@ -503,96 +523,237 @@ void fastcdc_gpu_close() {
 	fastcdc_gpu_release_driver();
 }
 
-int fastcdc_gpu_chunk_data(unsigned char *p, int n) {
+static void fastcdc_gpu_chunk_batch_cpu_fallback(unsigned char **buffers,
+		const int *sizes,
+		int task_count,
+		int *chunk_sizes) {
+	int i;
+
+	for (i = 0; i < task_count; i++) {
+		chunk_sizes[i] = fastcdc_chunk_data(buffers[i], sizes[i]);
+	}
+}
+
+static void jc_gpu_chunk_batch_cpu_fallback(unsigned char **buffers,
+		const int *sizes,
+		int task_count,
+		int *chunk_sizes) {
+	int i;
+
+	for (i = 0; i < task_count; i++) {
+		chunk_sizes[i] = gearjump_chunk_data(buffers[i], sizes[i]);
+	}
+}
+
+int fastcdc_gpu_chunk_batch(unsigned char **buffers,
+		const int *sizes,
+		int task_count,
+		int *chunk_sizes) {
 	CUdeviceptr device_input = 0;
+	CUdeviceptr device_offsets = 0;
+	CUdeviceptr device_lengths = 0;
 	CUdeviceptr device_result = 0;
-	CUresult rc;
+	CUresult rc = CUDA_SUCCESS;
 	uint64_t mask_s = 0;
 	uint64_t mask_l = 0;
 	int expect_size = 0;
-	int copy_len;
 	int warp_window = destor.chunk_warp_window;
-	struct fastcdc_gpu_kernel_result result;
-	void *kernel_params[10];
+	int threads_per_block = 128;
+	int blocks;
+	int i;
+	int ok = 1;
+	size_t total_bytes = 0;
+	unsigned char *host_input = NULL;
+	int *host_offsets = NULL;
+	int *host_lengths = NULL;
+	struct fastcdc_gpu_kernel_result *host_results = NULL;
+
+	if (!buffers || !sizes || !chunk_sizes || task_count <= 0) {
+		return -1;
+	}
 
 	if (!g_cuda.kernel_ready) {
-		return fastcdc_chunk_data(p, n);
+		fastcdc_gpu_chunk_batch_cpu_fallback(buffers, sizes, task_count, chunk_sizes);
+		return 0;
+	}
+	if (fastcdc_gpu_activate_context() != 0) {
+		fastcdc_gpu_chunk_batch_cpu_fallback(buffers, sizes, task_count, chunk_sizes);
+		return 0;
+	}
+
+	host_offsets = (int *)malloc(sizeof(int) * (size_t)task_count);
+	host_lengths = (int *)malloc(sizeof(int) * (size_t)task_count);
+	host_results = (struct fastcdc_gpu_kernel_result *)calloc((size_t)task_count,
+			sizeof(struct fastcdc_gpu_kernel_result));
+	if (!host_offsets || !host_lengths || !host_results) {
+		ok = 0;
+		goto done;
+	}
+
+	for (i = 0; i < task_count; i++) {
+		int copy_len = sizes[i] < destor.chunk_max_size ? sizes[i] : destor.chunk_max_size;
+
+		if (copy_len < 0) {
+			copy_len = 0;
+		}
+		host_offsets[i] = (int)total_bytes;
+		host_lengths[i] = copy_len;
+		total_bytes += (size_t)copy_len;
+	}
+
+	if (total_bytes == 0) {
+		for (i = 0; i < task_count; i++) {
+			chunk_sizes[i] = 0;
+		}
+		goto done;
+	}
+
+	host_input = (unsigned char *)malloc(total_bytes);
+	if (!host_input) {
+		ok = 0;
+		goto done;
+	}
+
+	for (i = 0; i < task_count; i++) {
+		int copy_len = host_lengths[i];
+		if (copy_len > 0) {
+			memcpy(host_input + host_offsets[i], buffers[i], (size_t)copy_len);
+		}
 	}
 
 	fastcdc_gpu_compute_masks(&mask_s, &mask_l, &expect_size);
-	copy_len = n < destor.chunk_max_size ? n : destor.chunk_max_size;
-	memset(&result, 0, sizeof(result));
+	blocks = (task_count + threads_per_block - 1) / threads_per_block;
 
-	rc = g_cuda.cuMemAlloc(&device_input, (size_t)copy_len);
+	rc = g_cuda.cuMemAlloc(&device_input, total_bytes);
 	if (rc != CUDA_SUCCESS) {
-		WARNING("FastCDC GPU: cuMemAlloc input failed: %s", fastcdc_cuda_error_string(rc));
-		return fastcdc_chunk_data(p, n);
+		ok = 0;
+		goto done;
 	}
-	rc = g_cuda.cuMemAlloc(&device_result, sizeof(result));
+	rc = g_cuda.cuMemAlloc(&device_offsets, sizeof(int) * (size_t)task_count);
 	if (rc != CUDA_SUCCESS) {
-		WARNING("FastCDC GPU: cuMemAlloc result failed: %s", fastcdc_cuda_error_string(rc));
-		g_cuda.cuMemFree(device_input);
-		return fastcdc_chunk_data(p, n);
+		ok = 0;
+		goto done;
 	}
-	rc = g_cuda.cuMemcpyHtoD(device_input, p, (size_t)copy_len);
+	rc = g_cuda.cuMemAlloc(&device_lengths, sizeof(int) * (size_t)task_count);
 	if (rc != CUDA_SUCCESS) {
-		WARNING("FastCDC GPU: cuMemcpyHtoD input failed: %s", fastcdc_cuda_error_string(rc));
-		g_cuda.cuMemFree(device_result);
-		g_cuda.cuMemFree(device_input);
-		return fastcdc_chunk_data(p, n);
+		ok = 0;
+		goto done;
 	}
-	rc = g_cuda.cuMemcpyHtoD(device_result, &result, sizeof(result));
+	rc = g_cuda.cuMemAlloc(&device_result,
+			sizeof(struct fastcdc_gpu_kernel_result) * (size_t)task_count);
 	if (rc != CUDA_SUCCESS) {
-		WARNING("FastCDC GPU: cuMemcpyHtoD result init failed: %s", fastcdc_cuda_error_string(rc));
-		g_cuda.cuMemFree(device_result);
-		g_cuda.cuMemFree(device_input);
-		return fastcdc_chunk_data(p, n);
+		ok = 0;
+		goto done;
 	}
 
-	kernel_params[0] = &device_input;
-	kernel_params[1] = &copy_len;
-	kernel_params[2] = &g_cuda.gear_matrix_device;
-	kernel_params[3] = &destor.chunk_min_size;
-	kernel_params[4] = &destor.chunk_max_size;
-	kernel_params[5] = &expect_size;
-	kernel_params[6] = &mask_s;
-	kernel_params[7] = &mask_l;
-	kernel_params[8] = &warp_window;
-	kernel_params[9] = &device_result;
+	rc = g_cuda.cuMemcpyHtoD(device_input, host_input, total_bytes);
+	if (rc != CUDA_SUCCESS) {
+		ok = 0;
+		goto done;
+	}
+	rc = g_cuda.cuMemcpyHtoD(device_offsets,
+			host_offsets,
+			sizeof(int) * (size_t)task_count);
+	if (rc != CUDA_SUCCESS) {
+		ok = 0;
+		goto done;
+	}
+	rc = g_cuda.cuMemcpyHtoD(device_lengths,
+			host_lengths,
+			sizeof(int) * (size_t)task_count);
+	if (rc != CUDA_SUCCESS) {
+		ok = 0;
+		goto done;
+	}
 
-	rc = g_cuda.cuLaunchKernel(g_cuda.fastcdc_kernel,
-			1,
-			1,
-			1,
-			32,
-			1,
-			1,
-			0,
-			NULL,
-			kernel_params,
-			NULL);
+	{
+		void *kernel_params[13];
+		kernel_params[0] = &device_input;
+		kernel_params[1] = &device_offsets;
+		kernel_params[2] = &device_lengths;
+		kernel_params[3] = &task_count;
+		kernel_params[4] = &g_cuda.gear_matrix_device;
+		kernel_params[5] = &destor.chunk_min_size;
+		kernel_params[6] = &destor.chunk_max_size;
+		kernel_params[7] = &expect_size;
+		kernel_params[8] = &mask_s;
+		kernel_params[9] = &mask_l;
+		kernel_params[10] = &warp_window;
+		kernel_params[11] = &device_result;
+		kernel_params[12] = NULL;
+
+		rc = g_cuda.cuLaunchKernel(g_cuda.fastcdc_kernel,
+				(unsigned int)blocks,
+				1,
+				1,
+				(unsigned int)threads_per_block,
+				1,
+				1,
+				0,
+				NULL,
+				kernel_params,
+				NULL);
+	}
 	if (rc == CUDA_SUCCESS) {
 		rc = g_cuda.cuCtxSynchronize();
 	}
 	if (rc == CUDA_SUCCESS) {
-		rc = g_cuda.cuMemcpyDtoH(&result, device_result, sizeof(result));
+		rc = g_cuda.cuMemcpyDtoH(host_results,
+				device_result,
+				sizeof(struct fastcdc_gpu_kernel_result) * (size_t)task_count);
 	}
-
-	g_cuda.cuMemFree(device_result);
-	g_cuda.cuMemFree(device_input);
-
 	if (rc != CUDA_SUCCESS) {
-		WARNING("FastCDC GPU: kernel launch failed, falling back to CPU: %s",
-				fastcdc_cuda_error_string(rc));
-		return fastcdc_chunk_data(p, n);
-	}
-	if (result.chunk_size <= 0 || result.chunk_size > n) {
-		WARNING("FastCDC GPU: invalid kernel chunk size %d, falling back to CPU", result.chunk_size);
-		return fastcdc_chunk_data(p, n);
+		ok = 0;
+		goto done;
 	}
 
-	fastcdc_gpu_note_kernel_result(&result);
-	return result.chunk_size;
+	for (i = 0; i < task_count; i++) {
+		if (host_results[i].chunk_size <= 0 || host_results[i].chunk_size > sizes[i]) {
+			chunk_sizes[i] = fastcdc_chunk_data(buffers[i], sizes[i]);
+		} else {
+			chunk_sizes[i] = host_results[i].chunk_size;
+		}
+		fastcdc_gpu_note_kernel_result(host_results + i);
+	}
+
+done:
+	if (device_result) {
+		g_cuda.cuMemFree(device_result);
+	}
+	if (device_lengths) {
+		g_cuda.cuMemFree(device_lengths);
+	}
+	if (device_offsets) {
+		g_cuda.cuMemFree(device_offsets);
+	}
+	if (device_input) {
+		g_cuda.cuMemFree(device_input);
+	}
+	free(host_results);
+	free(host_lengths);
+	free(host_offsets);
+	free(host_input);
+
+	if (!ok) {
+		WARNING("FastCDC GPU batch: launch/copy failed, falling back to CPU: %s",
+				fastcdc_cuda_error_string(rc));
+		fastcdc_gpu_chunk_batch_cpu_fallback(buffers, sizes, task_count, chunk_sizes);
+	}
+	return 0;
+}
+
+int fastcdc_gpu_chunk_data(unsigned char *p, int n) {
+	unsigned char *buffers[1];
+	int sizes[1];
+	int chunk_sizes[1];
+
+	buffers[0] = p;
+	sizes[0] = n;
+	chunk_sizes[0] = 0;
+	if (fastcdc_gpu_chunk_batch(buffers, sizes, 1, chunk_sizes) != 0) {
+		return fastcdc_chunk_data(p, n);
+	}
+	return chunk_sizes[0];
 }
 
 int jc_gpu_init() {
@@ -603,97 +764,217 @@ void jc_gpu_close() {
 	fastcdc_gpu_close();
 }
 
-int jc_gpu_chunk_data(unsigned char *p, int n) {
+int jc_gpu_chunk_batch(unsigned char **buffers,
+		const int *sizes,
+		int task_count,
+		int *chunk_sizes) {
 	CUdeviceptr device_input = 0;
+	CUdeviceptr device_offsets = 0;
+	CUdeviceptr device_lengths = 0;
 	CUdeviceptr device_result = 0;
-	CUresult rc;
+	CUresult rc = CUDA_SUCCESS;
 	uint64_t mask = 0;
 	uint64_t jump_mask = 0;
 	int jump_len = 0;
 	int expect_size = 0;
-	int copy_len;
 	int warp_window = destor.chunk_warp_window;
-	struct fastcdc_gpu_kernel_result result;
-	void *kernel_params[10];
+	int threads_per_block = 128;
+	int blocks;
+	int i;
+	int ok = 1;
+	size_t total_bytes = 0;
+	unsigned char *host_input = NULL;
+	int *host_offsets = NULL;
+	int *host_lengths = NULL;
+	struct fastcdc_gpu_kernel_result *host_results = NULL;
+
+	if (!buffers || !sizes || !chunk_sizes || task_count <= 0) {
+		return -1;
+	}
 
 	if (!g_cuda.jc_kernel_ready) {
-		return gearjump_chunk_data(p, n);
+		jc_gpu_chunk_batch_cpu_fallback(buffers, sizes, task_count, chunk_sizes);
+		return 0;
+	}
+	if (fastcdc_gpu_activate_context() != 0) {
+		jc_gpu_chunk_batch_cpu_fallback(buffers, sizes, task_count, chunk_sizes);
+		return 0;
 	}
 	if (jc_gpu_compute_params(&mask, &jump_mask, &jump_len, &expect_size) != 0 || jump_len <= 0) {
-		return gearjump_chunk_data(p, n);
+		jc_gpu_chunk_batch_cpu_fallback(buffers, sizes, task_count, chunk_sizes);
+		return 0;
 	}
 
-	copy_len = n < destor.chunk_max_size ? n : destor.chunk_max_size;
-	memset(&result, 0, sizeof(result));
-
-	rc = g_cuda.cuMemAlloc(&device_input, (size_t)copy_len);
-	if (rc != CUDA_SUCCESS) {
-		WARNING("JC GPU: cuMemAlloc input failed: %s", fastcdc_cuda_error_string(rc));
-		return gearjump_chunk_data(p, n);
-	}
-	rc = g_cuda.cuMemAlloc(&device_result, sizeof(result));
-	if (rc != CUDA_SUCCESS) {
-		WARNING("JC GPU: cuMemAlloc result failed: %s", fastcdc_cuda_error_string(rc));
-		g_cuda.cuMemFree(device_input);
-		return gearjump_chunk_data(p, n);
-	}
-	rc = g_cuda.cuMemcpyHtoD(device_input, p, (size_t)copy_len);
-	if (rc != CUDA_SUCCESS) {
-		WARNING("JC GPU: cuMemcpyHtoD input failed: %s", fastcdc_cuda_error_string(rc));
-		g_cuda.cuMemFree(device_result);
-		g_cuda.cuMemFree(device_input);
-		return gearjump_chunk_data(p, n);
-	}
-	rc = g_cuda.cuMemcpyHtoD(device_result, &result, sizeof(result));
-	if (rc != CUDA_SUCCESS) {
-		WARNING("JC GPU: cuMemcpyHtoD result init failed: %s", fastcdc_cuda_error_string(rc));
-		g_cuda.cuMemFree(device_result);
-		g_cuda.cuMemFree(device_input);
-		return gearjump_chunk_data(p, n);
+	host_offsets = (int *)malloc(sizeof(int) * (size_t)task_count);
+	host_lengths = (int *)malloc(sizeof(int) * (size_t)task_count);
+	host_results = (struct fastcdc_gpu_kernel_result *)calloc((size_t)task_count,
+			sizeof(struct fastcdc_gpu_kernel_result));
+	if (!host_offsets || !host_lengths || !host_results) {
+		ok = 0;
+		goto done;
 	}
 
-	kernel_params[0] = &device_input;
-	kernel_params[1] = &copy_len;
-	kernel_params[2] = &g_cuda.gear_matrix_device;
-	kernel_params[3] = &destor.chunk_min_size;
-	kernel_params[4] = &destor.chunk_max_size;
-	kernel_params[5] = &mask;
-	kernel_params[6] = &jump_mask;
-	kernel_params[7] = &jump_len;
-	kernel_params[8] = &warp_window;
-	kernel_params[9] = &device_result;
+	for (i = 0; i < task_count; i++) {
+		int copy_len = sizes[i] < destor.chunk_max_size ? sizes[i] : destor.chunk_max_size;
 
-	rc = g_cuda.cuLaunchKernel(g_cuda.jc_kernel,
-			1,
-			1,
-			1,
-			32,
-			1,
-			1,
-			0,
-			NULL,
-			kernel_params,
-			NULL);
+		if (copy_len < 0) {
+			copy_len = 0;
+		}
+		host_offsets[i] = (int)total_bytes;
+		host_lengths[i] = copy_len;
+		total_bytes += (size_t)copy_len;
+	}
+
+	if (total_bytes == 0) {
+		for (i = 0; i < task_count; i++) {
+			chunk_sizes[i] = 0;
+		}
+		goto done;
+	}
+
+	host_input = (unsigned char *)malloc(total_bytes);
+	if (!host_input) {
+		ok = 0;
+		goto done;
+	}
+
+	for (i = 0; i < task_count; i++) {
+		int copy_len = host_lengths[i];
+		if (copy_len > 0) {
+			memcpy(host_input + host_offsets[i], buffers[i], (size_t)copy_len);
+		}
+	}
+
+	blocks = (task_count + threads_per_block - 1) / threads_per_block;
+
+	rc = g_cuda.cuMemAlloc(&device_input, total_bytes);
+	if (rc != CUDA_SUCCESS) {
+		ok = 0;
+		goto done;
+	}
+	rc = g_cuda.cuMemAlloc(&device_offsets, sizeof(int) * (size_t)task_count);
+	if (rc != CUDA_SUCCESS) {
+		ok = 0;
+		goto done;
+	}
+	rc = g_cuda.cuMemAlloc(&device_lengths, sizeof(int) * (size_t)task_count);
+	if (rc != CUDA_SUCCESS) {
+		ok = 0;
+		goto done;
+	}
+	rc = g_cuda.cuMemAlloc(&device_result,
+			sizeof(struct fastcdc_gpu_kernel_result) * (size_t)task_count);
+	if (rc != CUDA_SUCCESS) {
+		ok = 0;
+		goto done;
+	}
+
+	rc = g_cuda.cuMemcpyHtoD(device_input, host_input, total_bytes);
+	if (rc != CUDA_SUCCESS) {
+		ok = 0;
+		goto done;
+	}
+	rc = g_cuda.cuMemcpyHtoD(device_offsets,
+			host_offsets,
+			sizeof(int) * (size_t)task_count);
+	if (rc != CUDA_SUCCESS) {
+		ok = 0;
+		goto done;
+	}
+	rc = g_cuda.cuMemcpyHtoD(device_lengths,
+			host_lengths,
+			sizeof(int) * (size_t)task_count);
+	if (rc != CUDA_SUCCESS) {
+		ok = 0;
+		goto done;
+	}
+
+	{
+		void *kernel_params[13];
+		kernel_params[0] = &device_input;
+		kernel_params[1] = &device_offsets;
+		kernel_params[2] = &device_lengths;
+		kernel_params[3] = &task_count;
+		kernel_params[4] = &g_cuda.gear_matrix_device;
+		kernel_params[5] = &destor.chunk_min_size;
+		kernel_params[6] = &destor.chunk_max_size;
+		kernel_params[7] = &mask;
+		kernel_params[8] = &jump_mask;
+		kernel_params[9] = &jump_len;
+		kernel_params[10] = &warp_window;
+		kernel_params[11] = &device_result;
+		kernel_params[12] = NULL;
+
+		rc = g_cuda.cuLaunchKernel(g_cuda.jc_kernel,
+				(unsigned int)blocks,
+				1,
+				1,
+				(unsigned int)threads_per_block,
+				1,
+				1,
+				0,
+				NULL,
+				kernel_params,
+				NULL);
+	}
 	if (rc == CUDA_SUCCESS) {
 		rc = g_cuda.cuCtxSynchronize();
 	}
 	if (rc == CUDA_SUCCESS) {
-		rc = g_cuda.cuMemcpyDtoH(&result, device_result, sizeof(result));
+		rc = g_cuda.cuMemcpyDtoH(host_results,
+				device_result,
+				sizeof(struct fastcdc_gpu_kernel_result) * (size_t)task_count);
 	}
-
-	g_cuda.cuMemFree(device_result);
-	g_cuda.cuMemFree(device_input);
-
 	if (rc != CUDA_SUCCESS) {
-		WARNING("JC GPU: kernel launch failed, falling back to CPU: %s",
-				fastcdc_cuda_error_string(rc));
-		return gearjump_chunk_data(p, n);
-	}
-	if (result.chunk_size <= 0 || result.chunk_size > n) {
-		WARNING("JC GPU: invalid kernel chunk size %d, falling back to CPU", result.chunk_size);
-		return gearjump_chunk_data(p, n);
+		ok = 0;
+		goto done;
 	}
 
-	fastcdc_gpu_note_kernel_result(&result);
-	return result.chunk_size;
+	for (i = 0; i < task_count; i++) {
+		if (host_results[i].chunk_size <= 0 || host_results[i].chunk_size > sizes[i]) {
+			chunk_sizes[i] = gearjump_chunk_data(buffers[i], sizes[i]);
+		} else {
+			chunk_sizes[i] = host_results[i].chunk_size;
+		}
+		fastcdc_gpu_note_kernel_result(host_results + i);
+	}
+
+done:
+	if (device_result) {
+		g_cuda.cuMemFree(device_result);
+	}
+	if (device_lengths) {
+		g_cuda.cuMemFree(device_lengths);
+	}
+	if (device_offsets) {
+		g_cuda.cuMemFree(device_offsets);
+	}
+	if (device_input) {
+		g_cuda.cuMemFree(device_input);
+	}
+	free(host_results);
+	free(host_lengths);
+	free(host_offsets);
+	free(host_input);
+
+	if (!ok) {
+		WARNING("JC GPU batch: launch/copy failed, falling back to CPU: %s",
+				fastcdc_cuda_error_string(rc));
+		jc_gpu_chunk_batch_cpu_fallback(buffers, sizes, task_count, chunk_sizes);
+	}
+	return 0;
+}
+
+int jc_gpu_chunk_data(unsigned char *p, int n) {
+	unsigned char *buffers[1];
+	int sizes[1];
+	int chunk_sizes[1];
+
+	buffers[0] = p;
+	sizes[0] = n;
+	chunk_sizes[0] = 0;
+	if (jc_gpu_chunk_batch(buffers, sizes, 1, chunk_sizes) != 0) {
+		return gearjump_chunk_data(p, n);
+	}
+	return chunk_sizes[0];
 }
