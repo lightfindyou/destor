@@ -17,6 +17,10 @@ if [ ! -x "$TOOL" ]; then
 	make -C "$SCRIPT_DIR" chunkingTool
 fi
 
+if [ "$GPU_MODE" = "1" ]; then
+	make -C "$SCRIPT_DIR/../src/chunking" fastcdc_gpu_ptx
+fi
+
 rm -f "$OUTPUT_CSV"
 
 for avg in $AVG_SIZES; do
