@@ -20,6 +20,10 @@
 struct destor destor;
 
 typedef int (*chunk_fn_t)(unsigned char *p, int n);
+typedef int (*chunk_batch_fn_t)(unsigned char **buffers,
+		const int *sizes,
+		int task_count,
+		int *chunk_sizes);
 typedef void (*chunk_close_fn_t)(void);
 
 struct chunk_tool_options {
@@ -45,6 +49,7 @@ struct chunk_tool_options {
 
 struct chunk_tool_run {
 	chunk_fn_t chunk_fn;
+	chunk_batch_fn_t chunk_batch_fn;
 	chunk_close_fn_t close_fn;
 	const char *display_name;
 	int effective_avg_size;
@@ -97,6 +102,10 @@ static int run_chunking(const struct chunk_tool_options *options,
 static int append_stats_csv(const char *path,
 		const char *input_label,
 		const struct chunk_tool_stats *stats);
+static int run_chunking_batch(const struct chunk_tool_options *options,
+		const struct chunk_tool_run *run,
+		const struct chunk_tool_path_list *paths,
+		struct chunk_tool_stats *stats);
 static void baseline_parallel_init(void);
 static int baseline_parallel_chunk_data(unsigned char *p, int n);
 static double time_diff_ms(const struct timespec *start, const struct timespec *end);
@@ -850,6 +859,184 @@ static int run_chunking(const struct chunk_tool_options *options,
 	return 0;
 }
 
+static int run_chunking_batch(const struct chunk_tool_options *options,
+		const struct chunk_tool_run *run,
+		const struct chunk_tool_path_list *paths,
+		struct chunk_tool_stats *stats) {
+	int batch_start;
+	size_t printed = 0;
+
+	init_stats(stats);
+	stats->algorithm = run->display_name;
+	stats->configured_min = destor.chunk_min_size;
+	stats->configured_avg = run->effective_avg_size;
+	stats->configured_max = destor.chunk_max_size;
+	stats->configured_mask_bits = destor.chunk_mask_bits;
+	stats->configured_warp_window = destor.chunk_warp_window;
+	stats->uses_gpu = run->uses_gpu;
+	stats->profile_chunking = options->profile_chunking;
+
+	for (batch_start = 0; batch_start < paths->count; batch_start += CHUNK_TOOL_MAX_BATCH) {
+		int batch_count = paths->count - batch_start;
+		unsigned char *buffers[CHUNK_TOOL_MAX_BATCH];
+		size_t buffer_sizes[CHUNK_TOOL_MAX_BATCH];
+		size_t offsets[CHUNK_TOOL_MAX_BATCH];
+		int done[CHUNK_TOOL_MAX_BATCH];
+		size_t batch_total_bytes = 0;
+		unsigned long long total_chunk_bytes = 0;
+		size_t chunk_count = 0;
+		int observed_min = INT_MAX;
+		int observed_max = 0;
+		struct chunk_experiment_stats experiment_stats;
+		struct timespec start_time;
+		struct timespec end_time;
+		int i;
+
+		if (batch_count > CHUNK_TOOL_MAX_BATCH) {
+			batch_count = CHUNK_TOOL_MAX_BATCH;
+		}
+		memset(buffers, 0, sizeof(buffers));
+		memset(buffer_sizes, 0, sizeof(buffer_sizes));
+		memset(offsets, 0, sizeof(offsets));
+		memset(done, 0, sizeof(done));
+
+		for (i = 0; i < batch_count; i++) {
+			if (read_input_file(paths->items[batch_start + i], &buffers[i], &buffer_sizes[i]) != 0) {
+				int j;
+				for (j = 0; j < batch_count; j++) {
+					free(buffers[j]);
+				}
+				return -1;
+			}
+			batch_total_bytes += buffer_sizes[i];
+		}
+
+		chunk_experiment_reset_stats();
+		chunk_tool_progress_begin(options,
+				run,
+				paths,
+				batch_start,
+				batch_total_bytes,
+				g_chunk_tool_progress.completed_bytes);
+		clock_gettime(CLOCK_MONOTONIC, &start_time);
+
+		while (1) {
+			unsigned char *active_buffers[CHUNK_TOOL_MAX_BATCH];
+			int active_sizes[CHUNK_TOOL_MAX_BATCH];
+			int chunk_sizes[CHUNK_TOOL_MAX_BATCH];
+			int active_index[CHUNK_TOOL_MAX_BATCH];
+			size_t current_batch_offset = 0;
+			int active_count = 0;
+
+			for (i = 0; i < batch_count; i++) {
+				if (done[i]) {
+					current_batch_offset += buffer_sizes[i];
+					continue;
+				}
+				current_batch_offset += offsets[i];
+				if (offsets[i] < buffer_sizes[i]) {
+					active_buffers[active_count] = buffers[i] + offsets[i];
+					active_sizes[active_count] = (int)(buffer_sizes[i] - offsets[i]);
+					active_index[active_count] = i;
+					active_count++;
+				}
+			}
+
+			if (active_count == 0) {
+				break;
+			}
+
+			if (run->chunk_batch_fn(active_buffers, active_sizes, active_count, chunk_sizes) != 0) {
+				for (i = 0; i < batch_count; i++) {
+					free(buffers[i]);
+				}
+				chunk_tool_progress_clear();
+				return -1;
+			}
+
+			for (i = 0; i < active_count; i++) {
+				int file_index = active_index[i];
+				int remaining = active_sizes[i];
+				int chunk_size = chunk_sizes[i];
+
+				if (chunk_size <= 0 || chunk_size > remaining) {
+					CHUNK_TOOL_ERROR("Invalid chunk size %d for file %s, remaining=%d",
+							chunk_size,
+							paths->items[batch_start + file_index],
+							remaining);
+					for (file_index = 0; file_index < batch_count; file_index++) {
+						free(buffers[file_index]);
+					}
+					chunk_tool_progress_clear();
+					return -1;
+				}
+
+				if (chunk_size < observed_min) {
+					observed_min = chunk_size;
+				}
+				if (chunk_size > observed_max) {
+					observed_max = chunk_size;
+				}
+				total_chunk_bytes += (unsigned long long)chunk_size;
+				chunk_count++;
+				if (options->print_chunks && printed < (size_t)options->print_limit) {
+					printf("%s chunk[%zu] start=%zu end=%zu size=%d\n",
+							paths->items[batch_start + active_index[i]],
+							printed,
+							offsets[active_index[i]],
+							offsets[active_index[i]] + (size_t)chunk_size,
+							chunk_size);
+					printed++;
+				}
+				offsets[active_index[i]] += (size_t)chunk_size;
+				if (offsets[active_index[i]] >= buffer_sizes[active_index[i]]) {
+					done[active_index[i]] = 1;
+				}
+			}
+
+			if (g_chunk_tool_progress.active && chunk_tool_progress_should_refresh()) {
+				size_t total_done = 0;
+				for (i = 0; i < batch_count; i++) {
+					total_done += offsets[i];
+				}
+				chunk_tool_progress_render(total_done);
+			}
+		}
+
+		clock_gettime(CLOCK_MONOTONIC, &end_time);
+		chunk_experiment_snapshot(&experiment_stats);
+		stats->file_count += (size_t)batch_count;
+		stats->total_bytes += batch_total_bytes;
+		stats->chunk_count += chunk_count;
+		stats->elapsed_ms += time_diff_ms(&start_time, &end_time);
+		if (chunk_count > 0) {
+			if (stats->observed_min == INT_MAX || observed_min < stats->observed_min) {
+				stats->observed_min = observed_min;
+			}
+			if (observed_max > stats->observed_max) {
+				stats->observed_max = observed_max;
+			}
+			stats->observed_avg = (double)(stats->observed_avg * (double)(stats->chunk_count - chunk_count)
+					+ (double)total_chunk_bytes) / (double)stats->chunk_count;
+		}
+		if (options->profile_chunking) {
+			merge_experiment_stats(&stats->experiment_stats, &experiment_stats);
+		}
+		chunk_tool_progress_finish_file(batch_total_bytes);
+
+		for (i = 0; i < batch_count; i++) {
+			free(buffers[i]);
+		}
+	}
+
+	chunk_tool_progress_clear();
+	finalize_stats(stats);
+	if (options->print_chunks && stats->chunk_count > (size_t)options->print_limit) {
+		printf("printed first %d of %zu chunks\n", options->print_limit, stats->chunk_count);
+	}
+	return 0;
+}
+
 static void print_batch_summary(const struct chunk_tool_stats *stats, int count) {
 	int i;
 
@@ -995,6 +1182,13 @@ static int execute_path_run(const struct chunk_tool_options *options,
 		finalize_stats(stats);
 		return 0;
 	}
+	if (run.uses_gpu && run.chunk_batch_fn && paths->count > 1) {
+		int rc = run_chunking_batch(options, &run, paths, stats);
+		if (run.close_fn) {
+			run.close_fn();
+		}
+		return rc;
+	}
 
 	for (i = 0; i < paths->count; i++) {
 		unsigned char *buffer = NULL;
@@ -1095,6 +1289,7 @@ static int select_algorithm(const struct chunk_tool_options *options, struct chu
 				WARNING("chunkingTool: FastCDC --gpu requested, but GPU kernel is unavailable; falling back to CPU");
 			} else {
 				run->chunk_fn = fastcdc_gpu_chunk_data;
+				run->chunk_batch_fn = fastcdc_gpu_chunk_batch;
 				run->close_fn = fastcdc_gpu_close;
 				run->uses_gpu = 1;
 			}
@@ -1112,6 +1307,7 @@ static int select_algorithm(const struct chunk_tool_options *options, struct chu
 				WARNING("chunkingTool: JC --gpu requested, but GPU kernel is unavailable; falling back to CPU");
 			} else {
 				run->chunk_fn = jc_gpu_chunk_data;
+				run->chunk_batch_fn = jc_gpu_chunk_batch;
 				run->close_fn = jc_gpu_close;
 				run->uses_gpu = 1;
 			}
