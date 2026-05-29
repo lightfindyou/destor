@@ -13,6 +13,7 @@ WARP_WINDOWS=${WARP_WINDOWS:-"32"}
 JC_JUMP_MTO=${JC_JUMP_MTO:-1}
 GPU_DEVICE=${GPU_DEVICE:-0}
 GPU_BATCH=${GPU_BATCH:-8388608}
+GPU_PIPELINE_TASKS=${GPU_PIPELINE_TASKS:-256}
 NCU_BIN=${NCU_BIN:-ncu}
 NCU_METRICS=${NCU_METRICS:-"sm__sass_average_branch_targets_threads_per_instruction.pct"}
 
@@ -51,6 +52,7 @@ for avg in $AVG_SIZES; do
 					-s "$avg" --min "$min" --max "$max" \
 					--mask-bits "$mask_bits" --warp-window "$warp_window" \
 					--gpu --gpu-device "$GPU_DEVICE" --gpu-batch "$GPU_BATCH" \
+					--gpu-pipeline-tasks "$GPU_PIPELINE_TASKS" \
 					--profile-chunking --result-csv "$experiment_csv"
 				if [ "$algorithm" = "jc" ]; then
 					set -- "$@" --jump-mto "$JC_JUMP_MTO"

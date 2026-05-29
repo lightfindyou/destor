@@ -13,6 +13,12 @@ static void* chunk_thread(void *arg);
 
 static int (*chunking)(unsigned char* buf, int size);
 static int (*chunking_batch)(unsigned char **buffers, const int *sizes, int task_count, int *chunk_sizes) = NULL;
+static int (*chunking_segment_batch)(unsigned char **buffers,
+		const int *sizes,
+		int task_count,
+		int boundary_stride,
+		int *boundary_counts,
+		int *chunk_sizes) = NULL;
 static int chunking_uses_gpu = 0;
 static void (*chunking_gpu_close_fn)() = NULL;
 
@@ -23,8 +29,10 @@ struct chunk_file_state {
 	struct chunk *file_start;
 	struct chunk *file_end;
 	int start_emitted;
-	int has_pending_chunk;
-	int pending_chunk_size;
+	int *pending_chunk_sizes;
+	int pending_chunk_capacity;
+	int pending_chunk_count;
+	int pending_chunk_index;
 };
 
 static inline int fixed_chunk_data(unsigned char* buf, int size){
@@ -48,6 +56,18 @@ static int chunk_gpu_batch_task_limit() {
 	return task_limit;
 }
 
+static int chunk_gpu_segment_bytes(void) {
+	return fastcdc_gpu_segment_bytes() + destor.chunk_max_size;
+}
+
+static int chunk_gpu_boundary_stride(void) {
+	return fastcdc_gpu_segment_boundary_limit(chunk_gpu_segment_bytes());
+}
+
+static int chunk_file_state_has_pending(const struct chunk_file_state *state) {
+	return state && state->pending_chunk_index < state->pending_chunk_count;
+}
+
 static void chunk_file_state_reset(struct chunk_file_state *state) {
 	if (!state) {
 		return;
@@ -58,8 +78,10 @@ static void chunk_file_state_reset(struct chunk_file_state *state) {
 	state->file_start = NULL;
 	state->file_end = NULL;
 	state->start_emitted = 0;
-	state->has_pending_chunk = 0;
-	state->pending_chunk_size = 0;
+	state->pending_chunk_sizes = NULL;
+	state->pending_chunk_capacity = 0;
+	state->pending_chunk_count = 0;
+	state->pending_chunk_index = 0;
 }
 
 static void chunk_file_state_destroy(struct chunk_file_state *state) {
@@ -69,6 +91,10 @@ static void chunk_file_state_destroy(struct chunk_file_state *state) {
 	if (state->leftbuf) {
 		free(state->leftbuf);
 		state->leftbuf = NULL;
+	}
+	if (state->pending_chunk_sizes) {
+		free(state->pending_chunk_sizes);
+		state->pending_chunk_sizes = NULL;
 	}
 	if (state->file_start) {
 		free_chunk(state->file_start);
@@ -83,11 +109,15 @@ static void chunk_file_state_destroy(struct chunk_file_state *state) {
 
 static int chunk_file_state_fill(struct chunk_file_state *state) {
 	struct chunk *c;
+	int target_bytes = chunking_segment_batch ? chunk_gpu_segment_bytes() : destor.chunk_max_size;
 
 	if (!state || !state->leftbuf || state->file_end) {
 		return 0;
 	}
-	while (state->leftlen < destor.chunk_max_size && !state->file_end) {
+	if (target_bytes < destor.chunk_max_size) {
+		target_bytes = destor.chunk_max_size;
+	}
+	while (state->leftlen < target_bytes && !state->file_end) {
 		c = sync_queue_pop(read_queue);
 		if (c == NULL) {
 			return -1;
@@ -119,6 +149,14 @@ static int chunk_file_state_init(struct chunk_file_state *state) {
 		free_chunk(c);
 		return -1;
 	}
+	state->pending_chunk_capacity = chunk_gpu_boundary_stride();
+	state->pending_chunk_sizes = malloc(sizeof(int) * (size_t)state->pending_chunk_capacity);
+	if (!state->pending_chunk_sizes) {
+		free(state->leftbuf);
+		state->leftbuf = NULL;
+		free_chunk(c);
+		return -1;
+	}
 	state->file_start = c;
 	if (chunk_file_state_fill(state) != 0) {
 		chunk_file_state_destroy(state);
@@ -132,13 +170,15 @@ static void chunk_emit_data_chunk(struct chunk_file_state *state,
 	int chunk_size;
 	struct chunk *nc;
 
-	chunk_size = state->pending_chunk_size;
+	chunk_size = state->pending_chunk_sizes[state->pending_chunk_index++];
 	nc = new_chunk(chunk_size);
 	memcpy(nc->data, state->leftbuf + state->leftoff, chunk_size);
 	state->leftlen -= chunk_size;
 	state->leftoff += chunk_size;
-	state->has_pending_chunk = 0;
-	state->pending_chunk_size = 0;
+	if (state->pending_chunk_index >= state->pending_chunk_count) {
+		state->pending_chunk_index = 0;
+		state->pending_chunk_count = 0;
+	}
 
 	if (memcmp(zeros, nc->data, chunk_size) == 0) {
 		VERBOSE("Chunk phase: %ldth chunk  of %d zero bytes",
@@ -159,20 +199,20 @@ static void chunk_file_state_consume(struct chunk_file_state *state,
 		state->file_start = NULL;
 		state->start_emitted = 1;
 	}
-	if (state->has_pending_chunk) {
+	if (chunk_file_state_has_pending(state)) {
 		chunk_emit_data_chunk(state, zeros);
-		if (state->leftlen > 0) {
+		if (!chunk_file_state_has_pending(state) && state->leftlen > 0) {
 			memmove(state->leftbuf, state->leftbuf + state->leftoff, state->leftlen);
+			state->leftoff = 0;
 		}
-		state->leftoff = 0;
-		if (!state->file_end) {
+		if (!chunk_file_state_has_pending(state) && !state->file_end) {
 			chunk_file_state_fill(state);
 		}
 	}
 }
 
 static int chunk_file_state_is_done(const struct chunk_file_state *state) {
-	return state && state->leftlen == 0 && state->file_end && !state->has_pending_chunk;
+	return state && state->leftlen == 0 && state->file_end && !chunk_file_state_has_pending(state);
 }
 
 static void chunk_file_state_emit_end(struct chunk_file_state *state) {
@@ -199,15 +239,31 @@ static void* chunk_thread_batch_gpu(void *arg) {
 	int max_active = chunk_gpu_batch_task_limit();
 	struct chunk_file_state *states = calloc((size_t)max_active, sizeof(struct chunk_file_state));
 	unsigned char *zeros = malloc(destor.chunk_max_size);
+	unsigned char **buffers = NULL;
+	int *sizes = NULL;
+	int *chunk_sizes = NULL;
+	int *boundary_counts = NULL;
+	int *state_index = NULL;
+	int boundary_stride = chunk_gpu_boundary_stride();
 	int active_count = 0;
 	int read_done = 0;
 	int batch_notice_emitted = 0;
 	int i;
 
 	(void)arg;
-	if (!states || !zeros) {
+	buffers = malloc(sizeof(unsigned char *) * (size_t)max_active);
+	sizes = malloc(sizeof(int) * (size_t)max_active);
+	chunk_sizes = malloc(sizeof(int) * (size_t)max_active * (size_t)boundary_stride);
+	boundary_counts = malloc(sizeof(int) * (size_t)max_active);
+	state_index = malloc(sizeof(int) * (size_t)max_active);
+	if (!states || !zeros || !buffers || !sizes || !chunk_sizes || !boundary_counts || !state_index) {
 		free(states);
 		free(zeros);
+		free(buffers);
+		free(sizes);
+		free(chunk_sizes);
+		free(boundary_counts);
+		free(state_index);
 		return chunk_thread(NULL);
 	}
 	bzero(zeros, destor.chunk_max_size);
@@ -233,14 +289,10 @@ static void* chunk_thread_batch_gpu(void *arg) {
 		}
 
 		{
-			unsigned char *buffers[64];
-			int sizes[64];
-			int chunk_sizes[64];
-			int state_index[64];
 			int task_count = 0;
 
 			for (i = 0; i < active_count; i++) {
-				if (!states[i].has_pending_chunk && states[i].leftlen > 0) {
+				if (!chunk_file_state_has_pending(states + i) && states[i].leftlen > 0) {
 					buffers[task_count] = states[i].leftbuf + states[i].leftoff;
 					sizes[task_count] = states[i].leftlen;
 					state_index[task_count] = i;
@@ -255,17 +307,38 @@ static void* chunk_thread_batch_gpu(void *arg) {
 					batch_notice_emitted = 1;
 				}
 				TIMER_BEGIN(1);
-				if (chunking_batch) {
+				if (chunking_segment_batch) {
+					chunking_segment_batch(buffers,
+							sizes,
+							task_count,
+							boundary_stride,
+							boundary_counts,
+							chunk_sizes);
+				} else if (chunking_batch) {
 					chunking_batch(buffers, sizes, task_count, chunk_sizes);
 				} else {
 					for (i = 0; i < task_count; i++) {
 						chunk_sizes[i] = chunking(buffers[i], sizes[i]);
+						boundary_counts[i] = 1;
 					}
 				}
 				TIMER_END(1, jcr.chunk_time);
 				for (i = 0; i < task_count; i++) {
-					states[state_index[i]].pending_chunk_size = chunk_sizes[i];
-					states[state_index[i]].has_pending_chunk = 1;
+					struct chunk_file_state *state = states + state_index[i];
+					int count = chunking_segment_batch ? boundary_counts[i] : 1;
+
+					if (count <= 0) {
+						count = 1;
+						chunk_sizes[i * boundary_stride] = chunking(buffers[i], sizes[i]);
+					}
+					if (count > state->pending_chunk_capacity) {
+						count = state->pending_chunk_capacity;
+					}
+					memcpy(state->pending_chunk_sizes,
+							chunk_sizes + (i * boundary_stride),
+							sizeof(int) * (size_t)count);
+					state->pending_chunk_count = count;
+					state->pending_chunk_index = 0;
 				}
 			}
 		}
@@ -276,7 +349,7 @@ static void* chunk_thread_batch_gpu(void *arg) {
 				chunk_compact_active_states(states, &active_count, 0);
 				continue;
 			}
-			if (!states[0].has_pending_chunk) {
+			if (!chunk_file_state_has_pending(states)) {
 				break;
 			}
 			chunk_file_state_consume(states, zeros);
@@ -288,6 +361,11 @@ static void* chunk_thread_batch_gpu(void *arg) {
 	}
 	free(states);
 	free(zeros);
+	free(buffers);
+	free(sizes);
+	free(chunk_sizes);
+	free(boundary_counts);
+	free(state_index);
 
 #ifndef NODEDUP
 	sync_queue_term(chunk_queue);
@@ -414,6 +492,7 @@ static void* chunk_thread(void *arg) {
 void start_chunk_phase() {
 	chunking_uses_gpu = 0;
 	chunking_batch = NULL;
+	chunking_segment_batch = NULL;
 	destor.chunk_gpu_is_active = 0;
 	chunking_gpu_close_fn = NULL;
 
@@ -501,6 +580,7 @@ void start_chunk_phase() {
 			if (fastcdc_gpu_init() == 0) {
 				chunking = fastcdc_gpu_chunk_data;
 				chunking_batch = fastcdc_gpu_chunk_batch;
+				chunking_segment_batch = fastcdc_gpu_chunk_segments_batch;
 				chunking_uses_gpu = 1;
 				destor.chunk_gpu_is_active = 1;
 				chunking_gpu_close_fn = fastcdc_gpu_close;
@@ -528,6 +608,7 @@ void start_chunk_phase() {
 			if (jc_gpu_init() == 0) {
 				chunking = jc_gpu_chunk_data;
 				chunking_batch = jc_gpu_chunk_batch;
+				chunking_segment_batch = jc_gpu_chunk_segments_batch;
 				chunking_uses_gpu = 1;
 				destor.chunk_gpu_is_active = 1;
 				chunking_gpu_close_fn = jc_gpu_close;
@@ -582,6 +663,7 @@ void stop_chunk_phase() {
 		}
 		chunking_uses_gpu = 0;
 		chunking_batch = NULL;
+		chunking_segment_batch = NULL;
 		destor.chunk_gpu_is_active = 0;
 		chunking_gpu_close_fn = NULL;
 	}

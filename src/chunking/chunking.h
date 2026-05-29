@@ -58,6 +58,16 @@ int fastcdc_gpu_chunk_batch(unsigned char **buffers,
 		const int *sizes,
 		int task_count,
 		int *chunk_sizes);
+int fastcdc_gpu_chunk_segments_batch(unsigned char **buffers,
+		const int *sizes,
+		int task_count,
+		int boundary_stride,
+		int *boundary_counts,
+		int *chunk_sizes);
+int fastcdc_gpu_segment_bytes(void);
+int fastcdc_gpu_segment_boundary_limit(int segment_bytes);
+void fastcdc_gpu_set_threads_per_block(int threads);
+void fastcdc_gpu_set_pipeline_tasks(int tasks);
 void fastcdc_gpu_reset_batch_timing(void);
 double fastcdc_gpu_get_batch_compute_ms(void);
 
@@ -68,6 +78,12 @@ int jc_gpu_chunk_data(unsigned char *p, int n);
 int jc_gpu_chunk_batch(unsigned char **buffers,
 		const int *sizes,
 		int task_count,
+		int *chunk_sizes);
+int jc_gpu_chunk_segments_batch(unsigned char **buffers,
+		const int *sizes,
+		int task_count,
+		int boundary_stride,
+		int *boundary_counts,
 		int *chunk_sizes);
 
 /* Gear family */

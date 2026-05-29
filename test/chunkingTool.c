@@ -26,6 +26,12 @@ typedef int (*chunk_batch_fn_t)(unsigned char **buffers,
 		const int *sizes,
 		int task_count,
 		int *chunk_sizes);
+typedef int (*chunk_segment_batch_fn_t)(unsigned char **buffers,
+		const int *sizes,
+		int task_count,
+		int boundary_stride,
+		int *boundary_counts,
+		int *chunk_sizes);
 typedef void (*chunk_close_fn_t)(void);
 
 struct chunk_tool_options {
@@ -44,6 +50,8 @@ struct chunk_tool_options {
 	int gpu_enabled;
 	int gpu_device_id;
 	int gpu_batch_size;
+	int gpu_pipeline_tasks;
+	int gpu_threads_per_block;
 	int print_chunks;
 	int print_limit;
 	int run_all;
@@ -52,6 +60,7 @@ struct chunk_tool_options {
 struct chunk_tool_run {
 	chunk_fn_t chunk_fn;
 	chunk_batch_fn_t chunk_batch_fn;
+	chunk_segment_batch_fn_t chunk_segment_batch_fn;
 	chunk_close_fn_t close_fn;
 	const char *display_name;
 	int effective_avg_size;
@@ -316,6 +325,8 @@ static void usage(const char *prog) {
 			"      --gpu              Enable GPU wrapper when supported\n"
 			"      --gpu-device ID    GPU device id, default 0\n"
 			"      --gpu-batch SIZE   GPU batch size, default 8388608\n"
+			"      --gpu-pipeline-tasks N  GPU sub-batch tasks per launch, default 256\n"
+			"      --gpu-threads-per-block N  GPU threads per block, default 128\n"
 			"      --jump-mto N       GearJump mask delta, default 1\n"
 			"      --leap-par-idx N   Leap parallelism index, default 0\n"
 			"      --print-chunks     Print chunk boundaries\n"
@@ -852,6 +863,8 @@ static int run_chunking(const struct chunk_tool_options *options,
 		unsigned char *buffer,
 		size_t buffer_size,
 		struct chunk_tool_stats *stats) {
+	int segment_bytes = fastcdc_gpu_segment_bytes();
+	int boundary_stride = fastcdc_gpu_segment_boundary_limit(segment_bytes);
 	size_t offset = 0;
 	size_t chunk_count = 0;
 	size_t printed = 0;
@@ -871,36 +884,85 @@ static int run_chunking(const struct chunk_tool_options *options,
 
 	while (offset < buffer_size) {
 		int remaining = (int)(buffer_size - offset);
-		int chunk_size = run->chunk_fn(buffer + offset, remaining);
 
-		if (chunk_size <= 0 || chunk_size > remaining) {
-			CHUNK_TOOL_ERROR("Invalid chunk size %d at offset %zu, remaining=%d",
-					chunk_size,
-					offset,
-					remaining);
-			return -1;
+		if (run->chunk_segment_batch_fn) {
+			unsigned char *segment_buffers[1];
+			int segment_sizes[1];
+			int boundary_counts[1];
+			int segment_chunk_sizes[boundary_stride];
+			int j;
+
+			segment_buffers[0] = buffer + offset;
+			segment_sizes[0] = remaining;
+			if (run->chunk_segment_batch_fn(segment_buffers,
+						segment_sizes,
+						1,
+						boundary_stride,
+						boundary_counts,
+						segment_chunk_sizes) != 0) {
+				return -1;
+			}
+			for (j = 0; j < boundary_counts[0]; j++) {
+				int chunk_size = segment_chunk_sizes[j];
+
+				if (chunk_size <= 0 || chunk_size > remaining) {
+					CHUNK_TOOL_ERROR("Invalid chunk size %d at offset %zu, remaining=%d",
+							chunk_size,
+							offset,
+							remaining);
+					return -1;
+				}
+				if (chunk_size < observed_min) {
+					observed_min = chunk_size;
+				}
+				if (chunk_size > observed_max) {
+					observed_max = chunk_size;
+				}
+				total_chunk_bytes += (unsigned long long)chunk_size;
+				chunk_count++;
+				if (options->print_chunks && printed < (size_t)options->print_limit) {
+					printf("chunk[%zu] start=%zu end=%zu size=%d\n",
+							chunk_count - 1,
+							offset,
+							offset + (size_t)chunk_size,
+							chunk_size);
+					printed++;
+				}
+				offset += (size_t)chunk_size;
+				remaining -= chunk_size;
+			}
+		} else {
+			int chunk_size = run->chunk_fn(buffer + offset, remaining);
+
+			if (chunk_size <= 0 || chunk_size > remaining) {
+				CHUNK_TOOL_ERROR("Invalid chunk size %d at offset %zu, remaining=%d",
+						chunk_size,
+						offset,
+						remaining);
+				return -1;
+			}
+
+			if (chunk_size < observed_min) {
+				observed_min = chunk_size;
+			}
+			if (chunk_size > observed_max) {
+				observed_max = chunk_size;
+			}
+
+			total_chunk_bytes += (unsigned long long)chunk_size;
+			chunk_count++;
+
+			if (options->print_chunks && printed < (size_t)options->print_limit) {
+				printf("chunk[%zu] start=%zu end=%zu size=%d\n",
+						chunk_count - 1,
+						offset,
+						offset + (size_t)chunk_size,
+						chunk_size);
+				printed++;
+			}
+
+			offset += (size_t)chunk_size;
 		}
-
-		if (chunk_size < observed_min) {
-			observed_min = chunk_size;
-		}
-		if (chunk_size > observed_max) {
-			observed_max = chunk_size;
-		}
-
-		total_chunk_bytes += (unsigned long long)chunk_size;
-		chunk_count++;
-
-		if (options->print_chunks && printed < (size_t)options->print_limit) {
-			printf("chunk[%zu] start=%zu end=%zu size=%d\n",
-					chunk_count - 1,
-					offset,
-					offset + (size_t)chunk_size,
-					chunk_size);
-			printed++;
-		}
-
-		offset += (size_t)chunk_size;
 		if (g_chunk_tool_progress.active && chunk_tool_progress_should_refresh()) {
 			chunk_tool_progress_render(offset);
 		}
@@ -940,6 +1002,8 @@ static int run_chunking_batch(const struct chunk_tool_options *options,
 		const struct chunk_tool_run *run,
 		const struct chunk_tool_path_list *paths,
 		struct chunk_tool_stats *stats) {
+	int segment_bytes = fastcdc_gpu_segment_bytes();
+	int boundary_stride = fastcdc_gpu_segment_boundary_limit(segment_bytes);
 	int batch_start;
 	size_t printed = 0;
 
@@ -1009,7 +1073,8 @@ static int run_chunking_batch(const struct chunk_tool_options *options,
 		while (1) {
 			unsigned char *active_buffers[CHUNK_TOOL_MAX_BATCH];
 			int active_sizes[CHUNK_TOOL_MAX_BATCH];
-			int chunk_sizes[CHUNK_TOOL_MAX_BATCH];
+			int chunk_sizes[CHUNK_TOOL_MAX_BATCH * boundary_stride];
+			int boundary_counts[CHUNK_TOOL_MAX_BATCH];
 			int active_index[CHUNK_TOOL_MAX_BATCH];
 			size_t current_batch_offset = 0;
 			int active_count = 0;
@@ -1032,7 +1097,20 @@ static int run_chunking_batch(const struct chunk_tool_options *options,
 				break;
 			}
 
-			if (run->chunk_batch_fn(active_buffers, active_sizes, active_count, chunk_sizes) != 0) {
+			if (run->chunk_segment_batch_fn) {
+				if (run->chunk_segment_batch_fn(active_buffers,
+							active_sizes,
+							active_count,
+							boundary_stride,
+							boundary_counts,
+							chunk_sizes) != 0) {
+					for (i = 0; i < batch_count; i++) {
+						release_input_file(buffers[i], buffer_sizes[i], buffer_is_mmap[i]);
+					}
+					chunk_tool_progress_clear();
+					return -1;
+				}
+			} else if (run->chunk_batch_fn(active_buffers, active_sizes, active_count, chunk_sizes) != 0) {
 				for (i = 0; i < batch_count; i++) {
 					release_input_file(buffers[i], buffer_sizes[i], buffer_is_mmap[i]);
 				}
@@ -1043,40 +1121,46 @@ static int run_chunking_batch(const struct chunk_tool_options *options,
 			for (i = 0; i < active_count; i++) {
 				int file_index = active_index[i];
 				int remaining = active_sizes[i];
-				int chunk_size = chunk_sizes[i];
+				int local_count = run->chunk_segment_batch_fn ? boundary_counts[i] : 1;
+				int j;
 
-				if (chunk_size <= 0 || chunk_size > remaining) {
-					CHUNK_TOOL_ERROR("Invalid chunk size %d for file %s, remaining=%d",
-							chunk_size,
-							paths->items[batch_start + file_index],
-							remaining);
-					for (file_index = 0; file_index < batch_count; file_index++) {
-						release_input_file(buffers[file_index],
-								buffer_sizes[file_index],
-								buffer_is_mmap[file_index]);
+				for (j = 0; j < local_count; j++) {
+					int chunk_size = chunk_sizes[i * boundary_stride + j];
+
+					if (chunk_size <= 0 || chunk_size > remaining) {
+						CHUNK_TOOL_ERROR("Invalid chunk size %d for file %s, remaining=%d",
+								chunk_size,
+								paths->items[batch_start + file_index],
+								remaining);
+						for (file_index = 0; file_index < batch_count; file_index++) {
+							release_input_file(buffers[file_index],
+									buffer_sizes[file_index],
+									buffer_is_mmap[file_index]);
+						}
+						chunk_tool_progress_clear();
+						return -1;
 					}
-					chunk_tool_progress_clear();
-					return -1;
-				}
 
-				if (chunk_size < observed_min) {
-					observed_min = chunk_size;
+					if (chunk_size < observed_min) {
+						observed_min = chunk_size;
+					}
+					if (chunk_size > observed_max) {
+						observed_max = chunk_size;
+					}
+					total_chunk_bytes += (unsigned long long)chunk_size;
+					chunk_count++;
+					if (options->print_chunks && printed < (size_t)options->print_limit) {
+						printf("%s chunk[%zu] start=%zu end=%zu size=%d\n",
+								paths->items[batch_start + active_index[i]],
+								printed,
+								offsets[active_index[i]],
+								offsets[active_index[i]] + (size_t)chunk_size,
+								chunk_size);
+						printed++;
+					}
+					offsets[active_index[i]] += (size_t)chunk_size;
+					remaining -= chunk_size;
 				}
-				if (chunk_size > observed_max) {
-					observed_max = chunk_size;
-				}
-				total_chunk_bytes += (unsigned long long)chunk_size;
-				chunk_count++;
-				if (options->print_chunks && printed < (size_t)options->print_limit) {
-					printf("%s chunk[%zu] start=%zu end=%zu size=%d\n",
-							paths->items[batch_start + active_index[i]],
-							printed,
-							offsets[active_index[i]],
-							offsets[active_index[i]] + (size_t)chunk_size,
-							chunk_size);
-					printed++;
-				}
-				offsets[active_index[i]] += (size_t)chunk_size;
 				if (offsets[active_index[i]] >= buffer_sizes[active_index[i]]) {
 					done[active_index[i]] = 1;
 				}
@@ -1247,6 +1331,8 @@ static void reset_destor_for_run(const struct chunk_tool_options *options) {
 	destor.chunk_gpu_device_id = options->gpu_device_id;
 	destor.chunk_gpu_batch_size = options->gpu_batch_size;
 	destor.chunk_gpu_is_active = 0;
+	fastcdc_gpu_set_threads_per_block(options->gpu_threads_per_block);
+	fastcdc_gpu_set_pipeline_tasks(options->gpu_pipeline_tasks);
 }
 
 static int execute_path_run(const struct chunk_tool_options *options,
@@ -1388,6 +1474,7 @@ static int select_algorithm(const struct chunk_tool_options *options, struct chu
 			} else {
 				run->chunk_fn = fastcdc_gpu_chunk_data;
 				run->chunk_batch_fn = fastcdc_gpu_chunk_batch;
+				run->chunk_segment_batch_fn = fastcdc_gpu_chunk_segments_batch;
 				run->close_fn = fastcdc_gpu_close;
 				run->uses_gpu = 1;
 			}
@@ -1406,6 +1493,7 @@ static int select_algorithm(const struct chunk_tool_options *options, struct chu
 			} else {
 				run->chunk_fn = jc_gpu_chunk_data;
 				run->chunk_batch_fn = jc_gpu_chunk_batch;
+				run->chunk_segment_batch_fn = jc_gpu_chunk_segments_batch;
 				run->close_fn = jc_gpu_close;
 				run->uses_gpu = 1;
 			}
@@ -1443,6 +1531,8 @@ static int parse_args(int argc, char **argv, struct chunk_tool_options *options)
 	options->jump_mask_delta = 1;
 	options->gpu_device_id = 0;
 	options->gpu_batch_size = 8 * 1024 * 1024;
+	options->gpu_pipeline_tasks = 256;
+	options->gpu_threads_per_block = 128;
 	options->print_limit = 32;
 
 	for (i = 1; i < argc; i++) {
@@ -1519,6 +1609,20 @@ static int parse_args(int argc, char **argv, struct chunk_tool_options *options)
 		if (strcmp(argv[i], "--gpu-batch") == 0 && i + 1 < argc) {
 			options->gpu_batch_size = parse_int_arg("gpu batch size", argv[++i]);
 			if (options->gpu_batch_size < 0) {
+				return -1;
+			}
+			continue;
+		}
+		if (strcmp(argv[i], "--gpu-pipeline-tasks") == 0 && i + 1 < argc) {
+			options->gpu_pipeline_tasks = parse_int_arg("gpu pipeline tasks", argv[++i]);
+			if (options->gpu_pipeline_tasks < 0) {
+				return -1;
+			}
+			continue;
+		}
+		if (strcmp(argv[i], "--gpu-threads-per-block") == 0 && i + 1 < argc) {
+			options->gpu_threads_per_block = parse_int_arg("gpu threads per block", argv[++i]);
+			if (options->gpu_threads_per_block < 0) {
 				return -1;
 			}
 			continue;
