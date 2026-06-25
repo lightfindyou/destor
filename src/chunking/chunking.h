@@ -6,6 +6,11 @@
 #define CHUNK_H_
 
 #include "../destor.h"
+#include <string.h>
+
+#ifndef CHUNK_EXPERIMENT_STATS
+#define CHUNK_EXPERIMENT_STATS 0
+#endif
 
 struct chunk_experiment_stats {
 	uint64_t fingerprint_updates;
@@ -23,12 +28,28 @@ struct chunk_experiment_stats {
 	uint64_t max_checks_per_chunk;
 };
 
-void chunk_experiment_reset_stats();
+#if CHUNK_EXPERIMENT_STATS
+void chunk_experiment_reset_stats(void);
 void chunk_experiment_snapshot(struct chunk_experiment_stats *stats);
-void chunk_experiment_note_fingerprint_update();
+void chunk_experiment_note_fingerprint_update(void);
 void chunk_experiment_note_jump(int jump_bytes);
 void chunk_experiment_note_redundancy(int redundant_checks, int warp_group_count);
 void chunk_experiment_note_chunk_complete(int chunk_size, int cutoff_hit);
+#else
+#define chunk_experiment_reset_stats() ((void)0)
+#define chunk_experiment_snapshot(stats) \
+	do { \
+		if (stats) { \
+			memset((stats), 0, sizeof(*(stats))); \
+		} \
+	} while (0)
+#define chunk_experiment_note_fingerprint_update() ((void)0)
+#define chunk_experiment_note_jump(jump_bytes) ((void)(jump_bytes))
+#define chunk_experiment_note_redundancy(redundant_checks, warp_group_count) \
+	((void)(redundant_checks), (void)(warp_group_count))
+#define chunk_experiment_note_chunk_complete(chunk_size, cutoff_hit) \
+	((void)(chunk_size), (void)(cutoff_hit))
+#endif
 
 /* Rabin family */
 void windows_reset();
@@ -68,6 +89,8 @@ int fastcdc_gpu_segment_bytes(void);
 int fastcdc_gpu_segment_boundary_limit(int segment_bytes);
 void fastcdc_gpu_set_threads_per_block(int threads);
 void fastcdc_gpu_set_pipeline_tasks(int tasks);
+void fastcdc_gpu_set_naive_mode(int enabled);
+int fastcdc_gpu_naive_probe_max_workers(int file_count);
 void fastcdc_gpu_reset_batch_timing(void);
 double fastcdc_gpu_get_batch_compute_ms(void);
 
@@ -85,6 +108,24 @@ int jc_gpu_chunk_segments_batch(unsigned char **buffers,
 		int boundary_stride,
 		int *boundary_counts,
 		int *chunk_sizes);
+
+/* Gear GPU */
+int gear_gpu_init();
+void gear_gpu_close();
+int gear_gpu_chunk_data(unsigned char *p, int n);
+int gear_gpu_chunk_batch(unsigned char **buffers,
+		const int *sizes,
+		int task_count,
+		int *chunk_sizes);
+int gear_gpu_chunk_segments_batch(unsigned char **buffers,
+		const int *sizes,
+		int task_count,
+		int boundary_stride,
+		int *boundary_counts,
+		int *chunk_sizes);
+int gear_gpu_naive_chunk_data(unsigned char *p, int n);
+int jc_gpu_naive_chunk_data(unsigned char *p, int n);
+void fastcdc_gpu_set_naive_algorithm(int algorithm);
 
 /* Gear family */
 void gear_init();

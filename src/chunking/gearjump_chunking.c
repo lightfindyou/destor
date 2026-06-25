@@ -70,7 +70,6 @@ int gearjump_chunk_data(unsigned char *p, int n) {
 
 	if (n <= minSize)
 	{
-		chunk_experiment_note_chunk_complete(n, 0);
 		return n;
  	}
 #if !CHUNKMIN
@@ -82,7 +81,6 @@ int gearjump_chunk_data(unsigned char *p, int n) {
 	while (i < n) {
 		fingerprint = (fingerprint << 1) + (g_gear_matrix[p[i]]);
 		i++;
-		chunk_experiment_note_fingerprint_update();
 
 		if (G_UNLIKELY(!(fingerprint & jumpMask))) {
 			if (!(fingerprint & mask)) {
@@ -92,17 +90,14 @@ int gearjump_chunk_data(unsigned char *p, int n) {
 					continue;
 				}
 #endif
-				chunk_experiment_note_chunk_complete(i, 1);
 				return i;
 			} else {
 				fingerprint = 0;
-				chunk_experiment_note_jump(jumpLen);
 				i += jumpLen;
 			}
 		}
 	}
 
-	chunk_experiment_note_chunk_complete(i < n ? i : n, 0);
 	return i < n ? i : n;
 }
 

@@ -55,7 +55,6 @@ int fastcdc_chunk_data(unsigned char *p, int n){
     //return n;
 
         if(n<=g_min_fastcdc_chunk_size) { //the minimal  subChunk Size.
-		chunk_experiment_note_chunk_complete(n, 0);
         return n;
         }
     //windows_reset();
@@ -66,9 +65,7 @@ int fastcdc_chunk_data(unsigned char *p, int n){
 
     while(i<Mid){
         fingerprint = (fingerprint<<1) + (g_gear_matrix[p[i]]);
-        chunk_experiment_note_fingerprint_update();
         if ((!(fingerprint & MaskS /*0x0000d90f03530000*/))) { //AVERAGE*2, *4, *8
-			chunk_experiment_note_chunk_complete(i, 1);
             return i;
         }
         i++;
@@ -76,14 +73,11 @@ int fastcdc_chunk_data(unsigned char *p, int n){
 
     while(i<n){
         fingerprint = (fingerprint<<1) + (g_gear_matrix[p[i]]);
-        chunk_experiment_note_fingerprint_update();
         if ((!(fingerprint & MaskL /*0x0000d90003530000*/))) { //Average/2, /4, /8
-			chunk_experiment_note_chunk_complete(i, 1);
             return i;
         }
         i++;
     }
     //printf("\r\n==chunking FINISH!\r\n");
-	chunk_experiment_note_chunk_complete(i, 0);
     return i;
 }

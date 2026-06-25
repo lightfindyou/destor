@@ -11,7 +11,7 @@ struct destor destor;
 
 static void usage(const char *prog) {
 	fprintf(stderr,
-			"Usage: %s [-n cases] [-s seed] [-a avg] [-m min] [-x max] [-l max_input_len]\n",
+			"Usage: %s [-n cases] [-s seed] [-a avg] [-m min] [-x max] [-l max_input_len] [--naive]\n",
 			prog);
 }
 
@@ -66,7 +66,13 @@ int main(int argc, char **argv) {
 	int max = 65536;
 	int max_input_len = 2 * 1024 * 1024;
 
+	int naive = 0;
+
 	for (int i = 1; i < argc; i++) {
+		if (strcmp(argv[i], "--naive") == 0) {
+			naive = 1;
+			continue;
+		}
 		if (strcmp(argv[i], "-n") == 0 && i + 1 < argc) {
 			cases = atoi(argv[++i]);
 		} else if (strcmp(argv[i], "-s") == 0 && i + 1 < argc) {
@@ -98,6 +104,9 @@ int main(int argc, char **argv) {
 	destor.chunk_gpu_enable = 1;
 
 	fastcdc_init();
+	if (naive) {
+		fastcdc_gpu_set_naive_mode(1);
+	}
 	if (fastcdc_gpu_init() != 0 || !fastcdc_gpu_is_ready()) {
 		fprintf(stderr,
 				"FastCDC GPU parity requires a loaded GPU kernel. Build PTX first with make -C src/chunking fastcdc_gpu_ptx\n");
@@ -158,7 +167,8 @@ int main(int argc, char **argv) {
 		}
 	}
 
-	printf("FastCDC parity PASS: cases=%d seed=%u min=%d avg=%d max=%d max_input_len=%d\n",
+	printf("FastCDC parity PASS%s: cases=%d seed=%u min=%d avg=%d max=%d max_input_len=%d\n",
+			naive ? " (naive GPU)" : "",
 			cases, seed, min, avg, max, max_input_len);
 
 	fastcdc_gpu_close();

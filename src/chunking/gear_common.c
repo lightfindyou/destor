@@ -2,6 +2,7 @@
 
 #include <memory.h>
 #include <openssl/md5.h>
+#include <pthread.h>
 
 enum {
 	GEAR_SYMBOL_COUNT = 256,
@@ -32,7 +33,9 @@ unsigned long g_condition_mask[] = {
 		0x0000d90703537000,
 };
 
-void gear_matrix_init() {
+static pthread_once_t g_gear_matrix_once = PTHREAD_ONCE_INIT;
+
+static void gear_matrix_init_impl(void) {
 	char seed[GEAR_SEED_LENGTH];
 
 	for (int i = 0; i < GEAR_SYMBOL_COUNT; i++) {
@@ -50,4 +53,8 @@ void gear_matrix_init() {
 
 		memcpy(&g_gear_matrix[i], md5_result, sizeof(uint64_t));
 	}
+}
+
+void gear_matrix_init() {
+	pthread_once(&g_gear_matrix_once, gear_matrix_init_impl);
 }

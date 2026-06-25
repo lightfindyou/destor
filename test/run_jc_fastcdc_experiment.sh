@@ -10,6 +10,7 @@ AVG_SIZES=${AVG_SIZES:-"4096 8192"}
 MASK_BITS_LIST=${MASK_BITS_LIST:-"11 12 13"}
 WARP_WINDOWS=${WARP_WINDOWS:-"32"}
 GPU_MODE=${GPU_MODE:-0}
+GPU_PIPELINE_TASKS=${GPU_PIPELINE_TASKS:-256}
 JC_JUMP_MTO=${JC_JUMP_MTO:-1}
 ALGORITHMS=${ALGORITHMS:-"baseline fastcdc jc"}
 
@@ -37,7 +38,7 @@ for avg in $AVG_SIZES; do
 					set -- "$@" --jump-mto "$JC_JUMP_MTO"
 				fi
 				if [ "$GPU_MODE" = "1" ]; then
-					set -- "$@" --gpu
+					set -- "$@" --gpu --gpu-pipeline-tasks "$GPU_PIPELINE_TASKS"
 				fi
 				echo "[experiment] algo=$algorithm avg=$avg mask_bits=$mask_bits warp_window=$warp_window gpu=$GPU_MODE"
 				"$@"
