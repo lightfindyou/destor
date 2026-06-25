@@ -153,4 +153,34 @@ patch_result_row() {
 		"$@"
 }
 
+# Temporary byte-capped dataset views (symlinks; removed on script exit).
+DESTOR_SUBSET_TMP=""
+DESTOR_SUBSET_CLEANUP_REGISTERED=0
+
+subset_tmp_cleanup() {
+	if [ -n "$DESTOR_SUBSET_TMP" ] && [ -d "$DESTOR_SUBSET_TMP" ]; then
+		rm -rf "$DESTOR_SUBSET_TMP"
+	fi
+	DESTOR_SUBSET_TMP=""
+}
+
+subset_tmp_init() {
+	if [ -n "$DESTOR_SUBSET_TMP" ]; then
+		return 0
+	fi
+	DESTOR_SUBSET_TMP=$(mktemp -d "${TMPDIR:-/tmp}/destor-subset.XXXXXX")
+	if [ "${KEEP_SUBSET:-0}" != "1" ] && [ "$DESTOR_SUBSET_CLEANUP_REGISTERED" -eq 0 ]; then
+		DESTOR_SUBSET_CLEANUP_REGISTERED=1
+		trap subset_tmp_cleanup EXIT INT TERM
+	fi
+}
+
+prepare_capped_input() {
+	ds_name="$1"
+	src="$2"
+	cap_bytes="$3"
+	subset_tmp_init
+	python3 "$SCRIPT_DIR/prepare_naive_subset.py" "$src" "$DESTOR_SUBSET_TMP/$ds_name" "$cap_bytes"
+}
+
 exp_common_init_algo_colors
