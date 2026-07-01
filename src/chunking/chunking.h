@@ -93,6 +93,8 @@ void fastcdc_gpu_set_naive_mode(int enabled);
 int fastcdc_gpu_naive_probe_max_workers(int file_count);
 void fastcdc_gpu_reset_batch_timing(void);
 double fastcdc_gpu_get_batch_compute_ms(void);
+void fastcdc_gpu_naive_reset_kernel_wall(void);
+double fastcdc_gpu_naive_get_kernel_wall_ms(void);
 
 /* JC GPU fallback wrapper */
 int jc_gpu_init();

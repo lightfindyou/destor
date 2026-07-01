@@ -1,0 +1,32 @@
+---
+description: 实验脚本与基准测试必须保证公平性；禁止历史 worktree/二进制
+alwaysApply: true
+---
+
+# 实验公平性（强制）
+
+修改实验、基准、计时或报告相关代码时，必须遵循：
+
+## 1. 严格保证实验公平性
+
+- 对比的各配置必须使用**同一套**可执行文件、计时模块、CSV 字段与报告口径。
+- 不得在 A/B/C/D（或 CPU/GPU 等）之间混用不同的计时定义、吞吐计算公式或 `--profile-chunking` 默认值。
+- `elapsed_ms` / `actual_elapsed_ms` / `kernel_throughput_gbps` 等字段在所有被对比的配置上含义必须一致（例如：是否含读盘、是否含 H2D/D2H 须统一说明并统一实现）。
+- 数据量不一致时（如 A 仅 1 GiB、B/C/D 全量）须在脚本注释与报告中明确标注，不得当作同口径绝对吞吐直接解读。
+- 禁止为“省事”引入会破坏对比公平性的捷径（如仅某一阶段开 profiling、仅某一阶段用不同 input cap）。
+
+## 2. 仅用当前仓库文件，禁止历史文件
+
+- **禁止**使用 git worktree、历史 commit 编译的 `chunkingTool`、`.worktrees/ablation/*` 等历史二进制做 exp1–exp4 或论文实验。
+- 消融（exp2 A→D）必须通过**当前** `test/chunkingTool` + **当前** `src/chunking/*` 上的参数/代码路径实现，不得拉取旧版本工具。
+- 历史结果目录可作参考，不得与新版框架混比；改版后应重跑实验。
+- `verify_setup.sh` 应拒绝脚本中出现 `build_ablation_tool`、`run_bench_tool`、`.worktrees/` 等历史消融依赖。
+
+## 实践检查清单
+
+修改 `test/experiments/`、`test/chunkingTool.c`、`test/chunk_tool_timing.*` 或 GPU 计时代码后：
+
+1. 所有对比阶段是否共用当前 `chunkingTool`？
+2. 计时口径是否在 `chunk_tool_timing` 与 `patch_bench_row_extras` / `generate_report.py` 中一致？
+3. 是否误引入 worktree、历史二进制或不同的 CSV 列语义？
+4. `verify_setup.sh` 是否仍通过？

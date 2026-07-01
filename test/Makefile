@@ -40,8 +40,8 @@ rapidCDCSizeDist:
 perfromanceBreakdown:
 	gcc -ggdb -Wall -I/usr/local/include -O3 -o perfromanceBreakdown perfromanceBreakdown.c read.c JC.c rabin.c ae.c leap.c sds.c fastcdc.c Rabin_simple.c -lm -lcrypto -lssl -pthread -lglib -lxxhash
 
-chunkingTool: ../src/chunking/libchunk.a chunkingTool.c
-	gcc -ggdb -Wall -O3 $(shell pkg-config --cflags glib-2.0) -o chunkingTool chunkingTool.c ../src/chunking/libchunk.a -lm -lcrypto -lssl $(shell pkg-config --libs glib-2.0) -ldl -pthread
+chunkingTool: ../src/chunking/libchunk.a chunkingTool.c chunk_tool_timing.c
+	gcc -ggdb -Wall -O3 $(shell pkg-config --cflags glib-2.0) -o chunkingTool chunkingTool.c chunk_tool_timing.c ../src/chunking/libchunk.a -lm -lcrypto -lssl $(shell pkg-config --libs glib-2.0) -ldl -pthread
 
 chunkingSuite: chunkingTool run_chunking_suite.sh
 	sh ./run_chunking_suite.sh ../README.md

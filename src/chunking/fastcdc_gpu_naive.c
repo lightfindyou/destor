@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 
 #define FASTCDC_GPU_NAIVE_KERNEL_SYMBOL "fastcdc_naive_chunk_kernel"
@@ -94,6 +95,52 @@ static int g_naive_algorithm = GPU_NAIVE_ALGO_FASTCDC;
 static int g_naive_probe_cache = -1;
 static pthread_key_t g_naive_tls_key;
 static pthread_once_t g_naive_tls_once = PTHREAD_ONCE_INIT;
+static pthread_mutex_t g_naive_kernel_wall_lock = PTHREAD_MUTEX_INITIALIZER;
+static int g_naive_kernel_wall_active;
+static struct timespec g_naive_kernel_wall_start;
+static struct timespec g_naive_kernel_wall_end;
+
+void fastcdc_gpu_naive_reset_kernel_wall(void) {
+	pthread_mutex_lock(&g_naive_kernel_wall_lock);
+	g_naive_kernel_wall_active = 0;
+	pthread_mutex_unlock(&g_naive_kernel_wall_lock);
+}
+
+static void fastcdc_gpu_naive_kernel_wall_begin(void) {
+	struct timespec now;
+
+	clock_gettime(CLOCK_MONOTONIC, &now);
+	pthread_mutex_lock(&g_naive_kernel_wall_lock);
+	if (!g_naive_kernel_wall_active) {
+		g_naive_kernel_wall_start = now;
+		g_naive_kernel_wall_active = 1;
+	}
+	pthread_mutex_unlock(&g_naive_kernel_wall_lock);
+}
+
+static void fastcdc_gpu_naive_kernel_wall_end(void) {
+	struct timespec now;
+
+	clock_gettime(CLOCK_MONOTONIC, &now);
+	pthread_mutex_lock(&g_naive_kernel_wall_lock);
+	if (g_naive_kernel_wall_active) {
+		g_naive_kernel_wall_end = now;
+	}
+	pthread_mutex_unlock(&g_naive_kernel_wall_lock);
+}
+
+double fastcdc_gpu_naive_get_kernel_wall_ms(void) {
+	double ms = 0.0;
+
+	pthread_mutex_lock(&g_naive_kernel_wall_lock);
+	if (g_naive_kernel_wall_active) {
+		ms = (double)(g_naive_kernel_wall_end.tv_sec - g_naive_kernel_wall_start.tv_sec) * 1000.0
+				+ (double)(g_naive_kernel_wall_end.tv_nsec - g_naive_kernel_wall_start.tv_nsec)
+						/ 1000000.0;
+	}
+	pthread_mutex_unlock(&g_naive_kernel_wall_lock);
+	return ms;
+}
 
 static void fastcdc_gpu_naive_tls_init_key(void) {
 	pthread_key_create(&g_naive_tls_key, free);
@@ -575,7 +622,8 @@ int fastcdc_gpu_naive_chunk_data(unsigned char *p, int n) {
 	void *kernel_params[9];
 
 	if (!state || !state->kernel_ready) {
-		return fastcdc_chunk_data(p, n);
+		WARNING("FastCDC GPU naive: kernel is not ready");
+		return -1;
 	}
 	if (n <= 0) {
 		return -1;
@@ -589,14 +637,14 @@ int fastcdc_gpu_naive_chunk_data(unsigned char *p, int n) {
 	if (rc != CUDA_SUCCESS) {
 		WARNING("FastCDC GPU naive: cuMemAlloc input failed: %s",
 				fastcdc_gpu_naive_error_string(state, rc));
-		return fastcdc_chunk_data(p, n);
+		return -1;
 	}
 	rc = state->cuMemAlloc(&device_result, sizeof(result));
 	if (rc != CUDA_SUCCESS) {
 		WARNING("FastCDC GPU naive: cuMemAlloc result failed: %s",
 				fastcdc_gpu_naive_error_string(state, rc));
 		state->cuMemFree(device_input);
-		return fastcdc_chunk_data(p, n);
+		return -1;
 	}
 	rc = state->cuMemcpyHtoD(device_input, p, (size_t)copy_len);
 	if (rc != CUDA_SUCCESS) {
@@ -604,7 +652,7 @@ int fastcdc_gpu_naive_chunk_data(unsigned char *p, int n) {
 				fastcdc_gpu_naive_error_string(state, rc));
 		state->cuMemFree(device_result);
 		state->cuMemFree(device_input);
-		return fastcdc_chunk_data(p, n);
+		return -1;
 	}
 	rc = state->cuMemcpyHtoD(device_result, &result, sizeof(result));
 	if (rc != CUDA_SUCCESS) {
@@ -612,7 +660,7 @@ int fastcdc_gpu_naive_chunk_data(unsigned char *p, int n) {
 				fastcdc_gpu_naive_error_string(state, rc));
 		state->cuMemFree(device_result);
 		state->cuMemFree(device_input);
-		return fastcdc_chunk_data(p, n);
+		return -1;
 	}
 
 	kernel_params[0] = &device_input;
@@ -625,6 +673,7 @@ int fastcdc_gpu_naive_chunk_data(unsigned char *p, int n) {
 	kernel_params[7] = &mask_l;
 	kernel_params[8] = &device_result;
 
+	fastcdc_gpu_naive_kernel_wall_begin();
 	rc = state->cuLaunchKernel(state->naive_kernel,
 			1,
 			1,
@@ -640,6 +689,7 @@ int fastcdc_gpu_naive_chunk_data(unsigned char *p, int n) {
 		rc = state->cuCtxSynchronize();
 	}
 	if (rc == CUDA_SUCCESS) {
+		fastcdc_gpu_naive_kernel_wall_end();
 		rc = state->cuMemcpyDtoH(&result, device_result, sizeof(result));
 	}
 
@@ -647,14 +697,13 @@ int fastcdc_gpu_naive_chunk_data(unsigned char *p, int n) {
 	state->cuMemFree(device_input);
 
 	if (rc != CUDA_SUCCESS) {
-		WARNING("FastCDC GPU naive: kernel launch failed, falling back to CPU: %s",
+		WARNING("FastCDC GPU naive: kernel launch failed: %s",
 				fastcdc_gpu_naive_error_string(state, rc));
-		return fastcdc_chunk_data(p, n);
+		return -1;
 	}
 	if (result.chunk_size <= 0 || result.chunk_size > n) {
-		WARNING("FastCDC GPU naive: invalid kernel chunk size %d, falling back to CPU",
-				result.chunk_size);
-		return fastcdc_chunk_data(p, n);
+		WARNING("FastCDC GPU naive: invalid kernel chunk size %d", result.chunk_size);
+		return -1;
 	}
 
 	return result.chunk_size;
@@ -671,13 +720,15 @@ int gear_gpu_naive_chunk_data(unsigned char *p, int n) {
 	void *kernel_params[7];
 
 	if (!state || !state->kernel_ready || !state->gear_naive_kernel) {
-		return gear_chunk_data(p, n);
+		WARNING("Gear GPU naive: kernel is not ready");
+		return -1;
 	}
 	if (n <= 0) {
 		return -1;
 	}
 	if (fastcdc_gpu_naive_gear_mask(&mask) != 0) {
-		return gear_chunk_data(p, n);
+		WARNING("Gear GPU naive: invalid chunking parameters");
+		return -1;
 	}
 
 	copy_len = n < destor.chunk_max_size ? n : destor.chunk_max_size;
@@ -685,24 +736,32 @@ int gear_gpu_naive_chunk_data(unsigned char *p, int n) {
 
 	rc = state->cuMemAlloc(&device_input, (size_t)copy_len);
 	if (rc != CUDA_SUCCESS) {
-		return gear_chunk_data(p, n);
+		WARNING("Gear GPU naive: cuMemAlloc input failed: %s",
+				fastcdc_gpu_naive_error_string(state, rc));
+		return -1;
 	}
 	rc = state->cuMemAlloc(&device_result, sizeof(result));
 	if (rc != CUDA_SUCCESS) {
+		WARNING("Gear GPU naive: cuMemAlloc result failed: %s",
+				fastcdc_gpu_naive_error_string(state, rc));
 		state->cuMemFree(device_input);
-		return gear_chunk_data(p, n);
+		return -1;
 	}
 	rc = state->cuMemcpyHtoD(device_input, p, (size_t)copy_len);
 	if (rc != CUDA_SUCCESS) {
+		WARNING("Gear GPU naive: cuMemcpyHtoD input failed: %s",
+				fastcdc_gpu_naive_error_string(state, rc));
 		state->cuMemFree(device_result);
 		state->cuMemFree(device_input);
-		return gear_chunk_data(p, n);
+		return -1;
 	}
 	rc = state->cuMemcpyHtoD(device_result, &result, sizeof(result));
 	if (rc != CUDA_SUCCESS) {
+		WARNING("Gear GPU naive: cuMemcpyHtoD result init failed: %s",
+				fastcdc_gpu_naive_error_string(state, rc));
 		state->cuMemFree(device_result);
 		state->cuMemFree(device_input);
-		return gear_chunk_data(p, n);
+		return -1;
 	}
 
 	kernel_params[0] = &device_input;
@@ -713,18 +772,26 @@ int gear_gpu_naive_chunk_data(unsigned char *p, int n) {
 	kernel_params[5] = &mask;
 	kernel_params[6] = &device_result;
 
+	fastcdc_gpu_naive_kernel_wall_begin();
 	rc = state->cuLaunchKernel(state->gear_naive_kernel,
 			1, 1, 1, 1, 1, 1, 0, NULL, kernel_params, NULL);
 	if (rc == CUDA_SUCCESS) {
 		rc = state->cuCtxSynchronize();
 	}
 	if (rc == CUDA_SUCCESS) {
+		fastcdc_gpu_naive_kernel_wall_end();
 		rc = state->cuMemcpyDtoH(&result, device_result, sizeof(result));
 	}
 	state->cuMemFree(device_result);
 	state->cuMemFree(device_input);
-	if (rc != CUDA_SUCCESS || result.chunk_size <= 0 || result.chunk_size > n) {
-		return gear_chunk_data(p, n);
+	if (rc != CUDA_SUCCESS) {
+		WARNING("Gear GPU naive: kernel launch failed: %s",
+				fastcdc_gpu_naive_error_string(state, rc));
+		return -1;
+	}
+	if (result.chunk_size <= 0 || result.chunk_size > n) {
+		WARNING("Gear GPU naive: invalid kernel chunk size %d", result.chunk_size);
+		return -1;
 	}
 	return result.chunk_size;
 }
@@ -742,13 +809,15 @@ int jc_gpu_naive_chunk_data(unsigned char *p, int n) {
 	void *kernel_params[9];
 
 	if (!state || !state->kernel_ready || !state->jc_naive_kernel) {
-		return gearjump_chunk_data(p, n);
+		WARNING("JC GPU naive: kernel is not ready");
+		return -1;
 	}
 	if (n <= 0) {
 		return -1;
 	}
 	if (fastcdc_gpu_naive_jc_params(&mask, &jump_mask, &jump_len) != 0) {
-		return gearjump_chunk_data(p, n);
+		WARNING("JC GPU naive: invalid chunking parameters");
+		return -1;
 	}
 
 	copy_len = n < destor.chunk_max_size ? n : destor.chunk_max_size;
@@ -756,24 +825,32 @@ int jc_gpu_naive_chunk_data(unsigned char *p, int n) {
 
 	rc = state->cuMemAlloc(&device_input, (size_t)copy_len);
 	if (rc != CUDA_SUCCESS) {
-		return gearjump_chunk_data(p, n);
+		WARNING("JC GPU naive: cuMemAlloc input failed: %s",
+				fastcdc_gpu_naive_error_string(state, rc));
+		return -1;
 	}
 	rc = state->cuMemAlloc(&device_result, sizeof(result));
 	if (rc != CUDA_SUCCESS) {
+		WARNING("JC GPU naive: cuMemAlloc result failed: %s",
+				fastcdc_gpu_naive_error_string(state, rc));
 		state->cuMemFree(device_input);
-		return gearjump_chunk_data(p, n);
+		return -1;
 	}
 	rc = state->cuMemcpyHtoD(device_input, p, (size_t)copy_len);
 	if (rc != CUDA_SUCCESS) {
+		WARNING("JC GPU naive: cuMemcpyHtoD input failed: %s",
+				fastcdc_gpu_naive_error_string(state, rc));
 		state->cuMemFree(device_result);
 		state->cuMemFree(device_input);
-		return gearjump_chunk_data(p, n);
+		return -1;
 	}
 	rc = state->cuMemcpyHtoD(device_result, &result, sizeof(result));
 	if (rc != CUDA_SUCCESS) {
+		WARNING("JC GPU naive: cuMemcpyHtoD result init failed: %s",
+				fastcdc_gpu_naive_error_string(state, rc));
 		state->cuMemFree(device_result);
 		state->cuMemFree(device_input);
-		return gearjump_chunk_data(p, n);
+		return -1;
 	}
 
 	kernel_params[0] = &device_input;
@@ -786,18 +863,26 @@ int jc_gpu_naive_chunk_data(unsigned char *p, int n) {
 	kernel_params[7] = &jump_len;
 	kernel_params[8] = &device_result;
 
+	fastcdc_gpu_naive_kernel_wall_begin();
 	rc = state->cuLaunchKernel(state->jc_naive_kernel,
 			1, 1, 1, 1, 1, 1, 0, NULL, kernel_params, NULL);
 	if (rc == CUDA_SUCCESS) {
 		rc = state->cuCtxSynchronize();
 	}
 	if (rc == CUDA_SUCCESS) {
+		fastcdc_gpu_naive_kernel_wall_end();
 		rc = state->cuMemcpyDtoH(&result, device_result, sizeof(result));
 	}
 	state->cuMemFree(device_result);
 	state->cuMemFree(device_input);
-	if (rc != CUDA_SUCCESS || result.chunk_size <= 0 || result.chunk_size > n) {
-		return gearjump_chunk_data(p, n);
+	if (rc != CUDA_SUCCESS) {
+		WARNING("JC GPU naive: kernel launch failed: %s",
+				fastcdc_gpu_naive_error_string(state, rc));
+		return -1;
+	}
+	if (result.chunk_size <= 0 || result.chunk_size > n) {
+		WARNING("JC GPU naive: invalid kernel chunk size %d", result.chunk_size);
+		return -1;
 	}
 	return result.chunk_size;
 }

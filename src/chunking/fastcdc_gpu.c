@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 
 extern int fastcdc_gpu_naive_mode_enabled(void);
@@ -167,6 +168,7 @@ struct cuda_driver_state {
     cuEventElapsedTime_t cuEventElapsedTime;
 	cuCtxSynchronize_t cuCtxSynchronize;
 	double batch_compute_ms_accum;
+	double batch_kernel_wall_ms_accum;
 };
 
 static struct cuda_driver_state g_cuda;
@@ -333,12 +335,23 @@ static void fastcdc_gpu_init_batch_events() {
 		}
 	}
 }
+static double fastcdc_gpu_timespec_diff_ms(const struct timespec *start,
+		const struct timespec *end) {
+	return (double)(end->tv_sec - start->tv_sec) * 1000.0
+			+ (double)(end->tv_nsec - start->tv_nsec) / 1000000.0;
+}
+
 void fastcdc_gpu_reset_batch_timing(void) {
 	g_cuda.batch_compute_ms_accum = 0.0;
+	g_cuda.batch_kernel_wall_ms_accum = 0.0;
 }
 
 double fastcdc_gpu_get_batch_compute_ms(void) {
-	return g_cuda.batch_compute_ms_accum;
+	/* Prefer CUDA event kernel time (excludes H2D/D2H); wall is fallback only. */
+	if (g_cuda.batch_compute_ms_accum > 0.0) {
+		return g_cuda.batch_compute_ms_accum;
+	}
+	return g_cuda.batch_kernel_wall_ms_accum;
 }
 
 static int fastcdc_gpu_floor_log2(unsigned int value) {
@@ -1161,7 +1174,7 @@ static int cuda_driver_init_context() {
 	fastcdc_gpu_load_threads_per_block_from_env();
 	g_cuda.handle = dlopen("libcuda.so.1", RTLD_NOW);
 	if (!g_cuda.handle) {
-		WARNING("Chunk GPU: CUDA driver not found (libcuda.so.1). Falling back to CPU.");
+		WARNING("Chunk GPU: CUDA driver not found (libcuda.so.1)");
 		return -1;
 	}
 
@@ -1210,7 +1223,7 @@ static int cuda_driver_init_context() {
 	}
 
 	if (destor.chunk_gpu_device_id < 0 || destor.chunk_gpu_device_id >= device_count) {
-		WARNING("Chunk GPU: device id %d out of range [0, %d), falling back to CPU",
+		WARNING("Chunk GPU: device id %d out of range [0, %d)",
 				destor.chunk_gpu_device_id, device_count);
 		fastcdc_gpu_release_driver();
 		return -1;
@@ -1274,69 +1287,6 @@ void fastcdc_gpu_close() {
 	fastcdc_gpu_release_driver();
 }
 
-typedef int (*fastcdc_gpu_cpu_chunk_fn)(unsigned char *buffer, int size);
-
-static void fastcdc_gpu_chunk_segments_cpu_fallback(unsigned char **buffers,
-		const int *sizes,
-		int task_count,
-		int boundary_stride,
-		int *boundary_counts,
-		int *chunk_sizes,
-		fastcdc_gpu_cpu_chunk_fn chunk_fn) {
-	int i;
-	int payload_bytes = fastcdc_gpu_segment_bytes();
-
-	for (i = 0; i < task_count; i++) {
-		int segment_size = sizes[i] < fastcdc_gpu_segment_window_bytes()
-				? sizes[i]
-				: fastcdc_gpu_segment_window_bytes();
-		int target_size = sizes[i] < payload_bytes ? sizes[i] : payload_bytes;
-		int offset = 0;
-		int count = 0;
-
-		if (segment_size < 0) {
-			segment_size = 0;
-		}
-		if (target_size < 0) {
-			target_size = 0;
-		}
-		while (offset < segment_size && count < boundary_stride) {
-			int chunk_size = chunk_fn(buffers[i] + offset, segment_size - offset);
-
-			if (chunk_size <= 0 || chunk_size > segment_size - offset) {
-				chunk_size = segment_size - offset;
-			}
-			chunk_sizes[i * boundary_stride + count] = chunk_size;
-			offset += chunk_size;
-			count++;
-			if (offset >= target_size) {
-				break;
-			}
-		}
-		boundary_counts[i] = count;
-	}
-}
-
-static void fastcdc_gpu_segment_fallback_one(unsigned char *buffer,
-		int size,
-		int boundary_stride,
-		int *boundary_count,
-		int *chunk_sizes,
-		fastcdc_gpu_cpu_chunk_fn chunk_fn) {
-	unsigned char *buffers[1];
-	int sizes[1];
-
-	buffers[0] = buffer;
-	sizes[0] = size;
-	fastcdc_gpu_chunk_segments_cpu_fallback(buffers,
-			sizes,
-			1,
-			boundary_stride,
-			boundary_count,
-			chunk_sizes,
-			chunk_fn);
-}
-
 static int fastcdc_gpu_chunk_segments_batch_common(unsigned char **buffers,
 		const int *sizes,
 		int task_count,
@@ -1379,21 +1329,24 @@ static int fastcdc_gpu_chunk_segments_batch_common(unsigned char **buffers,
 	int ok = 1;
 	size_t total_bytes = 0;
 	float kernel_ms = 0.0f;
+	struct timespec batch_wall_start;
+	struct timespec batch_wall_end;
+	int batch_wall_active = 0;
 	CUfunction kernel;
-	fastcdc_gpu_cpu_chunk_fn cpu_chunk_fn;
+	const char *kernel_name;
 
 	switch (kernel_kind) {
 	case GPU_BATCH_KERNEL_JC:
 		kernel = g_cuda.jc_kernel;
-		cpu_chunk_fn = gearjump_chunk_data;
+		kernel_name = "JC";
 		break;
 	case GPU_BATCH_KERNEL_GEAR:
 		kernel = g_cuda.gear_kernel;
-		cpu_chunk_fn = gear_chunk_data;
+		kernel_name = "Gear";
 		break;
 	default:
 		kernel = g_cuda.fastcdc_kernel;
-		cpu_chunk_fn = fastcdc_chunk_data;
+		kernel_name = "FastCDC";
 		break;
 	}
 
@@ -1404,45 +1357,21 @@ static int fastcdc_gpu_chunk_segments_batch_common(unsigned char **buffers,
 	if ((kernel_kind == GPU_BATCH_KERNEL_FASTCDC && !g_cuda.kernel_ready)
 			|| (kernel_kind == GPU_BATCH_KERNEL_JC && !g_cuda.jc_kernel_ready)
 			|| (kernel_kind == GPU_BATCH_KERNEL_GEAR && !g_cuda.gear_kernel_ready)) {
-		fastcdc_gpu_chunk_segments_cpu_fallback(buffers,
-				sizes,
-				task_count,
-				boundary_stride,
-				boundary_counts,
-				chunk_sizes,
-				cpu_chunk_fn);
-		return 0;
+		WARNING("%s GPU segment batch: kernel is not ready", kernel_name);
+		return -1;
 	}
 	if (fastcdc_gpu_activate_context() != 0) {
-		fastcdc_gpu_chunk_segments_cpu_fallback(buffers,
-				sizes,
-				task_count,
-				boundary_stride,
-				boundary_counts,
-				chunk_sizes,
-				cpu_chunk_fn);
-		return 0;
+		WARNING("%s GPU segment batch: failed to activate CUDA context", kernel_name);
+		return -1;
 	}
 	if (kernel_kind == GPU_BATCH_KERNEL_JC
 			&& (jc_gpu_compute_params(&mask, &jump_mask, &jump_len, &expect_size) != 0 || jump_len <= 0)) {
-		fastcdc_gpu_chunk_segments_cpu_fallback(buffers,
-				sizes,
-				task_count,
-				boundary_stride,
-				boundary_counts,
-				chunk_sizes,
-				cpu_chunk_fn);
-		return 0;
+		WARNING("%s GPU segment batch: invalid JC chunking parameters", kernel_name);
+		return -1;
 	}
 	if (kernel_kind == GPU_BATCH_KERNEL_GEAR && gear_gpu_compute_mask(&mask, &expect_size) != 0) {
-		fastcdc_gpu_chunk_segments_cpu_fallback(buffers,
-				sizes,
-				task_count,
-				boundary_stride,
-				boundary_counts,
-				chunk_sizes,
-				cpu_chunk_fn);
-		return 0;
+		WARNING("%s GPU segment batch: invalid Gear chunking parameters", kernel_name);
+		return -1;
 	}
 	if (kernel_kind == GPU_BATCH_KERNEL_FASTCDC) {
 		fastcdc_gpu_compute_masks(&mask_s, &mask_l, &expect_size);
@@ -1575,6 +1504,10 @@ static int fastcdc_gpu_chunk_segments_batch_common(unsigned char **buffers,
 			}
 
 			local_blocks = local_count;
+			if (!batch_wall_active) {
+				clock_gettime(CLOCK_MONOTONIC, &batch_wall_start);
+				batch_wall_active = 1;
+			}
 			if (kernel_kind == GPU_BATCH_KERNEL_JC) {
 				void *kernel_params[16];
 
@@ -1699,6 +1632,9 @@ static int fastcdc_gpu_chunk_segments_batch_common(unsigned char **buffers,
 				ok = 0;
 				goto done;
 			}
+			if (batch_wall_active) {
+				clock_gettime(CLOCK_MONOTONIC, &batch_wall_end);
+			}
 			if (g_cuda.batch_start_event[slot] && g_cuda.batch_stop_event[slot] && g_cuda.cuEventElapsedTime) {
 				rc = g_cuda.cuEventElapsedTime(&kernel_ms,
 						g_cuda.batch_start_event[slot],
@@ -1737,12 +1673,10 @@ static int fastcdc_gpu_chunk_segments_batch_common(unsigned char **buffers,
 					}
 				}
 				if (!valid) {
-					fastcdc_gpu_segment_fallback_one(buffers[idx],
-							sizes[idx] < segment_bytes ? sizes[idx] : segment_bytes,
-							boundary_stride,
-							boundary_counts + idx,
-							chunk_sizes + base,
-							cpu_chunk_fn);
+					WARNING("%s GPU segment batch: invalid kernel output for task %d",
+							kernel_name,
+							idx);
+					ok = 0;
 				} else {
 					boundary_counts[idx] = results_host[slot][i].boundary_count;
 				}
@@ -1753,23 +1687,15 @@ static int fastcdc_gpu_chunk_segments_batch_common(unsigned char **buffers,
 	}
 
 done:
+	if (batch_wall_active) {
+		g_cuda.batch_kernel_wall_ms_accum += fastcdc_gpu_timespec_diff_ms(&batch_wall_start,
+				&batch_wall_end);
+	}
 	if (!ok) {
-		const char *kernel_name = "FastCDC";
-		if (kernel_kind == GPU_BATCH_KERNEL_JC) {
-			kernel_name = "JC";
-		} else if (kernel_kind == GPU_BATCH_KERNEL_GEAR) {
-			kernel_name = "Gear";
-		}
-		WARNING("%s GPU segment batch: launch/copy failed, falling back to CPU: %s",
+		WARNING("%s GPU segment batch failed: %s",
 				kernel_name,
 				fastcdc_cuda_error_string(rc));
-		fastcdc_gpu_chunk_segments_cpu_fallback(buffers,
-				sizes,
-				task_count,
-				boundary_stride,
-				boundary_counts,
-				chunk_sizes,
-				cpu_chunk_fn);
+		return -1;
 	}
 	return 0;
 }
@@ -1814,7 +1740,7 @@ int fastcdc_gpu_chunk_data(unsigned char *p, int n) {
 	sizes[0] = n;
 	chunk_sizes[0] = 0;
 	if (fastcdc_gpu_chunk_batch(buffers, sizes, 1, chunk_sizes) != 0) {
-		return fastcdc_chunk_data(p, n);
+		return -1;
 	}
 	return chunk_sizes[0];
 }
@@ -1870,7 +1796,7 @@ int jc_gpu_chunk_data(unsigned char *p, int n) {
 	sizes[0] = n;
 	chunk_sizes[0] = 0;
 	if (jc_gpu_chunk_batch(buffers, sizes, 1, chunk_sizes) != 0) {
-		return gearjump_chunk_data(p, n);
+		return -1;
 	}
 	return chunk_sizes[0];
 }
@@ -1926,7 +1852,7 @@ int gear_gpu_chunk_data(unsigned char *p, int n) {
 	sizes[0] = n;
 	chunk_sizes[0] = 0;
 	if (gear_gpu_chunk_batch(buffers, sizes, 1, chunk_sizes) != 0) {
-		return gear_chunk_data(p, n);
+		return -1;
 	}
 	return chunk_sizes[0];
 }

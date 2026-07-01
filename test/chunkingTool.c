@@ -19,6 +19,7 @@
 #include "../src/destor.h"
 #include "../src/chunking/chunking.h"
 #include "../src/chunking/gear_common.h"
+#include "chunk_tool_timing.h"
 
 struct destor destor;
 
@@ -131,7 +132,6 @@ static int execute_path_run_cpu_parallel(const struct chunk_tool_options *option
 		const struct chunk_tool_path_list *paths,
 		struct chunk_tool_stats *stats);
 static int chunk_tool_cpu_parallel_eligible(const struct chunk_tool_options *options);
-static double time_diff_ms(const struct timespec *start, const struct timespec *end);
 
 static const char *k_all_algorithms[] = {
 	"rabin",
@@ -279,7 +279,7 @@ static int chunk_tool_progress_should_refresh(void) {
 		return 0;
 	}
 	clock_gettime(CLOCK_MONOTONIC, &now);
-	elapsed_ms = time_diff_ms(&g_chunk_tool_progress.last_update, &now);
+	elapsed_ms = chunk_tool_timespec_diff_ms(&g_chunk_tool_progress.last_update, &now);
 	if (elapsed_ms < 3000.0) {
 		return 0;
 	}
@@ -481,11 +481,6 @@ static int normalize_power_of_two(int size) {
 		normalized <<= 1;
 	}
 	return normalized;
-}
-
-static double time_diff_ms(const struct timespec *start, const struct timespec *end) {
-	return (double)(end->tv_sec - start->tv_sec) * 1000.0
-			+ (double)(end->tv_nsec - start->tv_nsec) / 1000000.0;
 }
 
 static int parse_algorithm_list(const char *text, const char **algorithms, int max_algorithms) {
@@ -976,6 +971,7 @@ struct file_parallel_pool {
 	int next_file;
 	int completed_files;
 	int rc;
+	struct chunk_tool_parallel_wall compute_wall;
 	struct chunk_tool_stats aggregate;
 };
 
@@ -1058,7 +1054,19 @@ static void *gpu_naive_file_worker_main(void *arg) {
 		}
 
 		init_stats(&file_stats);
-		chunk_rc = run_chunking(pool->options, &run, buffer, buffer_size, &file_stats);
+		{
+			struct timespec compute_start;
+			struct timespec compute_end;
+
+			clock_gettime(CLOCK_MONOTONIC, &compute_start);
+			chunk_rc = run_chunking(pool->options, &run, buffer, buffer_size, &file_stats);
+			clock_gettime(CLOCK_MONOTONIC, &compute_end);
+			if (chunk_rc == 0) {
+				chunk_tool_parallel_wall_merge(&pool->compute_wall,
+						&compute_start,
+						&compute_end);
+			}
+		}
 		release_input_file(buffer, buffer_size, buffer_is_mmap);
 		if (chunk_rc != 0) {
 			pthread_mutex_lock(&pool->lock);
@@ -1125,7 +1133,17 @@ static void *cpu_parallel_file_worker_main(void *arg) {
 		}
 
 		init_stats(&file_stats);
-		chunk_rc = run_chunking(pool->options, &run, buffer, buffer_size, &file_stats);
+		{
+			struct timespec compute_start;
+			struct timespec compute_end;
+
+			clock_gettime(CLOCK_MONOTONIC, &compute_start);
+			chunk_rc = run_chunking(pool->options, &run, buffer, buffer_size, &file_stats);
+			clock_gettime(CLOCK_MONOTONIC, &compute_end);
+			if (chunk_rc == 0) {
+				chunk_tool_parallel_wall_merge(&pool->compute_wall, &compute_start, &compute_end);
+			}
+		}
 		release_input_file(buffer, buffer_size, buffer_is_mmap);
 		if (chunk_rc != 0) {
 			pthread_mutex_lock(&pool->lock);
@@ -1174,12 +1192,15 @@ static int execute_path_run_gpu_naive_parallel(const struct chunk_tool_options *
 	pool.uses_gpu = 1;
 	init_stats(&pool.aggregate);
 	pthread_mutex_init(&pool.lock, NULL);
+	chunk_tool_parallel_wall_init(&pool.compute_wall);
 	reset_destor_for_run(options);
 	if (select_algorithm(options, &pool.run) != 0) {
+		chunk_tool_parallel_wall_destroy(&pool.compute_wall);
 		pthread_mutex_destroy(&pool.lock);
 		return 2;
 	}
 	if (!pool.run.uses_gpu) {
+		chunk_tool_parallel_wall_destroy(&pool.compute_wall);
 		pthread_mutex_destroy(&pool.lock);
 		return 2;
 	}
@@ -1190,6 +1211,7 @@ static int execute_path_run_gpu_naive_parallel(const struct chunk_tool_options *
 	worker_count = chunk_tool_gpu_naive_workers(paths->count);
 	threads = calloc((size_t)worker_count, sizeof(*threads));
 	if (!threads) {
+		chunk_tool_parallel_wall_destroy(&pool.compute_wall);
 		pthread_mutex_destroy(&pool.lock);
 		return 2;
 	}
@@ -1199,6 +1221,7 @@ static int execute_path_run_gpu_naive_parallel(const struct chunk_tool_options *
 			worker_count,
 			paths->count);
 
+	chunk_tool_compute_reset(CHUNK_TOOL_COMPUTE_GPU_NAIVE);
 	clock_gettime(CLOCK_MONOTONIC, &start_time);
 	for (i = 0; i < worker_count; i++) {
 		if (pthread_create(&threads[i], NULL, gpu_naive_file_worker_main, &pool) != 0) {
@@ -1217,6 +1240,7 @@ static int execute_path_run_gpu_naive_parallel(const struct chunk_tool_options *
 	}
 
 	free(threads);
+	chunk_tool_parallel_wall_destroy(&pool.compute_wall);
 	pthread_mutex_destroy(&pool.lock);
 
 	if (pool.rc != 0) {
@@ -1224,8 +1248,20 @@ static int execute_path_run_gpu_naive_parallel(const struct chunk_tool_options *
 	}
 
 	*stats = pool.aggregate;
-	stats->elapsed_ms = time_diff_ms(&start_time, &end_time);
-	stats->actual_elapsed_ms = stats->elapsed_ms;
+	{
+		double kernel_ms = chunk_tool_compute_read_ms(CHUNK_TOOL_COMPUTE_GPU_NAIVE);
+
+		(void)start_time;
+		(void)end_time;
+		if (kernel_ms <= 0.0) {
+			kernel_ms = chunk_tool_parallel_wall_ms(&pool.compute_wall);
+		}
+		chunk_tool_timing_assign(&stats->elapsed_ms,
+				&stats->actual_elapsed_ms,
+				kernel_ms,
+				CHUNK_TOOL_COMPUTE_GPU_NAIVE,
+				0.0);
+	}
 	finalize_stats(stats);
 	return 0;
 }
@@ -1261,8 +1297,10 @@ static int execute_path_run_cpu_parallel(const struct chunk_tool_options *option
 	pool.paths = paths;
 	init_stats(&pool.aggregate);
 	pthread_mutex_init(&pool.lock, NULL);
+	chunk_tool_parallel_wall_init(&pool.compute_wall);
 	reset_destor_for_run(options);
 	if (select_algorithm(options, &pool.run) != 0) {
+		chunk_tool_parallel_wall_destroy(&pool.compute_wall);
 		pthread_mutex_destroy(&pool.lock);
 		return 2;
 	}
@@ -1273,6 +1311,7 @@ static int execute_path_run_cpu_parallel(const struct chunk_tool_options *option
 		if (pool.run.close_fn) {
 			pool.run.close_fn();
 		}
+		chunk_tool_parallel_wall_destroy(&pool.compute_wall);
 		pthread_mutex_destroy(&pool.lock);
 		return 2;
 	}
@@ -1301,6 +1340,7 @@ static int execute_path_run_cpu_parallel(const struct chunk_tool_options *option
 	}
 
 	free(threads);
+	chunk_tool_parallel_wall_destroy(&pool.compute_wall);
 	pthread_mutex_destroy(&pool.lock);
 	if (pool.run.close_fn) {
 		pool.run.close_fn();
@@ -1311,8 +1351,11 @@ static int execute_path_run_cpu_parallel(const struct chunk_tool_options *option
 	}
 
 	*stats = pool.aggregate;
-	stats->elapsed_ms = time_diff_ms(&start_time, &end_time);
-	stats->actual_elapsed_ms = stats->elapsed_ms;
+	chunk_tool_timing_assign(&stats->elapsed_ms,
+			&stats->actual_elapsed_ms,
+			chunk_tool_parallel_wall_ms(&pool.compute_wall),
+			CHUNK_TOOL_COMPUTE_CPU,
+			chunk_tool_parallel_wall_ms(&pool.compute_wall));
 	finalize_stats(stats);
 	return 0;
 }
@@ -1330,16 +1373,12 @@ static int run_chunking(const struct chunk_tool_options *options,
 	unsigned long long total_chunk_bytes = 0;
 	int observed_min = INT_MAX;
 	int observed_max = 0;
-	struct timespec start_time;
-	struct timespec end_time;
 	struct chunk_experiment_stats experiment_stats;
+	chunk_tool_compute_kind compute_kind;
 
-	if (run->uses_gpu) {
-		fastcdc_gpu_reset_batch_timing();
-	}
+	compute_kind = chunk_tool_compute_kind_for(run->uses_gpu, options->gpu_naive);
+	chunk_tool_compute_reset(compute_kind);
 	chunk_experiment_reset_stats();
-
-	clock_gettime(CLOCK_MONOTONIC, &start_time);
 
         while (offset < buffer_size) {
         	size_t remaining = buffer_size - offset;
@@ -1427,7 +1466,6 @@ static int run_chunking(const struct chunk_tool_options *options,
 		}
 	}
 
-	clock_gettime(CLOCK_MONOTONIC, &end_time);
 	chunk_experiment_snapshot(&experiment_stats);
 	stats->algorithm = run->display_name;
 	stats->configured_min = destor.chunk_min_size;
@@ -1443,10 +1481,11 @@ static int run_chunking(const struct chunk_tool_options *options,
 	stats->observed_avg = chunk_count > 0
 			? (double)total_chunk_bytes / (double)chunk_count
 			: 0.0;
-	stats->elapsed_ms = time_diff_ms(&start_time, &end_time);
-	stats->actual_elapsed_ms = (run->uses_gpu && !options->gpu_naive)
-			? fastcdc_gpu_get_batch_compute_ms()
-			: stats->elapsed_ms;
+	chunk_tool_timing_assign(&stats->elapsed_ms,
+			&stats->actual_elapsed_ms,
+			0.0,
+			compute_kind,
+			0.0);
 	stats->uses_gpu = run->uses_gpu;
 	stats->profile_chunking = options->profile_chunking;
 	if (options->profile_chunking) {
@@ -1477,6 +1516,9 @@ static int run_chunking_batch(const struct chunk_tool_options *options,
 	stats->configured_warp_window = destor.chunk_warp_window;
 	stats->uses_gpu = run->uses_gpu;
 	stats->profile_chunking = options->profile_chunking;
+	if (run->uses_gpu) {
+		chunk_tool_compute_reset(CHUNK_TOOL_COMPUTE_GPU_BATCH);
+	}
 
 	for (batch_start = 0; batch_start < paths->count; batch_start += CHUNK_TOOL_MAX_BATCH) {
 		int batch_count = paths->count - batch_start;
@@ -1491,8 +1533,6 @@ static int run_chunking_batch(const struct chunk_tool_options *options,
 		int observed_min = INT_MAX;
 		int observed_max = 0;
 		struct chunk_experiment_stats experiment_stats;
-		struct timespec start_time;
-		struct timespec end_time;
 		int i;
 
 		if (batch_count > CHUNK_TOOL_MAX_BATCH) {
@@ -1519,9 +1559,6 @@ static int run_chunking_batch(const struct chunk_tool_options *options,
 			batch_total_bytes += buffer_sizes[i];
 		}
 
-		if (run->uses_gpu) {
-			fastcdc_gpu_reset_batch_timing();
-		}
 		chunk_experiment_reset_stats();
 		chunk_tool_progress_begin(options,
 				run,
@@ -1529,7 +1566,6 @@ static int run_chunking_batch(const struct chunk_tool_options *options,
 				batch_start,
 				batch_total_bytes,
 				g_chunk_tool_progress.completed_bytes);
-		clock_gettime(CLOCK_MONOTONIC, &start_time);
 
 		while (1) {
 			unsigned char *active_buffers[CHUNK_TOOL_MAX_BATCH];
@@ -1635,15 +1671,10 @@ static int run_chunking_batch(const struct chunk_tool_options *options,
 			}
 		}
 
-		clock_gettime(CLOCK_MONOTONIC, &end_time);
 		chunk_experiment_snapshot(&experiment_stats);
 		stats->file_count += (size_t)batch_count;
 		stats->total_bytes += batch_total_bytes;
 		stats->chunk_count += chunk_count;
-		stats->elapsed_ms += time_diff_ms(&start_time, &end_time);
-		if (run->uses_gpu) {
-			stats->actual_elapsed_ms += fastcdc_gpu_get_batch_compute_ms();
-		}
 		if (chunk_count > 0) {
 			if (stats->observed_min == INT_MAX || observed_min < stats->observed_min) {
 				stats->observed_min = observed_min;
@@ -1665,6 +1696,13 @@ static int run_chunking_batch(const struct chunk_tool_options *options,
 	}
 
 	chunk_tool_progress_clear();
+	if (run->uses_gpu) {
+		chunk_tool_timing_assign(&stats->elapsed_ms,
+				&stats->actual_elapsed_ms,
+				0.0,
+				CHUNK_TOOL_COMPUTE_GPU_BATCH,
+				0.0);
+	}
 	finalize_stats(stats);
 	if (options->print_chunks && stats->chunk_count > (size_t)options->print_limit) {
 		printf("printed first %d of %zu chunks\n", options->print_limit, stats->chunk_count);
@@ -1823,8 +1861,7 @@ static int execute_path_run(const struct chunk_tool_options *options,
 
 	if (options->gpu_naive
 			&& options->gpu_enabled
-			&& chunk_tool_gpu_naive_supported(options->algorithm)
-			&& paths->count > 1) {
+			&& chunk_tool_gpu_naive_supported(options->algorithm)) {
 		return execute_path_run_gpu_naive_parallel(options, paths, stats);
 	}
 
@@ -1846,7 +1883,7 @@ static int execute_path_run(const struct chunk_tool_options *options,
 		finalize_stats(stats);
 		return 0;
 	}
-	if (run.uses_gpu && run.chunk_batch_fn && paths->count > 1) {
+	if (run.uses_gpu && run.chunk_batch_fn) {
 		int rc = run_chunking_batch(options, &run, paths, stats);
 		if (run.close_fn) {
 			run.close_fn();
@@ -1854,39 +1891,64 @@ static int execute_path_run(const struct chunk_tool_options *options,
 		return rc;
 	}
 
-	for (i = 0; i < paths->count; i++) {
-		unsigned char *buffer = NULL;
-		size_t buffer_size = 0;
-		int buffer_is_mmap = 0;
-		struct chunk_tool_stats file_stats;
-		int rc;
+	{
+		struct chunk_tool_parallel_wall compute_wall;
 
-		if (read_input_file(paths->items[i], run.uses_gpu, &buffer, &buffer_size, &buffer_is_mmap) != 0) {
+		chunk_tool_parallel_wall_init(&compute_wall);
+		for (i = 0; i < paths->count; i++) {
+			unsigned char *buffer = NULL;
+			size_t buffer_size = 0;
+			int buffer_is_mmap = 0;
+			struct chunk_tool_stats file_stats;
+			struct timespec compute_start;
+			struct timespec compute_end;
+			int rc;
+
+			if (read_input_file(paths->items[i], run.uses_gpu, &buffer, &buffer_size, &buffer_is_mmap) != 0) {
+				release_input_file(buffer, buffer_size, buffer_is_mmap);
+				chunk_tool_parallel_wall_destroy(&compute_wall);
+				if (run.close_fn) {
+					run.close_fn();
+				}
+				chunk_tool_progress_clear();
+				return 2;
+			}
+			chunk_tool_progress_begin(options,
+					&run,
+					paths,
+					i,
+					buffer_size,
+					g_chunk_tool_progress.completed_bytes);
+			init_stats(&file_stats);
+			clock_gettime(CLOCK_MONOTONIC, &compute_start);
+			rc = run_chunking(options, &run, buffer, buffer_size, &file_stats) == 0 ? 0 : 1;
+			clock_gettime(CLOCK_MONOTONIC, &compute_end);
+			if (rc == 0) {
+				chunk_tool_parallel_wall_merge(&compute_wall, &compute_start, &compute_end);
+			}
+			chunk_tool_progress_finish_file(buffer_size);
 			release_input_file(buffer, buffer_size, buffer_is_mmap);
-			if (run.close_fn) {
-				run.close_fn();
+			if (rc != 0) {
+				chunk_tool_parallel_wall_destroy(&compute_wall);
+				if (run.close_fn) {
+					run.close_fn();
+				}
+				chunk_tool_progress_clear();
+				return rc;
 			}
-			chunk_tool_progress_clear();
-			return 2;
+			merge_stats_counts(stats, &file_stats);
 		}
-		chunk_tool_progress_begin(options,
-				&run,
-				paths,
-				i,
-				buffer_size,
-				g_chunk_tool_progress.completed_bytes);
-		init_stats(&file_stats);
-		rc = run_chunking(options, &run, buffer, buffer_size, &file_stats) == 0 ? 0 : 1;
-		chunk_tool_progress_finish_file(buffer_size);
-		release_input_file(buffer, buffer_size, buffer_is_mmap);
-		if (rc != 0) {
-			if (run.close_fn) {
-				run.close_fn();
-			}
-			chunk_tool_progress_clear();
-			return rc;
+		{
+			double cpu_wall_ms;
+
+			cpu_wall_ms = chunk_tool_parallel_wall_ms(&compute_wall);
+			chunk_tool_parallel_wall_destroy(&compute_wall);
+			chunk_tool_timing_assign(&stats->elapsed_ms,
+					&stats->actual_elapsed_ms,
+					cpu_wall_ms,
+					CHUNK_TOOL_COMPUTE_CPU,
+					cpu_wall_ms);
 		}
-		merge_stats(stats, &file_stats);
 	}
 	if (run.close_fn) {
 		run.close_fn();
@@ -1957,16 +2019,16 @@ static int select_algorithm(const struct chunk_tool_options *options, struct chu
 		run->display_name = "fastcdc";
 		if (options->gpu_enabled) {
 			if (fastcdc_gpu_init() != 0) {
-				WARNING("chunkingTool: FastCDC --gpu requested, but GPU kernel is unavailable; falling back to CPU");
-			} else {
-				run->chunk_fn = fastcdc_gpu_chunk_data;
-				if (!options->gpu_naive) {
-					run->chunk_batch_fn = fastcdc_gpu_chunk_batch;
-					run->chunk_segment_batch_fn = fastcdc_gpu_chunk_segments_batch;
-				}
-				run->close_fn = fastcdc_gpu_close;
-				run->uses_gpu = 1;
+				CHUNK_TOOL_ERROR("FastCDC --gpu requested, but GPU kernel is unavailable");
+				return -1;
 			}
+			run->chunk_fn = fastcdc_gpu_chunk_data;
+			if (!options->gpu_naive) {
+				run->chunk_batch_fn = fastcdc_gpu_chunk_batch;
+				run->chunk_segment_batch_fn = fastcdc_gpu_chunk_segments_batch;
+			}
+			run->close_fn = fastcdc_gpu_close;
+			run->uses_gpu = 1;
 		}
 	} else if (strcmp(options->algorithm, "gear") == 0) {
 		gear_init();
@@ -1974,16 +2036,16 @@ static int select_algorithm(const struct chunk_tool_options *options, struct chu
 		run->display_name = "gear";
 		if (options->gpu_enabled) {
 			if (gear_gpu_init() != 0) {
-				WARNING("chunkingTool: Gear --gpu requested, but GPU kernel is unavailable; falling back to CPU");
-			} else {
-				run->chunk_fn = gear_gpu_chunk_data;
-				if (!options->gpu_naive) {
-					run->chunk_batch_fn = gear_gpu_chunk_batch;
-					run->chunk_segment_batch_fn = gear_gpu_chunk_segments_batch;
-				}
-				run->close_fn = gear_gpu_close;
-				run->uses_gpu = 1;
+				CHUNK_TOOL_ERROR("Gear --gpu requested, but GPU kernel is unavailable");
+				return -1;
 			}
+			run->chunk_fn = gear_gpu_chunk_data;
+			if (!options->gpu_naive) {
+				run->chunk_batch_fn = gear_gpu_chunk_batch;
+				run->chunk_segment_batch_fn = gear_gpu_chunk_segments_batch;
+			}
+			run->close_fn = gear_gpu_close;
+			run->uses_gpu = 1;
 		}
 	} else if (strcmp(options->algorithm, "jc") == 0 || strcmp(options->algorithm, "gearjump") == 0) {
 		gearjump_init(options->jump_mask_delta);
@@ -1991,16 +2053,16 @@ static int select_algorithm(const struct chunk_tool_options *options, struct chu
 		run->display_name = "jc";
 		if (options->gpu_enabled) {
 			if (jc_gpu_init() != 0) {
-				WARNING("chunkingTool: JC --gpu requested, but GPU kernel is unavailable; falling back to CPU");
-			} else {
-				run->chunk_fn = jc_gpu_chunk_data;
-				if (!options->gpu_naive) {
-					run->chunk_batch_fn = jc_gpu_chunk_batch;
-					run->chunk_segment_batch_fn = jc_gpu_chunk_segments_batch;
-				}
-				run->close_fn = jc_gpu_close;
-				run->uses_gpu = 1;
+				CHUNK_TOOL_ERROR("JC --gpu requested, but GPU kernel is unavailable");
+				return -1;
 			}
+			run->chunk_fn = jc_gpu_chunk_data;
+			if (!options->gpu_naive) {
+				run->chunk_batch_fn = jc_gpu_chunk_batch;
+				run->chunk_segment_batch_fn = jc_gpu_chunk_segments_batch;
+			}
+			run->close_fn = jc_gpu_close;
+			run->uses_gpu = 1;
 		}
 	} else if (strcmp(options->algorithm, "jctttd") == 0) {
 		gearjump_init(options->jump_mask_delta);
