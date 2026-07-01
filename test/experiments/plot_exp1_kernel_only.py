@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 """Plot Experiment 1 kernel-only throughput: CPU vs GPU-Naive vs GPU (Ours-Full).
 
-Data sources:
-  - exp1_throughput.csv : CPU-Serial, Ours-Full (full dataset)
-  - exp2_ablation.csv   : A-GPU-Naive (first 1 GiB per dataset)
+Data source: exp1_throughput.csv only (all series, same dataset view).
+Requires RUN_GPU_NAIVE=1 when collecting exp1 data.
 
-Metric: actual_elapsed_ms -> GiB/s (labeled GB/s in charts, same as exp1 report).
+Metric: actual_elapsed_ms with timing=kernel (pure compute wall clock).
 """
 
 from __future__ import annotations
@@ -20,11 +19,11 @@ ALGO_LABEL = {"fastcdc": "FastCDC", "gear": "Gear", "gearjump": "JC"}
 ALGO_SHORT = {"fastcdc": "FastCDC", "gear": "Gear", "gearjump": "JC"}
 DATASETS = ["Wiki", "Paper", "LinuxDist", "GCC"]
 
-# (legend label, exp1 config, exp2 config or None)
+# (legend label, exp1 config_label)
 SERIES = [
-    ("CPU", "CPU-Serial", None),
-    ("GPU-Naive", None, "A-GPU-Naive"),
-    ("GPU", "Ours-Full", None),
+    ("CPU", "CPU-Serial"),
+    ("GPU-Naive", "GPU-Naive"),
+    ("GPU", "Ours-Full"),
 ]
 COLORS = ["#4C78A8", "#E45756", "#54A24B"]
 # -------------------------------------------------------------------------
@@ -42,6 +41,12 @@ def row_algo(row: dict[str, str]) -> str:
 def kernel_gbps(row: dict[str, str] | None) -> float:
     if not row:
         return 0.0
+    cached = row.get("kernel_throughput_gbps")
+    if cached not in (None, ""):
+        try:
+            return float(cached)
+        except ValueError:
+            pass
     actual_ms = float(row.get("actual_elapsed_ms") or 0.0)
     if actual_ms <= 0:
         return 0.0
@@ -55,22 +60,22 @@ def pick_row(rows: list[dict[str, str]], *, dataset: str, algo: str, config: str
             continue
         if row_algo(row) != algo:
             continue
-        if row.get("config_label") == config:
-            return row
+        if row.get("config_label") != config:
+            continue
+        timing = (row.get("timing") or "").strip()
+        if timing and timing not in ("kernel", ""):
+            continue
+        return row
     return None
 
 
-def load_values(exp1: list[dict], exp2: list[dict]) -> dict[tuple[str, str, str], float]:
+def load_values(exp1: list[dict]) -> dict[tuple[str, str, str], float]:
     """Key: (dataset, algo, series legend label)."""
     out: dict[tuple[str, str, str], float] = {}
     for ds in DATASETS:
         for algo in ALGORITHMS:
-            for legend, exp1_cfg, exp2_cfg in SERIES:
-                row = None
-                if exp1_cfg:
-                    row = pick_row(exp1, dataset=ds, algo=algo, config=exp1_cfg)
-                elif exp2_cfg:
-                    row = pick_row(exp2, dataset=ds, algo=algo, config=exp2_cfg)
+            for legend, exp1_cfg in SERIES:
+                row = pick_row(exp1, dataset=ds, algo=algo, config=exp1_cfg)
                 out[(ds, algo, legend)] = kernel_gbps(row)
     return out
 
@@ -79,7 +84,7 @@ def svg_combined(values: dict[tuple[str, str, str], float], out_path: Path) -> N
     width, height = 1100, 520
     margin_l, margin_t = 90, 70
     # 底部留白：越大 → 柱底与文字间距越大（plot 区域越矮）
-    margin_b = 90
+    margin_b = 45
     # 标签距 SVG 底边的距离：越大 → 文字越靠下（与柱底间距也变大）
     label_dataset_y = height - 12
     label_algo_y = height - 28
@@ -220,10 +225,10 @@ def write_report(values: dict[tuple[str, str, str], float], out_path: Path) -> N
     lines = [
         "## 实验一：Kernel-only 吞吐对比\n",
         "![Kernel-only combined](exp1_kernel_only_combined.svg)\n",
-        "指标：`actual_elapsed_ms`（纯 kernel 时间，不含 H2D/D2H）。\n",
-        "- **CPU**：实验一 `CPU-Serial`\n",
-        "- **GPU-Naive**：实验二 `A-GPU-Naive`（每数据集前 1 GiB）\n",
-        "- **GPU**：实验一 `Ours-Full`\n",
+        "指标：`actual_elapsed_ms`（纯分块计算墙钟，不含读盘/H2D/D2H；`timing=kernel`）。\n",
+        "- **CPU**：`CPU-Serial`\n",
+        "- **GPU-Naive**：`GPU-Naive`（与 CPU/GPU 相同数据范围）\n",
+        "- **GPU**：`Ours-Full`\n",
     ]
     for algo in ALGORITHMS:
         lines.append(f"\n### {ALGO_LABEL[algo]}\n")
@@ -252,21 +257,17 @@ def main() -> int:
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--exp1", type=Path, help="exp1_throughput.csv")
-    parser.add_argument("--exp2", type=Path, help="exp2_ablation.csv")
     parser.add_argument("--out-dir", type=Path, help="output directory (default: exp1 result dir)")
     args = parser.parse_args()
 
     exp1_path = args.exp1 or find_latest(results_dir, "exp1", "exp1_throughput.csv")
-    exp2_path = args.exp2 or find_latest(results_dir, "exp2", "exp2_ablation.csv")
     if not exp1_path or not exp1_path.is_file():
         raise SystemExit("missing exp1_throughput.csv; pass --exp1")
-    if not exp2_path or not exp2_path.is_file():
-        raise SystemExit("missing exp2_ablation.csv; pass --exp2")
 
     out_dir = args.out_dir or exp1_path.parent
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    values = load_values(read_csv(exp1_path), read_csv(exp2_path))
+    values = load_values(read_csv(exp1_path))
 
     combined = out_dir / "exp1_kernel_only_combined.svg"
     svg_combined(values, combined)
