@@ -10,6 +10,8 @@ test/testor
 test/speedTestor
 test/effectiveTestor
 test/perfromanceBreakdown
+test/experiments/results
+test/experiments/results_backup
 
 # Autotools generated files
 Makefile
