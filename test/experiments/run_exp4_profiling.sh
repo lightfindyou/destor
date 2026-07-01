@@ -9,7 +9,8 @@
 # 指标（由 summarize_ncu.py 从 NCU 报告提取）：
 #   Warp Execution Efficiency、分支发散、Global/Shared 访存吞吐、Achieved Occupancy
 #
-# 为控制 NCU 开销，两种变体均在同一 1GB 子集上 profile（GPU_NAIVE_BYTE_CAP，默认 1GiB）。
+# 为控制 NCU 开销，默认在 NCU_INPUT_BYTE_CAP（1GiB）子集上 profile；
+# 若设置 EXP_INPUT_BYTE_CAP，则与实验 1–3 使用相同数据上限。
 # 可通过 NCU_LAUNCH_COUNT 限制 profile 的 kernel launch 次数（Ours 默认 64，Naive 默认 16）。
 # 目录输入文件过多时 NCU 自动改用子集中最大的单文件，避免 GPU-Naive 上万次 launch 撑爆显存。
 # GPU_DEVICE=auto 选用当前显存占用最低的 GPU；若 GPU0 繁忙可设 GPU_DEVICE=1。
@@ -24,10 +25,9 @@
 # 若 RmProfilingAdminOnly=1，会自动 sudo -E 重新执行（保留 OUT_DIR 等环境变量）。
 #
 # 若出现 ERR_NVGPUCTRPERM 且不想每次 sudo，可运行 enable_ncu_profiling.sh 并重启。
-set -eu
+set -u
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-. "$SCRIPT_DIR/exp_common.sh"
 ROOT_DIR=$(CDPATH= cd -- "$SCRIPT_DIR/../.." && pwd)
 
 ensure_cuda_path() {
@@ -75,6 +75,9 @@ maybe_reexec_for_ncu() {
 
 maybe_reexec_for_ncu "$@"
 ensure_cuda_path
+. "$SCRIPT_DIR/exp_config.sh"
+. "$SCRIPT_DIR/exp_common.sh"
+. "$SCRIPT_DIR/exp_bench.sh"
 export DESTOR_FASTCDC_GPU_PTX="${DESTOR_FASTCDC_GPU_PTX:-$ROOT_DIR/src/chunking/fastcdc_gpu_kernel.ptx}"
 
 resolve_ncu_bin() {
@@ -133,27 +136,10 @@ color_variant() {
 }
 
 TEST_DIR="$ROOT_DIR/test"
-TOOL="$TEST_DIR/chunkingTool"
 OUT_DIR=${OUT_DIR:-"$SCRIPT_DIR/results/exp4_$(date +%Y%m%d_%H%M%S)"}
 NCU_DIR="$OUT_DIR/ncu"
 
 GPU_DEVICE=${GPU_DEVICE:-auto}
-AVG_SIZE=${AVG_SIZE:-4096}
-MIN_SIZE=${MIN_SIZE:-1024}
-MAX_SIZE=${MAX_SIZE:-16384}
-MASK_BITS=${MASK_BITS:-12}
-WARP_WINDOW=${WARP_WINDOW:-32}
-GPU_BATCH=${GPU_BATCH:-8388608}
-GPU_THREADS=${GPU_THREADS:-128}
-PIPELINE_FULL=${PIPELINE_FULL:-256}
-GPU_NAIVE_BYTE_CAP=${GPU_NAIVE_BYTE_CAP:-1073741824}
-NCU_LAUNCH_COUNT=${NCU_LAUNCH_COUNT:-64}
-NCU_NAIVE_LAUNCH_COUNT=${NCU_NAIVE_LAUNCH_COUNT:-16}
-NCU_MAX_DIR_FILES=${NCU_MAX_DIR_FILES:-32}
-NCU_PROFILE_BYTE_CAP=${NCU_PROFILE_BYTE_CAP:-134217728}
-NCU_REPLAY_MODE=${NCU_REPLAY_MODE:-kernel}
-NCU_NAIVE_REPLAY_MODE=${NCU_NAIVE_REPLAY_MODE:-application}
-NCU_CACHE_CONTROL=${NCU_CACHE_CONTROL:-none}
 NCU_BIN=$(resolve_ncu_bin)
 
 resolve_gpu_device() {
@@ -177,9 +163,6 @@ DATASET_PAPER=${DATASET_PAPER:-/home/xzjin/data/Paper}
 DATASET_GCC=${DATASET_GCC:-/home/xzjin/data/gcc}
 DATASET_LINUXDIST=${DATASET_LINUXDIST:-/home/xzjin/data/linuxDist}
 
-NCU_METRICS=${NCU_METRICS:-"smsp__thread_inst_executed_per_inst_executed.pct,smsp__sass_average_branch_targets_threads_uniform.pct,dram__throughput.avg.pct_of_peak_sustained_elapsed,l1tex__throughput.avg.pct_of_peak_sustained_elapsed,sm__warps_active.avg.pct_of_peak_sustained_active,dram__bytes.sum,l1tex__t_bytes.sum,gpu__time_duration.sum"}
-
-COMMON_OPTS="-s $AVG_SIZE --min $MIN_SIZE --max $MAX_SIZE --mask-bits $MASK_BITS --warp-window $WARP_WINDOW"
 SUMMARY_CSV="$OUT_DIR/exp4_profiling.csv"
 SUMMARY_HEADER='dataset,algorithm,variant,input,kernel_name,status,ncu_exit,warp_exec_eff_pct,branch_targets_pct,dram_throughput_pct,l1tex_throughput_pct,occupancy_pct,dram_bytes,l1tex_bytes,gpu_time_ns,ncu_report,ncu_csv,ncu_log'
 
@@ -246,36 +229,12 @@ pick_ncu_input() {
 	printf '%s' "$largest"
 }
 
-build_tools() {
-	echo "[build] chunkingTool + GPU PTX"
-	make -C "$ROOT_DIR/src/chunking" fastcdc_gpu_ptx >/dev/null 2>&1
-	(
-		cd "$ROOT_DIR/src/chunking"
-		for src in rabin_chunking.c rabinjump_chunking.c ae_chunking.c fastcdc_chunking.c \
-			gear_common.c gear_chunking.c gearjump_chunking.c fastcdc_gpu.c fastcdc_gpu_naive.c leap_chunking.c; do
-			gcc -O3 -Wall $(pkg-config --cflags glib-2.0) -I../../src -c "$src" >/dev/null 2>&1
-		done
-		ar rcs libchunk.a ./*.o
-	)
-	make -C "$TEST_DIR" chunkingTool >/dev/null 2>&1
-	echo "[build] done"
-}
-
-dataset_skipped() {
-	ds_name="$1"
-	case ",${SKIP_DATASETS:-}," in
-	*,$ds_name,*)
-		return 0
-		;;
-	esac
-	return 1
-}
-
 prepare_profile_input() {
 	ds_name="$1"
 	src="$2"
-	profile_input=$(prepare_capped_input "$ds_name" "$src" "$GPU_NAIVE_BYTE_CAP")
-	cap_gib=$(awk "BEGIN {printf \"%.2f\", $GPU_NAIVE_BYTE_CAP / (1024*1024*1024)}")
+	profile_input=$(resolve_profile_input "$ds_name" "$src")
+	cap="${EXP_INPUT_BYTE_CAP:-$NCU_INPUT_BYTE_CAP}"
+	cap_gib=$(awk "BEGIN {printf \"%.2f\", $cap / (1024*1024*1024)}")
 	ds_color=$(color_dataset "$ds_name")
 	echo "[subset] dataset=${ds_color}${ds_name}${C_RST} cap=${cap_gib}GiB input=$profile_input (tmp, auto-clean)" >&2
 	printf '%s' "$profile_input"
@@ -483,6 +442,14 @@ run_ncu_variant() {
 		status="no_report"
 	fi
 
+	if [ -f "$bench_csv" ] && [ -s "$bench_csv" ]; then
+		patch_result_row "$bench_csv" "$variant" "$ds_name" "$algo" "${EXP_TIMING_MODE:-kernel}"
+		cap="${EXP_INPUT_BYTE_CAP:-$NCU_INPUT_BYTE_CAP}"
+		if [ -n "$cap" ]; then
+			python3 "$SCRIPT_DIR/patch_csv.py" "$bench_csv" input_byte_cap "$cap"
+		fi
+	fi
+
 	append_exp4_row "$ds_name" "$algo" "$variant" "$profile_input" "$kernel_hint" \
 		"$status" "$ncu_exit" "$ncu_report" "$ncu_csv" "$ncu_log" "$bench_csv"
 }
@@ -528,9 +495,9 @@ printf '实验四：%sNCU 微观 Profiling%s (GPU-Naive vs Ours-Full)\n' "$C_KW"
 printf '  算法: '
 print_colored_algorithms "$EXP_ALGORITHMS"
 printf ' (Naive + Ours 均 profile)\n'
-printf '  子集: 每数据集前 %.2f GiB | NCU launches: Ours=%s Naive=%s | GPU=%s\n' \
-	"$(awk "BEGIN {print $GPU_NAIVE_BYTE_CAP / (1024*1024*1024)}")" \
-	"$NCU_LAUNCH_COUNT" "$NCU_NAIVE_LAUNCH_COUNT" "$GPU_DEVICE"
+printf '  子集: cap=%.2f GiB (EXP_INPUT_BYTE_CAP 优先) | NCU launches: Ours=%s Naive=%s | GPU=%s | timing=%s\n' \
+	"$(awk "BEGIN {cap=${EXP_INPUT_BYTE_CAP:-$NCU_INPUT_BYTE_CAP}; print cap / (1024*1024*1024)}")" \
+	"$NCU_LAUNCH_COUNT" "$NCU_NAIVE_LAUNCH_COUNT" "$GPU_DEVICE" "${EXP_TIMING_MODE:-kernel}"
 printf '  NCU: Ours replay=%s | Naive replay=%s | cache=%s\n' \
 	"$NCU_REPLAY_MODE" "$NCU_NAIVE_REPLAY_MODE" "$NCU_CACHE_CONTROL"
 printf '  输出: %s%s%s\n' "$C_VAL" "$OUT_DIR" "$C_RST"

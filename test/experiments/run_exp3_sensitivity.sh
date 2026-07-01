@@ -20,7 +20,7 @@
 #   OUT_DIR=/tmp/exp3 ./run_exp3_sensitivity.sh
 #   SKIP_DATASETS=Wiki ./run_exp3_sensitivity.sh
 #   PIPELINE_TASKS_LIST="16 32 64 128 256 512" THREAD_BLOCKS_LIST="128 256 512" ./run_exp3_sensitivity.sh
-set -eu
+set -u
 
 if [ -t 1 ]; then
 	C_RST=$(printf '\033[0m')
@@ -37,6 +37,17 @@ else
 	C_WIKI='' C_PAPER='' C_LINUXDIST='' C_GCC=''
 fi
 
+color_config() {
+	case "$1" in
+	pipeline_tasks=*|threads=*)
+		printf '%s' "$C_SWEEP"
+		;;
+	*)
+		printf '%s' "$C_RST"
+		;;
+	esac
+}
+
 color_dataset() {
 	case "$1" in
 	Wiki) printf '%s' "$C_WIKI" ;;
@@ -47,101 +58,37 @@ color_dataset() {
 	esac
 }
 
+color_config() {
+	case "$1" in
+	pipeline_tasks=*|threads=*)
+		printf '%s' "$C_SWEEP"
+		;;
+	*)
+		printf '%s' "$C_RST"
+		;;
+	esac
+}
+
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+. "$SCRIPT_DIR/exp_config.sh"
 . "$SCRIPT_DIR/exp_common.sh"
-ROOT_DIR=$(CDPATH= cd -- "$SCRIPT_DIR/../.." && pwd)
-TEST_DIR="$ROOT_DIR/test"
-TOOL="$TEST_DIR/chunkingTool"
+. "$SCRIPT_DIR/exp_bench.sh"
+
 OUT_DIR=${OUT_DIR:-"$SCRIPT_DIR/results/exp3_$(date +%Y%m%d_%H%M%S)"}
-
-GPU_DEVICE=${GPU_DEVICE:-0}
-AVG_SIZE=${AVG_SIZE:-4096}
-MIN_SIZE=${MIN_SIZE:-1024}
-MAX_SIZE=${MAX_SIZE:-16384}
-MASK_BITS=${MASK_BITS:-12}
-WARP_WINDOW=${WARP_WINDOW:-32}
-GPU_BATCH=${GPU_BATCH:-8388608}
-GPU_THREADS=${GPU_THREADS:-128}
-PIPELINE_FULL=${PIPELINE_FULL:-256}
-PIPELINE_TASKS_LIST=${PIPELINE_TASKS_LIST:-16 32 64 128 256 512}
-THREAD_BLOCKS_LIST=${THREAD_BLOCKS_LIST:-128 256 512}
-
-DATASET_WIKI=${DATASET_WIKI:-/home/xzjin/data/wiki}
-DATASET_PAPER=${DATASET_PAPER:-/home/xzjin/data/Paper}
-DATASET_GCC=${DATASET_GCC:-/home/xzjin/data/gcc}
-DATASET_LINUXDIST=${DATASET_LINUXDIST:-/home/xzjin/data/linuxDist}
-
-COMMON_OPTS="-s $AVG_SIZE --min $MIN_SIZE --max $MAX_SIZE --mask-bits $MASK_BITS --warp-window $WARP_WINDOW"
-CSV_HEADER='algorithm,input,mode,files,bytes,cfg_min,cfg_avg,cfg_max,mask_bits,warp_window,chunks,obs_min,obs_max,obs_avg,elapsed_ms,actual_elapsed_ms,actual_throughput_mib_s,fingerprint_updates,cutoff_hits,jump_hits,jump_bytes_skipped,redundant_checks,warp_groups,cutoff_lane_sum,tail_idle_lane_sum,min_checks,max_checks,avg_checks,config_label,dataset,timing,chunk_algo'
-
 mkdir -p "$OUT_DIR"
-
-build_tools() {
-	echo "[build] chunkingTool + GPU PTX"
-	make -C "$ROOT_DIR/src/chunking" fastcdc_gpu_ptx >/dev/null 2>&1
-	(
-		cd "$ROOT_DIR/src/chunking"
-		for src in rabin_chunking.c rabinjump_chunking.c ae_chunking.c fastcdc_chunking.c \
-			gear_common.c gear_chunking.c gearjump_chunking.c fastcdc_gpu.c fastcdc_gpu_naive.c leap_chunking.c; do
-			gcc -O3 -Wall $(pkg-config --cflags glib-2.0) -I../../src -c "$src" >/dev/null 2>&1
-		done
-		ar rcs libchunk.a ./*.o
-	)
-	make -C "$TEST_DIR" chunkingTool >/dev/null 2>&1
-	echo "[build] done"
-}
-
-dataset_skipped() {
-	ds_name="$1"
-	case ",${SKIP_DATASETS:-}," in
-	*,$ds_name,*)
-		return 0
-		;;
-	esac
-	return 1
-}
-
-run_bench_gpu() {
-	csv="$1"
-	label="$2"
-	algo="$3"
-	input="$4"
-	dataset_name="$5"
-	timing="$6"
-	shift 6
-	extra="$*"
-
-	export DESTOR_FASTCDC_GPU_PTX="$ROOT_DIR/src/chunking/fastcdc_gpu_kernel.ptx"
-	ds_color=$(color_dataset "$dataset_name")
-	algo_color=$(color_algorithm "$algo")
-	printf '[bench] algo=%s%s%s dataset=%s%s%s config=%s%s%s mode=%s%s%s input=%s\n' \
-		"$algo_color" "$algo" "$C_ALGO_RST" \
-		"$ds_color" "$dataset_name" "$C_RST" \
-		"$C_SWEEP" "$label" "$C_RST" \
-		"$C_GPU" "GPU" "$C_RST" "$input"
-
-	set -- "$TOOL" -a "$algo" -i "$input" $COMMON_OPTS $extra --result-csv "$csv"
-	case "$algo" in
-	gearjump|jc)
-		set -- "$@" --jump-mto "$JUMP_MASK_DELTA"
-		;;
-	esac
-	set -- "$@" --gpu --gpu-device "$GPU_DEVICE" --gpu-batch "$GPU_BATCH"
-	"$@"
-	patch_result_row "$csv" "$label" "$dataset_name" "$algo" "$timing"
-}
 
 run_exp31_dataset() {
 	ds_name="$1"
-	input="$2"
+	src="$2"
 	csv="$3"
+	input=$(resolve_dataset_input "$ds_name" "$src")
 
 	if dataset_skipped "$ds_name"; then
 		echo "[skip] $ds_name (SKIP_DATASETS)" >&2
 		return 0
 	fi
-	if [ ! -e "$input" ]; then
-		echo "[warn] skip $ds_name: path not found: $input" >&2
+	if [ ! -e "$src" ]; then
+		echo "[warn] skip $ds_name: path not found: $src" >&2
 		return 0
 	fi
 
@@ -157,22 +104,21 @@ run_exp31_dataset() {
 		printf '\n--- algorithm: %s%s%s (3.1 pipeline_tasks) ---\n' \
 			"$(color_algorithm "$algo")" "$algo" "$C_ALGO_RST"
 		for tasks in $PIPELINE_TASKS_LIST; do
-			run_bench_gpu "$csv" "pipeline_tasks=$tasks" "$algo" "$input" "$ds_name" e2e \
-				--gpu-pipeline-tasks "$tasks" \
-				--gpu-threads-per-block "$GPU_THREADS"
+			run_bench_gpu_ours "$csv" "pipeline_tasks=$tasks" "$algo" "$input" "$ds_name" "$tasks"
 		done
 	done
 }
 
 run_exp32_dataset() {
 	ds_name="$1"
-	input="$2"
+	src="$2"
 	csv="$3"
+	input=$(resolve_dataset_input "$ds_name" "$src")
 
 	if dataset_skipped "$ds_name"; then
 		return 0
 	fi
-	if [ ! -e "$input" ]; then
+	if [ ! -e "$src" ]; then
 		return 0
 	fi
 
@@ -186,8 +132,7 @@ run_exp32_dataset() {
 		printf '\n--- algorithm: %s%s%s (3.2 threads/block) ---\n' \
 			"$(color_algorithm "$algo")" "$algo" "$C_ALGO_RST"
 		for threads in $THREAD_BLOCKS_LIST; do
-			run_bench_gpu "$csv" "threads=$threads" "$algo" "$input" "$ds_name" kernel \
-				--gpu-pipeline-tasks "$PIPELINE_FULL" \
+			run_bench_gpu_ours "$csv" "threads=$threads" "$algo" "$input" "$ds_name" "$PIPELINE_FULL" \
 				--gpu-threads-per-block "$threads"
 		done
 	done
