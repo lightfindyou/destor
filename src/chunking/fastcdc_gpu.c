@@ -121,8 +121,8 @@ struct cuda_driver_state {
 	int batch_task_capacity;
 	unsigned char *batch_input_host;
 	unsigned char *batch_input_host_alt;
-	int *batch_offsets_host;
-	int *batch_offsets_host_alt;
+	long long *batch_offsets_host;
+	long long *batch_offsets_host_alt;
 	int *batch_lengths_host;
 	int *batch_lengths_host_alt;
 	int *batch_target_lengths_host;
@@ -188,16 +188,23 @@ static int fastcdc_gpu_segment_window_bytes(void) {
 
 int fastcdc_gpu_segment_boundary_limit(int segment_bytes) {
 	int min_size = destor.chunk_min_size > 0 ? destor.chunk_min_size : 1;
-	int limit;
+	long long limit;
 
 	if (segment_bytes <= 0) {
 		segment_bytes = fastcdc_gpu_segment_window_bytes();
 	}
-	limit = segment_bytes / min_size + 2;
-	if (limit < 2) {
-		limit = 2;
+	/* Typical CDC: segment/min_size; pathological tiny chunks need a much larger cap. */
+	limit = (long long)segment_bytes / (long long)min_size + 256LL;
+	if ((long long)segment_bytes / 128LL + 1024LL > limit) {
+		limit = (long long)segment_bytes / 128LL + 1024LL;
 	}
-	return limit;
+	if (limit < 2LL) {
+		limit = 2LL;
+	}
+	if (limit > (long long)INT_MAX) {
+		limit = (long long)INT_MAX;
+	}
+	return (int)limit;
 }
 
 static int fastcdc_gpu_clamp_pipeline_tasks(int tasks) {
@@ -347,10 +354,12 @@ void fastcdc_gpu_reset_batch_timing(void) {
 }
 
 double fastcdc_gpu_get_batch_compute_ms(void) {
-	/* Prefer CUDA event kernel time (excludes H2D/D2H); wall is fallback only. */
-	if (g_cuda.batch_compute_ms_accum > 0.0) {
-		return g_cuda.batch_compute_ms_accum;
-	}
+	/* CUDA event kernel time only (excludes H2D/D2H). */
+	return g_cuda.batch_compute_ms_accum;
+}
+
+double fastcdc_gpu_get_batch_e2e_ms(void) {
+	/* Per-batch stream wall (H2D wait + kernel + D2H until sync), summed across batches. */
 	return g_cuda.batch_kernel_wall_ms_accum;
 }
 
@@ -692,8 +701,8 @@ static int fastcdc_gpu_ensure_batch_capacity(size_t total_bytes,
 	CUdeviceptr new_device_ptr_alt = 0;
 	unsigned char *new_input_host = NULL;
 	unsigned char *new_input_host_alt = NULL;
-	int *new_offsets_host = NULL;
-	int *new_offsets_host_alt = NULL;
+	long long *new_offsets_host = NULL;
+	long long *new_offsets_host_alt = NULL;
 	int *new_lengths_host = NULL;
 	int *new_lengths_host_alt = NULL;
 	int *new_target_lengths_host = NULL;
@@ -752,10 +761,10 @@ static int fastcdc_gpu_ensure_batch_capacity(size_t total_bytes,
 		g_cuda.batch_input_capacity = total_bytes;
 	}
 	if (task_count > g_cuda.batch_task_capacity || boundary_stride != g_cuda.batch_boundary_stride) {
-		if (fastcdc_gpu_alloc_host_buffer((void **)&new_offsets_host, sizeof(int) * (size_t)task_count) != 0) {
+		if (fastcdc_gpu_alloc_host_buffer((void **)&new_offsets_host, sizeof(long long) * (size_t)task_count) != 0) {
 			return -1;
 		}
-		if (fastcdc_gpu_alloc_host_buffer((void **)&new_offsets_host_alt, sizeof(int) * (size_t)task_count) != 0) {
+		if (fastcdc_gpu_alloc_host_buffer((void **)&new_offsets_host_alt, sizeof(long long) * (size_t)task_count) != 0) {
 			fastcdc_gpu_free_host_buffer(new_offsets_host);
 			return -1;
 		}
@@ -893,12 +902,12 @@ static int fastcdc_gpu_ensure_batch_capacity(size_t total_bytes,
 		}
 
 		if (g_cuda.cuMemAlloc(&g_cuda.batch_offsets_device,
-				sizeof(int) * (size_t)task_count) != CUDA_SUCCESS) {
+				sizeof(long long) * (size_t)task_count) != CUDA_SUCCESS) {
 			g_cuda.batch_task_capacity = 0;
 			return -1;
 		}
 		if (g_cuda.cuMemAlloc(&g_cuda.batch_offsets_device_alt,
-				sizeof(int) * (size_t)task_count) != CUDA_SUCCESS) {
+				sizeof(long long) * (size_t)task_count) != CUDA_SUCCESS) {
 			g_cuda.cuMemFree(g_cuda.batch_offsets_device);
 			g_cuda.batch_offsets_device = 0;
 			g_cuda.batch_task_capacity = 0;
@@ -1303,11 +1312,11 @@ static int fastcdc_gpu_chunk_segments_batch_common(unsigned char **buffers,
 	CUdeviceptr results_devices[2];
 	CUdeviceptr boundaries_devices[2];
 	unsigned char *input_host[2];
-	int *offsets_host[2];
 	int *lengths_host[2];
 	int *target_lengths_host[2];
 	struct fastcdc_gpu_segment_result *results_host[2];
 	int *boundaries_host[2];
+	long long *offsets_host[2];
 	int slot_start[2] = { 0, 0 };
 	int slot_count[2] = { 0, 0 };
 	int slot_busy[2] = { 0, 0 };
@@ -1450,11 +1459,11 @@ static int fastcdc_gpu_chunk_segments_batch_common(unsigned char **buffers,
 				if (target_len < 0) {
 					target_len = 0;
 				}
-				offsets_host[slot][i] = (int)local_bytes;
+				offsets_host[slot][i] = (long long)local_bytes;
 				lengths_host[slot][i] = copy_len;
 				target_lengths_host[slot][i] = target_len;
 				if (copy_len > 0) {
-					memcpy(input_host[slot] + offsets_host[slot][i],
+					memcpy(input_host[slot] + (size_t)offsets_host[slot][i],
 							buffers[idx],
 							(size_t)copy_len);
 				}
@@ -1472,7 +1481,7 @@ static int fastcdc_gpu_chunk_segments_batch_common(unsigned char **buffers,
 			}
 			rc = g_cuda.cuMemcpyHtoDAsync(offsets_devices[slot],
 					offsets_host[slot],
-					sizeof(int) * (size_t)local_count,
+					sizeof(long long) * (size_t)local_count,
 					streams[slot]);
 			if (rc != CUDA_SUCCESS) {
 				ok = 0;
@@ -1656,7 +1665,9 @@ static int fastcdc_gpu_chunk_segments_batch_common(unsigned char **buffers,
 
 				if (results_host[slot][i].boundary_count <= 0
 						|| results_host[slot][i].boundary_count > boundary_stride
-						|| results_host[slot][i].consumed_bytes < target_lengths_host[slot][i]
+						|| (results_host[slot][i].consumed_bytes < target_lengths_host[slot][i]
+							&& results_host[slot][i].boundary_count < boundary_stride
+							&& results_host[slot][i].consumed_bytes < copy_len)
 						|| results_host[slot][i].consumed_bytes > copy_len) {
 					valid = 0;
 				}

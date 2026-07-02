@@ -1,17 +1,17 @@
 #!/bin/sh
 # 实验二：消融分析（仅当前仓库 chunkingTool，统一计时口径）
 #
-#   A  GPU-Naive           --gpu-naive，前 EXP2_NAIVE_BYTE_CAP（默认 1 GiB）
-#   B  Segment-Batch      --gpu-pipeline-tasks=$EXP2_B_PIPELINE_TASKS（默认 1），全量
-#   C  Pipeline           --gpu-pipeline-tasks=$EXP2_C_PIPELINE_TASKS（默认 64），全量
-#   D  Full-ParallelScan  --gpu-pipeline-tasks=$PIPELINE_FULL，全量
-#
-# A→D 为同一 Ours 实现上 pipeline 并发度递进；A 为独立 Naive 路径。
-#
-# 用法:
-#   ./run_exp2_ablation.sh
-#   EXP2_NAIVE_BYTE_CAP=1073741824 ./run_exp2_ablation.sh
-#   SKIP_DATASETS=Wiki ./run_exp2_ablation.sh
+# 用法: sh ./run_exp2_ablation.sh [-h]
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+case "${1:-}" in
+-h|--help)
+	. "$SCRIPT_DIR/exp_common.sh"
+	exp2_usage
+	exit 0
+	;;
+esac
+
 set -u
 
 if [ -t 1 ]; then
@@ -54,10 +54,10 @@ color_config() {
 	esac
 }
 
-SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 . "$SCRIPT_DIR/exp_config.sh"
 . "$SCRIPT_DIR/exp_common.sh"
 . "$SCRIPT_DIR/exp_bench.sh"
+exp_init_signals
 
 OUT_DIR=${OUT_DIR:-"$SCRIPT_DIR/results/exp2_$(date +%Y%m%d_%H%M%S)"}
 mkdir -p "$OUT_DIR"
@@ -67,17 +67,18 @@ run_gpu_ablation() {
 	ds_name="$2"
 	src="$3"
 	csv="$4"
-	naive_input=$(resolve_exp2_naive_input "$ds_name" "$src")
-	full_input=$(resolve_exp2_full_input "$ds_name" "$src")
-	naive_gib=$(awk "BEGIN {printf \"%.2f\", ${EXP2_NAIVE_BYTE_CAP:-1073741824} / (1024*1024*1024)}")
+	resolve_exp2_naive_input "$ds_name" "$src"
+	naive_input="$RESOLVED_DATASET_INPUT"
+	resolve_exp2_full_input "$ds_name" "$src"
+	full_input="$RESOLVED_DATASET_INPUT"
+	naive_gib=$(awk "BEGIN {printf \"%.2f\", ${GPU_NAIVE_BYTE_CAP:-1073741824} / (1024*1024*1024)}")
 
 	ds_color=$(color_dataset "$ds_name")
 	echo "[exp2] dataset=${ds_color}${ds_name}${C_RST} A=${naive_gib}GiB B/C/D=full" >&2
 	echo "[exp2]   A input=$naive_input" >&2
 	echo "[exp2]   B/C/D input=$full_input" >&2
 
-	run_bench "$csv" "A-GPU-Naive" "$algo" gpu "$naive_input" "$ds_name"
-	python3 "$SCRIPT_DIR/patch_csv.py" "$csv" naive_byte_cap "$EXP2_NAIVE_BYTE_CAP"
+	run_bench_gpu_naive "$csv" "A-GPU-Naive" "$algo" "$src" "$ds_name"
 	run_bench_gpu_ours "$csv" "B-Segment-Batch" "$algo" "$full_input" "$ds_name" "$EXP2_B_PIPELINE_TASKS"
 	run_bench_gpu_ours "$csv" "C-Pipeline" "$algo" "$full_input" "$ds_name" "$EXP2_C_PIPELINE_TASKS"
 	run_bench_gpu_ours "$csv" "D-Full-ParallelScan" "$algo" "$full_input" "$ds_name" "$PIPELINE_FULL"
@@ -119,9 +120,9 @@ printf '实验二：消融分析 (当前 chunkingTool, 统一计时)\n'
 printf '  算法: '
 print_colored_algorithms "$EXP_ALGORITHMS"
 printf '\n'
-printf '  A-GPU-Naive: 前 %.2f GiB (EXP2_NAIVE_BYTE_CAP=%s)\n' \
-	"$(awk "BEGIN {print ${EXP2_NAIVE_BYTE_CAP:-1073741824} / (1024*1024*1024)}")" \
-	"${EXP2_NAIVE_BYTE_CAP:-1073741824}"
+printf '  A-GPU-Naive: 前 %.2f GiB (GPU_NAIVE_BYTE_CAP=%s)\n' \
+	"$(awk "BEGIN {print ${GPU_NAIVE_BYTE_CAP:-1073741824} / (1024*1024*1024)}")" \
+	"${GPU_NAIVE_BYTE_CAP:-1073741824}"
 printf '  B/C/D: 全量数据集\n'
 printf '  A → B pipeline=%s → C pipeline=%s → D pipeline=%s\n' \
 	"$EXP2_B_PIPELINE_TASKS" "$EXP2_C_PIPELINE_TASKS" "$PIPELINE_FULL"

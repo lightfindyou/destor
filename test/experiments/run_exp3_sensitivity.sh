@@ -1,25 +1,17 @@
 #!/bin/sh
 # 实验三：参数敏感性分析 (Parameter Sensitivity)
 #
-# 使用与实验一相同的数据集与主仓库 chunkingTool（Ours-Full GPU）。
-# 对 fastcdc 与 gearjump 扫描 GPU 参数；gear 无 GPU 路径，自动跳过。
-#
-# 实验 3.1：子批次任务数 (pipeline_tasks) 敏感性
-#   X 轴：--gpu-pipeline-tasks（默认 16,32,64,128,256,512）
-#   Y 轴：端到端吞吐 elapsed_ms（H2D + Kernel + D2H）
-#   固定：--gpu-threads-per-block=$GPU_THREADS（默认 128）
-#
-# 实验 3.2：线程块规模敏感性
-#   X 轴：--gpu-threads-per-block（默认 128,256,512）
-#   Y 轴：Kernel 执行时间 actual_elapsed_ms
-#   固定：--gpu-pipeline-tasks=$PIPELINE_FULL（默认 256）
-#   Segment 窗口由编译期 DEFAULT_BLOCK_SIZE(1MiB)+chunk_max 决定，本实验不单独扫参。
-#
-# 用法:
-#   ./run_exp3_sensitivity.sh
-#   OUT_DIR=/tmp/exp3 ./run_exp3_sensitivity.sh
-#   SKIP_DATASETS=Wiki ./run_exp3_sensitivity.sh
-#   PIPELINE_TASKS_LIST="16 32 64 128 256 512" THREAD_BLOCKS_LIST="128 256 512" ./run_exp3_sensitivity.sh
+# 用法: sh ./run_exp3_sensitivity.sh [-h]
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+case "${1:-}" in
+-h|--help)
+	. "$SCRIPT_DIR/exp_common.sh"
+	exp3_usage
+	exit 0
+	;;
+esac
+
 set -u
 
 if [ -t 1 ]; then
@@ -69,10 +61,10 @@ color_config() {
 	esac
 }
 
-SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 . "$SCRIPT_DIR/exp_config.sh"
 . "$SCRIPT_DIR/exp_common.sh"
 . "$SCRIPT_DIR/exp_bench.sh"
+exp_init_signals
 
 OUT_DIR=${OUT_DIR:-"$SCRIPT_DIR/results/exp3_$(date +%Y%m%d_%H%M%S)"}
 mkdir -p "$OUT_DIR"
@@ -81,7 +73,8 @@ run_exp31_dataset() {
 	ds_name="$1"
 	src="$2"
 	csv="$3"
-	input=$(resolve_dataset_input "$ds_name" "$src")
+	resolve_dataset_input "$ds_name" "$src"
+	input="$RESOLVED_DATASET_INPUT"
 
 	if dataset_skipped "$ds_name"; then
 		echo "[skip] $ds_name (SKIP_DATASETS)" >&2
@@ -113,7 +106,8 @@ run_exp32_dataset() {
 	ds_name="$1"
 	src="$2"
 	csv="$3"
-	input=$(resolve_dataset_input "$ds_name" "$src")
+	resolve_dataset_input "$ds_name" "$src"
+	input="$RESOLVED_DATASET_INPUT"
 
 	if dataset_skipped "$ds_name"; then
 		return 0

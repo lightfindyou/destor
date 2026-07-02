@@ -109,7 +109,7 @@ void chunk_tool_compute_reset(chunk_tool_compute_kind kind) {
 	}
 }
 
-double chunk_tool_compute_read_ms(chunk_tool_compute_kind kind) {
+double chunk_tool_compute_kernel_ms(chunk_tool_compute_kind kind) {
 	switch (kind) {
 	case CHUNK_TOOL_COMPUTE_GPU_BATCH:
 		return fastcdc_gpu_get_batch_compute_ms();
@@ -122,26 +122,56 @@ double chunk_tool_compute_read_ms(chunk_tool_compute_kind kind) {
 
 void chunk_tool_timing_assign(double *elapsed_ms,
 		double *actual_elapsed_ms,
-		double fallback_ms,
+		double e2e_ms,
 		chunk_tool_compute_kind kind,
-		double cpu_wall_ms) {
-	double ms;
+		double kernel_ms) {
+	double elapsed;
+	double actual;
 
 	if (!elapsed_ms || !actual_elapsed_ms) {
 		return;
 	}
+
 	switch (kind) {
 	case CHUNK_TOOL_COMPUTE_GPU_BATCH:
+		actual = chunk_tool_compute_kernel_ms(kind);
+		if (actual <= 0.0 && kernel_ms > 0.0) {
+			actual = kernel_ms;
+		}
+		elapsed = e2e_ms;
+		if (elapsed <= 0.0) {
+			elapsed = fastcdc_gpu_get_batch_e2e_ms();
+		}
+		if (elapsed <= 0.0) {
+			elapsed = actual;
+		}
+		if (actual <= 0.0) {
+			actual = elapsed;
+		}
+		break;
 	case CHUNK_TOOL_COMPUTE_GPU_NAIVE:
-		ms = chunk_tool_compute_read_ms(kind);
-		if (ms <= 0.0) {
-			ms = fallback_ms;
+		actual = chunk_tool_compute_kernel_ms(kind);
+		if (actual <= 0.0 && kernel_ms > 0.0) {
+			actual = kernel_ms;
+		}
+		elapsed = e2e_ms;
+		if (elapsed <= 0.0) {
+			elapsed = actual;
+		}
+		if (actual <= 0.0) {
+			actual = elapsed;
 		}
 		break;
 	default:
-		ms = cpu_wall_ms > 0.0 ? cpu_wall_ms : fallback_ms;
+		if (kernel_ms > 0.0) {
+			elapsed = kernel_ms;
+		} else {
+			elapsed = e2e_ms;
+		}
+		actual = elapsed;
 		break;
 	}
-	*elapsed_ms = ms;
-	*actual_elapsed_ms = ms;
+
+	*elapsed_ms = elapsed;
+	*actual_elapsed_ms = actual;
 }

@@ -11,7 +11,11 @@ alwaysApply: true
 
 - 对比的各配置必须使用**同一套**可执行文件、计时模块、CSV 字段与报告口径。
 - 不得在 A/B/C/D（或 CPU/GPU 等）之间混用不同的计时定义、吞吐计算公式或 `--profile-chunking` 默认值。
-- `elapsed_ms` / `actual_elapsed_ms` / `kernel_throughput_gbps` 等字段在所有被对比的配置上含义必须一致（例如：是否含读盘、是否含 H2D/D2H 须统一说明并统一实现）。
+- **计时字段语义（强制，全实验统一）**：
+  - `elapsed_ms` / `e2e_throughput_gbps` / `throughput(total)`：**总吞吐**，分块阶段墙钟，**含 GPU H2D/D2H**，**不含读盘**。
+  - `actual_elapsed_ms` / `kernel_throughput_gbps` / `throughput(actual)`：**计算吞吐**，仅 kernel（GPU 为 CUDA event 累加；CPU 与 elapsed 相同）。
+  - 两者不得再写成相同值（GPU 路径必须拆分）。
+- **GPU-Naive 数据上限（强制）**：所有实验与基准中的 GPU-Naive **仅处理数据集前 1 GiB**（`GPU_NAIVE_BYTE_CAP=1073741824`），因其过慢；Ours/CPU 仍可用全量或 `EXP_INPUT_BYTE_CAP`。
 - 数据量不一致时（如 A 仅 1 GiB、B/C/D 全量）须在脚本注释与报告中明确标注，不得当作同口径绝对吞吐直接解读。
 - 禁止为“省事”引入会破坏对比公平性的捷径（如仅某一阶段开 profiling、仅某一阶段用不同 input cap）。
 

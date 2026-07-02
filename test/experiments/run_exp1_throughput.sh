@@ -1,15 +1,18 @@
 #!/bin/sh
 # 实验一：吞吐对比（统一计时口径，见 EXP_TIMING_MODE）
 #
-# 默认 EXP_TIMING_MODE=kernel：elapsed_ms = actual_elapsed_ms = 纯分块时间（不含读盘/H2D/D2H）
-#
-# 所有配置使用相同数据集视图（EXP_INPUT_BYTE_CAP 为空则全量）。
-# 仅使用主仓库 chunkingTool，不依赖 worktree。
-#
-# 用法:
-#   ./run_exp1_throughput.sh
-#   EXP_TIMING_MODE=e2e OUT_DIR=/tmp/exp1 ./run_exp1_throughput.sh
-#   EXP_INPUT_BYTE_CAP=1073741824 ./run_exp1_throughput.sh
+# 用法: sh ./run_exp1_throughput.sh [-h]
+# 帮助: sh ./run_exp1_throughput.sh -h  或  python3 ./run_exp1_throughput.py -h
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+case "${1:-}" in
+-h|--help)
+	. "$SCRIPT_DIR/exp_common.sh"
+	exp1_usage
+	exit 0
+	;;
+esac
+
 set -u
 
 if [ -t 1 ]; then
@@ -51,10 +54,10 @@ color_config() {
 	esac
 }
 
-SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 . "$SCRIPT_DIR/exp_config.sh"
 . "$SCRIPT_DIR/exp_common.sh"
 . "$SCRIPT_DIR/exp_bench.sh"
+exp_init_signals
 
 OUT_DIR=${OUT_DIR:-"$SCRIPT_DIR/results/exp1_$(date +%Y%m%d_%H%M%S)"}
 mkdir -p "$OUT_DIR"
@@ -63,7 +66,8 @@ run_dataset() {
 	ds_name="$1"
 	src="$2"
 	csv="$3"
-	input=$(resolve_dataset_input "$ds_name" "$src")
+	resolve_dataset_input "$ds_name" "$src"
+	input="$RESOLVED_DATASET_INPUT"
 
 	if dataset_skipped "$ds_name"; then
 		echo "[skip] $ds_name (SKIP_DATASETS)" >&2
@@ -92,7 +96,7 @@ run_dataset() {
 			run_bench_gpu_ours "$csv" "Ours-Full" "$algo" "$input" "$ds_name" "$PIPELINE_FULL"
 		fi
 		if algo_supports_gpu_naive "$algo" && [ "${RUN_GPU_NAIVE:-0}" = "1" ]; then
-			run_bench "$csv" "GPU-Naive" "$algo" gpu "$input" "$ds_name"
+			run_bench_gpu_naive "$csv" "GPU-Naive" "$algo" "$src" "$ds_name"
 		fi
 	done
 }
@@ -106,7 +110,8 @@ printf '  指标字段: %s\n' "$(timing_metric_ms)"
 if [ -n "${EXP_INPUT_BYTE_CAP:-}" ]; then
 	printf '  数据上限: %s bytes (全部配置一致)\n' "$EXP_INPUT_BYTE_CAP"
 else
-	printf '  数据上限: 全量数据集\n'
+	printf '  数据上限: 全量数据集 (GPU-Naive 固定前 %.2f GiB)\n' \
+		"$(awk "BEGIN {print ${GPU_NAIVE_BYTE_CAP:-1073741824} / (1024*1024*1024)}")"
 fi
 printf '  输出: %s%s%s\n' "$C_VAL" "$OUT_DIR" "$C_RST"
 echo "============================================================"

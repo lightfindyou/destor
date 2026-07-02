@@ -79,8 +79,26 @@ static __device__ void gpu_prefix_scan_tile(unsigned long long elem_a,
 	__syncthreads();
 }
 
+static __device__ __forceinline__ void gpu_mark_segment_result(struct fastcdc_gpu_segment_result *task_result,
+		int target_n,
+		int n,
+		int boundary_stride) {
+	(void)boundary_stride;
+
+	if (task_result->boundary_count < 0) {
+		return;
+	}
+	if (task_result->consumed_bytes >= target_n || task_result->consumed_bytes >= n) {
+		return;
+	}
+	if (task_result->boundary_count >= boundary_stride) {
+		return;
+	}
+	task_result->boundary_count = -1;
+}
+
 __global__ void fastcdc_chunk_kernel(const unsigned char *input,
-		const int *input_offsets,
+		const long long *input_offsets,
 		const int *input_lengths,
 		const int *target_lengths,
 		int task_count,
@@ -214,15 +232,13 @@ __global__ void fastcdc_chunk_kernel(const unsigned char *input,
 	}
 
 	if (tid == 0) {
-		if (task_result->consumed_bytes < target_n) {
-			task_result->boundary_count = -1;
-		}
+		gpu_mark_segment_result(task_result, target_n, n, boundary_stride);
 		gpu_finalize_result(task_result);
 	}
 }
 
 __global__ void jc_chunk_kernel(const unsigned char *input,
-		const int *input_offsets,
+		const long long *input_offsets,
 		const int *input_lengths,
 		const int *target_lengths,
 		int task_count,
@@ -358,15 +374,13 @@ __global__ void jc_chunk_kernel(const unsigned char *input,
 	}
 
 	if (tid == 0) {
-		if (task_result->consumed_bytes < target_n) {
-			task_result->boundary_count = -1;
-		}
+		gpu_mark_segment_result(task_result, target_n, n, boundary_stride);
 		gpu_finalize_result(task_result);
 	}
 }
 
 __global__ void gear_chunk_kernel(const unsigned char *input,
-		const int *input_offsets,
+		const long long *input_offsets,
 		const int *input_lengths,
 		const int *target_lengths,
 		int task_count,
@@ -490,9 +504,7 @@ __global__ void gear_chunk_kernel(const unsigned char *input,
 	}
 
 	if (tid == 0) {
-		if (task_result->consumed_bytes < target_n) {
-			task_result->boundary_count = -1;
-		}
+		gpu_mark_segment_result(task_result, target_n, n, boundary_stride);
 		gpu_finalize_result(task_result);
 	}
 }

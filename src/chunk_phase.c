@@ -279,9 +279,8 @@ static void* chunk_thread_batch_gpu(void *arg) {
 				read_done = 1;
 				break;
 			}
-			WARNING("Chunk phase: failed to initialize GPU batch file state, fallback to sequential GPU mode");
-			read_done = 1;
-			break;
+			NOTICE("Chunk phase: failed to initialize GPU batch file state");
+			exit(1);
 		}
 
 		if (active_count == 0) {
@@ -301,6 +300,7 @@ static void* chunk_thread_batch_gpu(void *arg) {
 			}
 
 			if (task_count > 0) {
+				int batch_rc = 0;
 				TIMER_DECLARE(1);
 				if (!batch_notice_emitted && task_count > 1) {
 					NOTICE("Chunk phase: GPU batch scheduler launched %d concurrent tasks", task_count);
@@ -308,14 +308,14 @@ static void* chunk_thread_batch_gpu(void *arg) {
 				}
 				TIMER_BEGIN(1);
 				if (chunking_segment_batch) {
-					chunking_segment_batch(buffers,
+					batch_rc = chunking_segment_batch(buffers,
 							sizes,
 							task_count,
 							boundary_stride,
 							boundary_counts,
 							chunk_sizes);
 				} else if (chunking_batch) {
-					chunking_batch(buffers, sizes, task_count, chunk_sizes);
+					batch_rc = chunking_batch(buffers, sizes, task_count, chunk_sizes);
 				} else {
 					for (i = 0; i < task_count; i++) {
 						chunk_sizes[i] = chunking(buffers[i], sizes[i]);
@@ -323,16 +323,23 @@ static void* chunk_thread_batch_gpu(void *arg) {
 					}
 				}
 				TIMER_END(1, jcr.chunk_time);
+				if (batch_rc != 0) {
+					NOTICE("Chunk phase: GPU batch failed (rc=%d)", batch_rc);
+					exit(1);
+				}
 				for (i = 0; i < task_count; i++) {
 					struct chunk_file_state *state = states + state_index[i];
 					int count = chunking_segment_batch ? boundary_counts[i] : 1;
 
 					if (count <= 0) {
-						count = 1;
-						chunk_sizes[i * boundary_stride] = chunking(buffers[i], sizes[i]);
+						NOTICE("Chunk phase: GPU batch returned invalid boundary count %d (task %d)",
+								count, i);
+						exit(1);
 					}
 					if (count > state->pending_chunk_capacity) {
-						count = state->pending_chunk_capacity;
+						NOTICE("Chunk phase: GPU batch returned %d boundaries, capacity %d (task %d)",
+								count, state->pending_chunk_capacity, i);
+						exit(1);
 					}
 					memcpy(state->pending_chunk_sizes,
 							chunk_sizes + (i * boundary_stride),
@@ -586,7 +593,8 @@ void start_chunk_phase() {
 				chunking_gpu_close_fn = fastcdc_gpu_close;
 				NOTICE("Chunk phase: FastCDC GPU mode enabled, device=%d, batch-size=%d", destor.chunk_gpu_device_id, destor.chunk_gpu_batch_size);
 			} else {
-				WARNING("Chunk phase: FastCDC GPU mode unavailable, fallback to CPU");
+				NOTICE("Chunk phase: FastCDC GPU mode unavailable (init failed)");
+				exit(1);
 			}
 		}
 	} else if(destor.chunk_algorithm == CHUNK_SC){
@@ -614,7 +622,8 @@ void start_chunk_phase() {
 				chunking_gpu_close_fn = jc_gpu_close;
 				NOTICE("Chunk phase: JC GPU mode enabled, device=%d, batch-size=%d", destor.chunk_gpu_device_id, destor.chunk_gpu_batch_size);
 			} else {
-				WARNING("Chunk phase: JC GPU mode unavailable, fallback to CPU");
+				NOTICE("Chunk phase: JC GPU mode unavailable (init failed)");
+				exit(1);
 			}
 		}
 	} else if(destor.chunk_algorithm == CHUNK_JCTTTD){
@@ -639,7 +648,8 @@ void start_chunk_phase() {
 
 	if (destor.chunk_gpu_enable && destor.chunk_algorithm != CHUNK_FASTCDC
 			&& destor.chunk_algorithm != CHUNK_GEARJUMP) {
-		WARNING("Chunk phase: GPU mode currently supports FastCDC/JC only, fallback to CPU");
+		NOTICE("Chunk phase: GPU mode supports FastCDC and GearJump only");
+		exit(1);
 	}
 
 	chunk_queue = sync_queue_new(100);

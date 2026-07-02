@@ -1,33 +1,19 @@
 #!/bin/sh
 # 实验四：NCU 微观 Profiling（GPU-Naive vs Ours-Full）
 #
-# 按分块算法分别 profile（EXP_ALGORITHMS，默认 fastcdc + gearjump；gear 无 GPU 跳过）：
-#   fastcdc   GPU-Naive vs Ours-Full
-#   gear      GPU-Naive vs Ours-Full
-#   gearjump  GPU-Naive vs Ours-Full
-#
-# 指标（由 summarize_ncu.py 从 NCU 报告提取）：
-#   Warp Execution Efficiency、分支发散、Global/Shared 访存吞吐、Achieved Occupancy
-#
-# 为控制 NCU 开销，默认在 NCU_INPUT_BYTE_CAP（1GiB）子集上 profile；
-# 若设置 EXP_INPUT_BYTE_CAP，则与实验 1–3 使用相同数据上限。
-# 可通过 NCU_LAUNCH_COUNT 限制 profile 的 kernel launch 次数（Ours 默认 64，Naive 默认 16）。
-# 目录输入文件过多时 NCU 自动改用子集中最大的单文件，避免 GPU-Naive 上万次 launch 撑爆显存。
-# GPU_DEVICE=auto 选用当前显存占用最低的 GPU；若 GPU0 繁忙可设 GPU_DEVICE=1。
-#
-# 用法:
-#   ./run_exp4_profiling.sh
-#   SKIP_NCU=1 ./run_exp4_profiling.sh          # 仅生成空表与报告骨架
-#   SKIP_DATASETS=Wiki ./run_exp4_profiling.sh
-#   NCU_USE_SUDO=0 ./run_exp4_profiling.sh      # 已放开 RmProfilingAdminOnly 时禁用自动 sudo
-#
-# 脚本会自动设置 DESTOR_FASTCDC_GPU_PTX、探测 /usr/local/cuda/bin/ncu；
-# 若 RmProfilingAdminOnly=1，会自动 sudo -E 重新执行（保留 OUT_DIR 等环境变量）。
-#
-# 若出现 ERR_NVGPUCTRPERM 且不想每次 sudo，可运行 enable_ncu_profiling.sh 并重启。
-set -u
+# 用法: sh ./run_exp4_profiling.sh [-h]
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+case "${1:-}" in
+-h|--help)
+	. "$SCRIPT_DIR/exp_common.sh"
+	exp4_usage
+	exit 0
+	;;
+esac
+
+set -u
+
 ROOT_DIR=$(CDPATH= cd -- "$SCRIPT_DIR/../.." && pwd)
 
 ensure_cuda_path() {
@@ -78,6 +64,7 @@ ensure_cuda_path
 . "$SCRIPT_DIR/exp_config.sh"
 . "$SCRIPT_DIR/exp_common.sh"
 . "$SCRIPT_DIR/exp_bench.sh"
+exp_init_signals
 export DESTOR_FASTCDC_GPU_PTX="${DESTOR_FASTCDC_GPU_PTX:-$ROOT_DIR/src/chunking/fastcdc_gpu_kernel.ptx}"
 
 resolve_ncu_bin() {
@@ -186,37 +173,37 @@ warn_busy_gpu() {
 }
 
 pick_ncu_input() {
-	input="$1"
-	variant="$2"
-	if [ -f "$input" ]; then
-		printf '%s' "$input"
+	ncu_path="$1"
+	ncu_variant="$2"
+	if [ -f "$ncu_path" ]; then
+		printf '%s' "$ncu_path"
 		return 0
 	fi
-	if [ ! -d "$input" ]; then
-		printf '%s' "$input"
+	if [ ! -d "$ncu_path" ]; then
+		printf '%s' "$ncu_path"
 		return 0
 	fi
-	file_count=$(find "$input" -type f ! -name .source 2>/dev/null | wc -l)
-	total_bytes=$(find "$input" -type f ! -name .source -printf '%s\n' 2>/dev/null \
+	file_count=$(find "$ncu_path" -type f ! -name .source 2>/dev/null | wc -l)
+	total_bytes=$(find "$ncu_path" -type f ! -name .source -printf '%s\n' 2>/dev/null \
 		| awk '{s+=$1} END {print s+0}')
 	use_single=0
 	if [ "$file_count" -gt "$NCU_MAX_DIR_FILES" ]; then
 		use_single=1
 	fi
-	if [ "$variant" = "GPU-Naive" ]; then
+	if [ "$ncu_variant" = "GPU-Naive" ]; then
 		use_single=1
 	fi
 	if [ "$total_bytes" -gt "$NCU_PROFILE_BYTE_CAP" ]; then
 		use_single=1
 	fi
 	if [ "$use_single" -eq 0 ]; then
-		printf '%s' "$input"
+		printf '%s' "$ncu_path"
 		return 0
 	fi
-	largest=$(find "$input" -type f ! -name .source -printf '%s %p\n' 2>/dev/null \
+	largest=$(find "$ncu_path" -type f ! -name .source -printf '%s %p\n' 2>/dev/null \
 		| sort -rn | head -1 | cut -d' ' -f2-)
 	if [ -z "$largest" ]; then
-		printf '%s' "$input"
+		printf '%s' "$ncu_path"
 		return 0
 	fi
 	size_mb=$(awk "BEGIN {printf \"%.1f\", $(stat -c%s "$largest" 2>/dev/null || echo 0) / (1024*1024)}")
@@ -225,18 +212,19 @@ pick_ncu_input() {
 		total_mb=$(awk "BEGIN {printf \"%.0f\", $total_bytes / (1024*1024)}")
 		reason="${reason} total=${total_mb}MiB"
 	fi
-	echo "[ncu-input] $variant: NCU 改用最大单文件 (${size_mb}MiB, ${reason}): $largest" >&2
+	echo "[ncu-input] $ncu_variant: NCU 改用最大单文件 (${size_mb}MiB, ${reason}): $largest" >&2
 	printf '%s' "$largest"
 }
 
 prepare_profile_input() {
-	ds_name="$1"
-	src="$2"
-	profile_input=$(resolve_profile_input "$ds_name" "$src")
+	_prof_ds_name="$1"
+	_prof_src="$2"
+	resolve_profile_input "$_prof_ds_name" "$_prof_src"
+	profile_input="$RESOLVED_DATASET_INPUT"
 	cap="${EXP_INPUT_BYTE_CAP:-$NCU_INPUT_BYTE_CAP}"
 	cap_gib=$(awk "BEGIN {printf \"%.2f\", $cap / (1024*1024*1024)}")
-	ds_color=$(color_dataset "$ds_name")
-	echo "[subset] dataset=${ds_color}${ds_name}${C_RST} cap=${cap_gib}GiB input=$profile_input (tmp, auto-clean)" >&2
+	ds_color=$(color_dataset "$_prof_ds_name")
+	echo "[subset] dataset=${ds_color}${_prof_ds_name}${C_RST} cap=${cap_gib}GiB input=$profile_input (tmp, auto-clean)" >&2
 	printf '%s' "$profile_input"
 }
 
@@ -413,13 +401,18 @@ run_ncu_variant() {
 			--export "$ncu_report" \
 			"$@"
 		echo $? >"$ncu_exit_file"
-	) 2>&1 | tee "$ncu_log" | ncu_progress_filter
+	) 2>&1 | tee "$ncu_log" | ncu_progress_filter &
+	EXP_CHILD_PID=$!
+	wait "$EXP_CHILD_PID"
+	_ncu_pipe_rc=$?
+	EXP_CHILD_PID=""
+	set -e
+	exp_check_child_rc "$_ncu_pipe_rc"
 	ncu_exit=0
 	if [ -f "$ncu_exit_file" ]; then
 		ncu_exit=$(cat "$ncu_exit_file")
 		rm -f "$ncu_exit_file"
 	fi
-	set -e
 
 	if [ "$ncu_exit" -ne 0 ]; then
 		status="ncu_failed"
